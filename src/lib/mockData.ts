@@ -2,7 +2,7 @@
 import type { Poll, User } from '@/types';
 
 const generateRandomVotes = () => Math.floor(Math.random() * 300) + 10;
-const generateRandomTips = () => Math.floor(Math.random() * 50) + 1; // Ensure at least 1 tip for display
+const generateRandomTips = () => Math.floor(Math.random() * 50); // Can be 0
 const generateRandomPledge = (hasPledge: boolean = Math.random() > 0.7): number | undefined => {
   return hasPledge ? Math.floor(Math.random() * 95) + 5 : undefined;
 }
@@ -26,17 +26,27 @@ const usersData: { name: string }[] = [
   { name: 'David Kelly' }, { name: 'Michael Sanders' }, { name: 'James Price' }, { name: 'John Bennett' },
   { name: 'Robert Wood' }, { name: 'Ben Ross' }, { name: 'Chris Henderson' }, { name: 'Daniel Coleman' },
   { name: 'Leo Jenkins' }, { name: 'Mark Perry' }, { name: 'Nate Powell' }, { name: 'Oscar Long' },
-  // New users for 2-option polls
   { name: 'Romantic Traveler' }, { name: 'Curious Explorer' }, { name: 'Home Buyer' }, { name: 'Hungry Harry' },
   { name: 'Festival Fiona' }, { name: 'Career Changer' }, { name: 'Path Seeker' }, 
-  { name: 'Family Mediator' }, { name: 'Betrayed Spouse' }, { name: 'Fashion Conscious' }
+  { name: 'Family Mediator' }, { name: 'Betrayed Spouse' }, { name: 'Fashion Conscious' },
+  // New users for 2-option polls from the list
+  { name: 'Cereal Consumer' }, { name: 'Drama Llama' }, { name: 'Rap Analyst' }, { name: 'Thirsty Hubby' },
+  { name: 'Ghost Ponderer' }, { name: 'Hoodie Champion' }, { name: 'Tender Lover' }, { name: 'Insta Model' },
+  { name: 'Message Ignorer' }, { name: 'Charger Keeper' }, { name: 'Party Planner' }, { name: 'Podcast Dreamer' },
+  { name: 'Spotify Stalker' }, { name: 'Text Detective' }, { name: 'Grass Avoider' }, { name: 'Tattoo Thinker' },
+  { name: 'Dog Pic Defender' }, { name: 'Job Quitter Pro' }, { name: 'Cheese Critic' }, { name: 'Feet Pic Financier' },
+  { name: 'Toxic Trait Tom' }, { name: 'Delulu Deb' }, { name: 'Charger Hoarder' }, { name: 'Fridge Raider' },
+  { name: 'Archive Diver' }, { name: 'Late Night Texter' }, { name: 'Chaos Agent' }, { name: 'Toothbrush Sharer' },
+  { name: 'Story Blocker' }, { name: 'Fries Fighter' }, { name: 'Ex Mom Texter' }, { name: 'Red Flag Racer' },
+  { name: 'Group Chat Guru' }, { name: 'KitKat Connoisseur' }, { name: 'Hoodie Hostage' }, { name: 'DM Slider' },
+  { name: 'Crisis Responder' }, { name: 'Breath Buddy' }, { name: 'Ugly Day Canceller' }, { name: 'Poll Progenitor' }
 ];
 
 export const mockUsers: User[] = usersData.map((user, index) => ({
   id: `user${index + 1}`,
   name: user.name,
   avatarUrl: `https://placehold.co/100x100.png?text=${user.name.substring(0,1)}`,
-  username: user.name.toLowerCase().replace(/\s+/g, '').substring(0, 6) + (index + 100), // Deterministic username
+  username: user.name.toLowerCase().replace(/\s+/g, '').substring(0, 10) + (index + 100), 
 }));
 
 const parseTimeRemaining = (timeString: string): number => {
@@ -65,11 +75,11 @@ const generateCreatedAt = (deadlineString: string): string => {
   let createdAgoMs;
 
   if (deadlineMs <= 60 * 60 * 1000) { // 1 hour or less
-    createdAgoMs = Math.random() * (deadlineMs * 0.5); // created up to halfway to deadline
+    createdAgoMs = Math.random() * (deadlineMs * 0.5); 
   } else if (deadlineMs <= 24 * 60 * 60 * 1000) { // 1 day or less
-    createdAgoMs = Math.random() * (6 * 60 * 60 * 1000) + (15 * 60 * 1000); // 15 mins to 6 hours ago
+    createdAgoMs = Math.random() * (6 * 60 * 60 * 1000) + (15 * 60 * 1000); 
   } else { // more than 1 day
-    createdAgoMs = Math.random() * (3 * 24 * 60 * 60 * 1000) + (1 * 24 * 60 * 60 * 1000); // 1 to 4 days ago
+    createdAgoMs = Math.random() * (3 * 24 * 60 * 60 * 1000) + (1 * 24 * 60 * 60 * 1000); 
   }
   return new Date(Date.now() - createdAgoMs).toISOString();
 };
@@ -80,12 +90,12 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll1',
     creator: findUser('Alice Wonderland'),
     question: 'What is your favorite season?',
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Seasons'],
     options: [
-      { id: 'opt1a', text: 'Spring', votes: 120, imageUrl: 'https://placehold.co/300x200.png', affiliateLink: 'https://example.com/spring-decor' },
-      { id: 'opt1b', text: 'Summer', votes: 250, imageUrl: 'https://placehold.co/300x200.png', affiliateLink: 'https://example.com/summer-gear' },
-      { id: 'opt1c', text: 'Autumn', votes: 180, imageUrl: 'https://placehold.co/300x200.png', affiliateLink: 'https://example.com/autumn-fashion' },
-      { id: 'opt1d', text: 'Winter', votes: 90, imageUrl: 'https://placehold.co/300x200.png', affiliateLink: 'https://example.com/winter-sports' },
+      { id: 'opt1a', text: 'Spring', votes: 120, imageUrl: 'https://placehold.co/300x200.png?text=Spring', affiliateLink: 'https://example.com/spring-decor' },
+      { id: 'opt1b', text: 'Summer', votes: 250, imageUrl: 'https://placehold.co/300x200.png?text=Summer', affiliateLink: 'https://example.com/summer-gear' },
+      { id: 'opt1c', text: 'Autumn', votes: 180, imageUrl: 'https://placehold.co/300x200.png?text=Autumn', affiliateLink: 'https://example.com/autumn-fashion' },
+      { id: 'opt1d', text: 'Winter', votes: 90, imageUrl: 'https://placehold.co/300x200.png?text=Winter', affiliateLink: 'https://example.com/winter-sports' },
     ],
     deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
@@ -94,6 +104,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll2',
     creator: findUser('Bob The Builder'),
     question: 'Best programming language for beginners in 2024?',
+    imageUrls: ['https://placehold.co/600x400.png?text=Code'],
     options: [
       { id: 'opt2a', text: 'Python', votes: 300, affiliateLink: 'https://example.com/python-course' },
       { id: 'opt2b', text: 'JavaScript', votes: 280, affiliateLink: 'https://example.com/js-bootcamp' },
@@ -107,6 +118,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll3',
     creator: findUser('Charlie Chaplin'),
     question: 'Which travel destination for next summer?',
+    imageUrls: ['https://placehold.co/600x400.png?text=Travel'],
     videoUrl: 'placeholder-video-url',
     options: [
       { id: 'opt3a', text: 'Paris, France', votes: 180, videoUrl: 'placeholder-option-video-url', affiliateLink: 'https://example.com/paris-tours' },
@@ -120,7 +132,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_sophia_vcard_main',
     creator: findUser('Sophia Miller'),
     question: "Finna lose my V-card, besties. To wrap it or not to wrap it? Low-key kinda nervous but also wanna YOLO. What's the tea?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=YOLO'], 
     options: [
       { id: 'sv_opt1_main', text: "Wrap it like it's your favorite mixtape ('cause STIs are NOT a vibe). Safety first, always! Think about long-term health and peace of mind. It's a sign of respect for yourself and your partner.", votes: generateRandomVotes(), affiliateLink: 'https://example.com/safe-sex-info' },
       { id: 'sv_opt2_main', text: "The stars whisper secrets of protection... and pleasure. Choose wisely. Sometimes the most mysterious path is the safest one, leading to even greater joys when approached with care and consideration.", votes: generateRandomVotes() },
@@ -134,7 +146,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_sophia_houseplant',
     creator: findUser('Sophia Miller'),
     question: 'My houseplant is getting too big for its pot. Do I repot it, or prune it back aggressively?',
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Plant'], 
     options: [
       { id: 'sh_opt1', text: 'Repot it! Let it flourish.', votes: generateRandomVotes(), affiliateLink: 'https://example.com/large-pots' },
       { id: 'sh_opt2', text: 'Prune it, keep it manageable.', votes: generateRandomVotes(), affiliateLink: 'https://example.com/pruning-shears' },
@@ -148,7 +160,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_alex_code',
     creator: findUser('Alex Johnson'),
     question: 'Should I learn to code to boost my career, or is it too late for an old dog to learn new tricks?',
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Career'], 
     options: [
       { id: 'ac_opt1', text: 'Never too late! Code away!', votes: generateRandomVotes(), affiliateLink: 'https://example.com/coding-bootcamp-for-adults' },
       { id: 'ac_opt2', text: 'Focus on refining current skills.', votes: generateRandomVotes() },
@@ -162,7 +174,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_emma_ghosting',
     creator: findUser('Emma Davis'),
     question: 'My best friend keeps ghosting me for their new significant other. Do I confront them or just accept our friendship has changed?',
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Friendship'], 
     options: [
       { id: 'eg_opt1', text: 'Confront them, open communication is vital.', votes: generateRandomVotes() },
       { id: 'eg_opt2', text: 'Give them space, they\'ll come back around.', votes: generateRandomVotes() },
@@ -176,7 +188,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_liam_pizza',
     creator: findUser('Liam Garcia'),
     question: "Is it ever okay to eat cold pizza for breakfast? Asking for a friend who's currently staring at a leftover slice.",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Pizza'], 
     options: [
       { id: 'lp_opt1', text: "Absolutely, it's a breakfast staple!", votes: generateRandomVotes() },
       { id: 'lp_opt2', text: "No, heat it up or don't bother.", votes: generateRandomVotes() },
@@ -190,7 +202,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_olivia_roommate',
     creator: findUser('Olivia Rodriguez'),
     question: 'My roommate never cleans. Do I create a chore chart, or passive-aggressively clean only my side?',
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Chores'], 
     options: [
       { id: 'or_opt1', text: 'Chore chart! Clear expectations.', votes: generateRandomVotes(), affiliateLink: 'https://example.com/chore-charts' },
       { id: 'or_opt2', text: 'Passive aggression wins every time.', votes: generateRandomVotes() },
@@ -204,7 +216,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_noah_bangs',
     creator: findUser('Noah Smith'),
     question: 'Should I get bangs? It feels like a big commitment for my face shape.',
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Haircut'], 
     options: [
       { id: 'nb_opt1', text: 'Go for it! Hair grows back.', votes: generateRandomVotes() },
       { id: 'nb_opt2', text: 'No bangs, too much maintenance.', votes: generateRandomVotes() },
@@ -218,7 +230,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_ava_lunch',
     creator: findUser('Ava Williams'),
     question: "I've got 5 minutes to decide on lunch. Pizza or a sad desk salad? My stomach is conflicted.",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Lunchtime'], 
     options: [
       { id: 'al_opt1', text: 'Pizza! Always pizza.', votes: generateRandomVotes(), affiliateLink: 'https://example.com/local-pizza-deals' },
       { id: 'al_opt2', text: 'Salad, gotta be healthy today.', votes: generateRandomVotes() },
@@ -232,7 +244,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_isabella_socks',
     creator: findUser('Isabella Brown'),
     question: "My partner keeps leaving their dirty socks everywhere. Do I passive-aggressively put them on their pillow, or actually talk about it?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Socks'], 
     options: [
         { id: 'is_opt1', text: "Pillow revenge! It's a classic.", votes: generateRandomVotes() },
         { id: 'is_opt2', text: "Communicate, it's the adult thing to do.", votes: generateRandomVotes() },
@@ -246,7 +258,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_mia_bedroom',
     creator: findUser('Mia Jones'),
     question: "Thinking about spicing things up in the bedroom tonight. Should we try that new position from the internet, or stick to our faves?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Bedroom'], 
     options: [
         { id: 'mb_opt1', text: "Go for the new! Adventure awaits.", votes: generateRandomVotes(), affiliateLink: 'https://example.com/kama-sutra-guide' },
         { id: 'mb_opt2', text: "Stick to the classics, they're classics for a reason.", votes: generateRandomVotes() },
@@ -260,7 +272,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_charlotte_date',
     creator: findUser('Charlotte Wilson'),
     question: "Should I go on a third date with someone who's super hot but has absolutely no ambition, or cut my losses?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Dating'], 
     options: [
         { id: 'cd_opt1', text: "Hotness fades, ambition lasts. Cut losses.", votes: generateRandomVotes() },
         { id: 'cd_opt2', text: "Enjoy the hotness while it lasts!", votes: generateRandomVotes() },
@@ -274,7 +286,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_amelia_balance',
     creator: findUser('Amelia Taylor'),
     question: "Is it truly possible to balance a demanding career and a fulfilling family life, or is one always sacrificed for the other?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Balance'], 
     options: [
         { id: 'ab_opt1', text: "Yes, with careful planning and boundaries.", votes: generateRandomVotes(), affiliateLink: 'https://example.com/work-life-balance-book' },
         { id: 'ab_opt2', text: "No, it's an impossible dream for most.", votes: generateRandomVotes() },
@@ -288,7 +300,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_harper_masters',
     creator: findUser('Harper Anderson'),
     question: "Should I pursue a master's degree to advance my career, even if it means taking on significant student debt?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Education'], 
     options: [
         { id: 'hm_opt1', text: "Invest in yourself, it will pay off.", votes: generateRandomVotes(), affiliateLink: 'https://example.com/masters-programs' },
         { id: 'hm_opt2', text: "Debt is a trap, explore other options.", votes: generateRandomVotes() },
@@ -302,7 +314,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_evelyn_city',
     creator: findUser('Evelyn Thomas'),
     question: "I'm thinking of moving to a completely new city where I know no one. Exciting fresh start, or terrifying leap into the unknown?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Moving'], 
     options: [
         { id: 'ec_opt1', text: "Exciting! Embrace the new adventure.", votes: generateRandomVotes() },
         { id: 'ec_opt2', text: "Terrifying, build a network first.", votes: generateRandomVotes() },
@@ -316,7 +328,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_abigail_feelings',
     creator: findUser('Abigail Jackson'),
     question: "Should I confess my feelings to my long-time friend, even if it risks ruining our friendship?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Feelings'], 
     options: [
         { id: 'af_opt1', text: "Take the leap! You'll regret not knowing.", votes: generateRandomVotes() },
         { id: 'af_opt2', text: "Keep it platonic, friendship is too valuable.", votes: generateRandomVotes() },
@@ -330,7 +342,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_ella_car',
     creator: findUser('Ella White'),
     question: "My car is on its last legs. Do I repair it one last time, or finally buy a new (or used) one?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Car'], 
     options: [
         { id: 'elc_opt1', text: "Repair it, squeeze out every last mile.", votes: generateRandomVotes() },
         { id: 'elc_opt2', text: "New car time! Enjoy the reliability.", votes: generateRandomVotes(), affiliateLink: 'https://example.com/new-car-deals' },
@@ -344,7 +356,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_scarlett_cooking',
     creator: findUser('Scarlett Harris'),
     question: "Is it okay to secretly dislike my partner's cooking, or should I tell them the truth (gently, of course)?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Cooking'], 
     options: [
         { id: 'sch_opt1', text: "Pretend to love it, save their feelings.", votes: generateRandomVotes() },
         { id: 'sch_opt2', text: "Tell them gently, offer to cook together.", votes: generateRandomVotes() },
@@ -358,7 +370,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_elizabeth_sport',
     creator: findUser('Elizabeth Martin'),
     question: "Should I try a new, extreme sport like skydiving or rock climbing, or stick to my cozy hobbies?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=ExtremeSport'], 
     options: [
         { id: 'els_opt1', text: "Go for it! Adrenaline rush!", votes: generateRandomVotes(), affiliateLink: 'https://example.com/skydiving-experience' },
         { id: 'els_opt2', text: "Stay cozy, safety first.", votes: generateRandomVotes() },
@@ -372,7 +384,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_sofia_pet_surgery', 
     creator: findUser('Sophia Miller'), 
     question: "My pet needs an expensive surgery. Do I drain my savings for it, or consider other options?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=PetHealth'], 
     options: [
         { id: 'sps_opt1', text: "Save your pet, cost is secondary!", votes: generateRandomVotes() },
         { id: 'sps_opt2', text: "Consider quality of life, explore alternatives.", votes: generateRandomVotes() },
@@ -386,7 +398,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_camila_apology',
     creator: findUser('Camila Thompson'),
     question: "Is it better to apologize immediately when you're wrong, or wait until emotions cool down?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Apology'], 
     options: [
         { id: 'ca_opt1', text: "Immediately, clear the air.", votes: generateRandomVotes() },
         { id: 'ca_opt2', text: "Wait, a calm apology is more effective.", votes: generateRandomVotes() },
@@ -400,7 +412,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_aria_social_media',
     creator: findUser('Aria Moore'),
     question: "Should I confront my friend about their problematic social media posts, or is it not my place?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=SocialMedia'], 
     options: [
         { id: 'asm_opt1', text: "Confront them privately, from a place of care.", votes: generateRandomVotes() },
         { id: 'asm_opt2', text: "It's not your place, let them be.", votes: generateRandomVotes() },
@@ -414,7 +426,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_victoria_client',
     creator: findUser('Victoria Lee'),
     question: "I'm a freelancer and a potential client is offering a huge project but has a terrible reputation. Do I take the money or protect my peace?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Freelance'], 
     options: [
         { id: 'vc_opt1', text: "Take the money, deal with the headache later.", votes: generateRandomVotes() },
         { id: 'vc_opt2', text: "Protect your peace, it's not worth it.", votes: generateRandomVotes() },
@@ -428,7 +440,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_madison_kids',
     creator: findUser('Madison Perez'),
     question: "My parents are pressuring me to have kids. Do I give in or stand my ground on my childfree choice?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Kids'], 
     options: [
         { id: 'mk_opt1', text: "It's your life, stand your ground!", votes: generateRandomVotes() },
         { id: 'mk_opt2', text: "Consider it, maybe you'll change your mind.", votes: generateRandomVotes() },
@@ -442,7 +454,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_luna_splurge',
     creator: findUser('Luna Walker'),
     question: "Should I splurge on this designer item I've been eyeing, or save that money for something more practical?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Splurge'], 
     options: [
         { id: 'ls_opt1', text: "Treat yourself! You deserve it.", votes: generateRandomVotes(), affiliateLink: 'https://example.com/designer-bags' },
         { id: 'ls_opt2', text: "Save it, practicality wins.", votes: generateRandomVotes() },
@@ -456,7 +468,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_grace_job',
     creator: findUser('Grace Hall'),
     question: "I received a job offer but I'm also waiting to hear back from my dream company. Do I accept or hold out?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=JobOffer'], 
     options: [
         { id: 'gj_opt1', text: "Accept the offer, a bird in hand...", votes: generateRandomVotes() },
         { id: 'gj_opt2', text: "Hold out for the dream job, it's worth the risk.", votes: generateRandomVotes() },
@@ -470,7 +482,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_natalie_hair',
     creator: findUser('Natalie Allen'),
     question: "Should I embrace my natural hair texture, or continue with my elaborate styling routine?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=NaturalHair'], 
     options: [
         { id: 'nh_opt1', text: "Embrace the natural! Freedom awaits.", votes: generateRandomVotes(), affiliateLink: 'https://example.com/natural-hair-products' },
         { id: 'nh_opt2', text: "Stick to the routine, it's your signature.", votes: generateRandomVotes() },
@@ -484,7 +496,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_sarah_lie',
     creator: findUser('Sarah Young'),
     question: "Is it okay to lie to spare someone's feelings, or is brutal honesty always the best policy?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Honesty'], 
     options: [
         { id: 'sl_opt1', text: "Lie gently, kindness first.", votes: generateRandomVotes() },
         { id: 'sl_opt2', text: "Honesty, even if it hurts short-term.", votes: generateRandomVotes() },
@@ -498,7 +510,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_alice_creative', 
     creator: findUser('Alice Wonderland'),
     question: "My creative project is stalled. Do I push through the block, or take a break and come back later?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=CreativeBlock'], 
     options: [
         { id: 'acr_opt1', text: "Push through! Discipline is key.", votes: generateRandomVotes() },
         { id: 'acr_opt2', text: "Take a break, recharge your creativity.", votes: generateRandomVotes() },
@@ -512,7 +524,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_bella_spill',
     creator: findUser('Bella King'),
     question: "I accidentally spilled coffee on my friend's expensive rug. Do I confess immediately and offer to clean/pay, or try to clean it secretly?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Spill'], 
     options: [
         { id: 'bs_opt1', text: "Confess immediately, honesty is best.", votes: generateRandomVotes() },
         { id: 'bs_opt2', text: "Clean it secretly, hope they don't notice.", votes: generateRandomVotes() },
@@ -526,7 +538,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_chloe_party',
     creator: findUser('Chloe Wright'),
     question: "Is it ever okay to show up late to a party, or is punctuality always king?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=PartyTime'], 
     options: [
         { id: 'cp_opt1', text: "Fashionably late is a vibe.", votes: generateRandomVotes() },
         { id: 'cp_opt2', text: "Always be on time, it's respectful.", votes: generateRandomVotes() },
@@ -540,7 +552,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_daisy_dating',
     creator: findUser('Daisy Scott'),
     question: "Should I tell my parents I'm dating someone they won't approve of, or keep it a secret?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=SecretLove'], 
     options: [
         { id: 'dd_opt1', text: "Tell them, honesty is the best policy.", votes: generateRandomVotes() },
         { id: 'dd_opt2', text: "Keep it secret to avoid conflict.", votes: generateRandomVotes() },
@@ -554,7 +566,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_emily_coffeeshop',
     creator: findUser('Emily Green'),
     question: "My favorite local coffee shop is closing. Do I try to rally the community to save it, or mourn its loss quietly?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=SaveCoffee'], 
     options: [
         { id: 'ecs_opt1_2', text: "Rally the troops! Fight for your coffee!", votes: generateRandomVotes() },
         { id: 'ecs_opt2_2', text: "Mourn quietly, some things aren't meant to last.", votes: generateRandomVotes() },
@@ -568,7 +580,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_fiona_language',
     creator: findUser('Fiona Adams'),
     question: "Should I learn a new language, or focus on becoming an expert in a skill I already have?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=LearnSkill'], 
     options: [
         { id: 'fl_opt1_2', text: "New language! Expand your horizons.", votes: generateRandomVotes() },
         { id: 'fl_opt2_2', text: "Master current skills, depth over breadth.", votes: generateRandomVotes() },
@@ -582,7 +594,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_grace_unfollow',
     creator: findUser('Grace Hall'), 
     question: "Is it okay to unfollow a friend on social media if their content is consistently annoying/negative?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Unfollow'], 
     options: [
         { id: 'gu_opt1', text: "Yes, protect your peace.", votes: generateRandomVotes() },
         { id: 'gu_opt2', text: "No, it's rude and childish.", votes: generateRandomVotes() },
@@ -596,7 +608,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_hannah_pet',
     creator: findUser('Hannah Baker'),
     question: "I'm torn between getting a dog or a cat. Help me decide, fur parents!",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=DogVsCat'], 
     options: [
         { id: 'hp_opt1', text: "Team Dog! Loyalty and adventure.", votes: generateRandomVotes() },
         { id: 'hp_opt2', text: "Team Cat! Independent and cuddly.", votes: generateRandomVotes() },
@@ -610,7 +622,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_ivy_volunteer',
     creator: findUser('Ivy Nelson'),
     question: "Should I volunteer my time to a cause I believe in, or focus solely on my own self-improvement right now?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Volunteer'], 
     options: [
         { id: 'iv_opt1', text: "Volunteer! Give back to the community.", votes: generateRandomVotes() },
         { id: 'iv_opt2', text: "Focus on self-improvement first, then volunteer.", votes: generateRandomVotes() },
@@ -624,7 +636,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_jessie_family',
     creator: findUser('Jessie Carter'),
     question: "Should I cut ties with a toxic family member, or try to maintain a relationship for the sake of 'family'?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=ToxicFamily'], 
     options: [
         { id: 'jf_opt1', text: "Cut ties, your mental health comes first.", votes: generateRandomVotes() },
         { id: 'jf_opt2', text: "Maintain, family is important no matter what.", votes: generateRandomVotes() },
@@ -638,7 +650,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_kayla_parties',
     creator: findUser('Kayla Mitchell'),
     question: "I'm invited to two parties on the same night. Which one do I go to: the wild one with all my party friends, or the chill one with deep conversations?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=TwoParties'], 
     options: [
         { id: 'kp_opt1', text: "Wild party! YOLO!", votes: generateRandomVotes() },
         { id: 'kp_opt2', text: "Chill party, for the soul.", votes: generateRandomVotes() },
@@ -652,7 +664,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_lily_instrument',
     creator: findUser('Lily Roberts'),
     question: "Should I learn to play a musical instrument, even if I have no natural talent?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Music'], 
     options: [
         { id: 'li_opt1', text: "Go for it! Passion over talent.", votes: generateRandomVotes() },
         { id: 'li_opt2', text: "No, focus on what you're good at.", votes: generateRandomVotes() },
@@ -666,7 +678,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_mia_talk_self',
     creator: findUser('Mia Jones'), 
     question: "Is it okay to talk to yourself out loud when you're alone? Asking for a friend... who is me.",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=TalkToSelf'], 
     options: [
         { id: 'mts_opt1', text: "Totally normal! It helps organize thoughts.", votes: generateRandomVotes() },
         { id: 'mts_opt2', text: "Only if you don't answer yourself back.", votes: generateRandomVotes() },
@@ -680,7 +692,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_nora_book_club',
     creator: findUser('Nora Phillips'),
     question: "Should I join a book club even though I barely read? I want to be more cultured.",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=BookClub'], 
     options: [
         { id: 'nbc_opt1', text: "Join! It'll motivate you to read.", votes: generateRandomVotes() },
         { id: 'nbc_opt2', text: "No, don't pretend to be someone you're not.", votes: generateRandomVotes() },
@@ -694,7 +706,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_olivia_travel_world',
     creator: findUser('Olivia Rodriguez'), 
     question: "My dream is to travel the world. Do I save every penny, or take out a loan and go now?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=WorldTravel'], 
     options: [
         { id: 'otw_opt1', text: "Save every penny, travel debt-free.", votes: generateRandomVotes() },
         { id: 'otw_opt2', text: "Go now! Life is short.", votes: generateRandomVotes() },
@@ -708,7 +720,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_penny_pajamas',
     creator: findUser('Penny Campbell'),
     question: "Is it acceptable to wear pajamas all day if you're working from home and have no video calls?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=WFHPajamas'], 
     options: [
         { id: 'pp_opt1', text: "Absolutely, peak WFH comfort!", votes: generateRandomVotes() },
         { id: 'pp_opt2', text: "No, get dressed, it boosts productivity.", votes: generateRandomVotes() },
@@ -722,7 +734,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_quinn_cooking',
     creator: findUser('Quinn Evans'),
     question: "Should I learn to cook elaborate meals, or stick to my trusty microwave dinners?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=CookingSkills'], 
     options: [
         { id: 'qc_opt1', text: "Learn to cook! It's a life skill.", votes: generateRandomVotes() },
         { id: 'qc_opt2', text: "Microwave all the way, efficiency!", votes: generateRandomVotes() },
@@ -736,7 +748,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_ruby_move_in',
     creator: findUser('Ruby Edwards'),
     question: "My significant other wants to move in together, but I love my personal space. Do I agree or hit the brakes?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=MoveIn'], 
     options: [
         { id: 'rmi_opt1', text: "Agree, it's the next step!", votes: generateRandomVotes() },
         { id: 'rmi_opt2', text: "Hit the brakes, personal space is vital.", votes: generateRandomVotes() },
@@ -750,7 +762,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_sophia_organic',
     creator: findUser('Sophia Miller'), 
     question: "Is it worth buying organic food, or is it just a marketing gimmick?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=OrganicFood'], 
     options: [
         { id: 'so_opt1', text: "Definitely worth it for health and environment!", votes: generateRandomVotes() },
         { id: 'so_opt2', text: "Marketing gimmick, save your money.", votes: generateRandomVotes() },
@@ -764,7 +776,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_tina_pet_landlord',
     creator: findUser('Tina Collins'),
     question: "Should I get a pet without telling my landlord, and hope they don't find out?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=SecretPet'], 
     options: [
         { id: 'tpl_opt1', text: "No! Get permission first, avoid eviction.", votes: generateRandomVotes() },
         { id: 'tpl_opt2', text: "Yes, easier to ask forgiveness than permission.", votes: generateRandomVotes() },
@@ -778,7 +790,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_ursula_vows',
     creator: findUser('Ursula Stewart'),
     question: "My partner wants to renew our vows on our 10th anniversary, but I feel like we're just going through the motions. Do I go along with it or be honest?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=RenewVows'], 
     options: [
         { id: 'uv_opt1', text: "Go along, it might rekindle something.", votes: generateRandomVotes() },
         { id: 'uv_opt2', text: "Be honest, address the underlying issues.", votes: generateRandomVotes() },
@@ -792,7 +804,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_violet_minimalism',
     creator: findUser('Violet Morris'),
     question: "Should I embrace minimalism and declutter my entire life, or cling to my beloved possessions?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Minimalism'], 
     options: [
         { id: 'vm_opt1', text: "Declutter! Freedom through less stuff.", votes: generateRandomVotes() },
         { id: 'vm_opt2', text: "Cling! Memories are priceless.", votes: generateRandomVotes() },
@@ -806,7 +818,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_wendy_texts',
     creator: findUser('Wendy Rogers'),
     question: "Is it okay to secretly read my partner's text messages if I suspect they're hiding something?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Privacy'], 
     options: [
         { id: 'wt_opt1', text: "No! Respect their privacy.", votes: generateRandomVotes() },
         { id: 'wt_opt2', text: "Yes, if your suspicions are strong.", votes: generateRandomVotes() },
@@ -820,7 +832,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_zara_tattoo',
     creator: findUser('Zara Reed'),
     question: "Should I get a tattoo of my current partner's name? Everyone says it's bad luck, but I feel it's true love.",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=NameTattoo'], 
     options: [
         { id: 'zt_opt1', text: "No! Bad luck and bad ideas.", votes: generateRandomVotes() },
         { id: 'zt_opt2', text: "Yes! Declare your love boldly.", votes: generateRandomVotes() },
@@ -834,7 +846,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_zoe_hair_color',
     creator: findUser('Zoe Cook'),
     question: "I'm thinking about dying my hair a crazy, unnatural color. Bold fashion statement or future regret?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=HairDye'], 
     options: [
         { id: 'zhc_opt1', text: "Bold statement! Express yourself.", votes: generateRandomVotes() },
         { id: 'zhc_opt2', text: "Future regret, stick to natural.", votes: generateRandomVotes() },
@@ -848,7 +860,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_ethan_career_switch',
     creator: findUser('Ethan Morgan'),
     question: "Should I go back to school to switch careers in my 40s? It feels like now or never.",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=CareerSwitch'], 
     options: [
         { id: 'ecs_opt1', text: "Now or never! Invest in your future.", votes: generateRandomVotes() },
         { id: 'ecs_opt2', text: "Too late, focus on retirement.", votes: generateRandomVotes() },
@@ -862,7 +874,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_frank_laser',
     creator: findUser('Frank Bell'),
     question: "My pet is obsessed with chasing laser pointers. Is it fun for them, or secretly frustrating because they can never 'catch' it?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=LaserPointer'], 
     options: [
         { id: 'fl_opt1', text: "Fun and good exercise!", votes: generateRandomVotes() },
         { id: 'fl_opt2', text: "Frustrating, avoid them.", votes: generateRandomVotes() },
@@ -876,7 +888,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_gary_resume',
     creator: findUser('Gary Murphy'),
     question: "Is it ever okay to lie on a resume to get a job, then learn the skills quickly?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=ResumeLie'], 
     options: [
         { id: 'gr_opt1', text: "No, it's unethical and you'll get caught.", votes: generateRandomVotes() },
         { id: 'gr_opt2', text: "Yes, if you're confident you can learn fast.", votes: generateRandomVotes() },
@@ -890,7 +902,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_henry_polyamory',
     creator: findUser('Henry Bailey'),
     question: "Should I try polyamory with my long-term partner? It sounds exciting but also terrifying.",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Polyamory'], 
     options: [
         { id: 'hp_opt1_poly', text: "Explore it, but with clear boundaries and communication.", votes: generateRandomVotes() },
         { id: 'hp_opt2_poly', text: "No, stick to monogamy.", votes: generateRandomVotes() },
@@ -904,7 +916,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_ian_fiance',
     creator: findUser('Ian Cooper'),
     question: "My best friend just got engaged, but I secretly hate their fiancé. Do I fake enthusiasm or express my concerns?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=HateFiance'], 
     options: [
         { id: 'if_opt1', text: "Fake enthusiasm, it's their happiness.", votes: generateRandomVotes() },
         { id: 'if_opt2', text: "Express concerns gently and privately.", votes: generateRandomVotes() },
@@ -918,7 +930,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_jack_vcard_again',
     creator: findUser('Jack Howard'),
     question: "Finna lose my V-card, besties. To wrap it or not to wrap it? Low-key kinda nervous but also wanna YOLO. What's the tea?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=VCardAgain'], 
     options: [
         { id: 'jva_opt1', text: "Always wrap it, no cap. Safety first!", votes: generateRandomVotes() },
         { id: 'jva_opt2', text: "YOLO, but smart YOLO. Get tested, then maybe raw dog it.", votes: generateRandomVotes() },
@@ -932,7 +944,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_justin_beer',
     creator: findUser('Justin Kelly'),
     question: "Wife just gave me the side-eye for another beer during the game. My team's down, and I need this. Do I risk the wrath or just hydrate?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=AnotherBeer'], 
     options: [
         { id: 'jb_opt1', text: "Go for it! It's game day, you earned it.", votes: generateRandomVotes() },
         { id: 'jb_opt2', text: "Nah, happy wife, happy life. Stick to water.", votes: generateRandomVotes() },
@@ -946,7 +958,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_david_boss',
     creator: findUser('David Kelly'),
     question: "My boss is taking credit for my ideas. Do I speak up and risk my job, or let them shine and fume in silence?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=BossCredit'], 
     options: [
         { id: 'db_opt1', text: "Speak up! Your work deserves recognition.", votes: generateRandomVotes() },
         { id: 'db_opt2', text: "Suck it up, play the long game.", votes: generateRandomVotes() },
@@ -960,7 +972,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_michael_marriage',
     creator: findUser('Michael Sanders'),
     question: "After 25 years, my marriage feels like a forgotten Netflix subscription. Do I finally cancel it or try to find a new series to binge together?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=MarriageStale'], 
     options: [
         { id: 'mm_opt1', text: "It's time to explore new horizons. You deserve happiness.", votes: generateRandomVotes() },
         { id: 'mm_opt2', text: "Try couples counseling. You've invested too much to give up easily.", votes: generateRandomVotes() },
@@ -974,7 +986,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_james_snacks',
     creator: findUser('James Price'),
     question: "My doctor said I should cut down on late-night snacks. But how am I supposed to watch my shows without my chips and salsa? Give me the hard truth.",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=LateSnacks'], 
     options: [
         { id: 'js_opt1', text: "Swap snacks for fruit/veggies. Healthy crunch!", votes: generateRandomVotes() },
         { id: 'js_opt2', text: "Limit it to once a week. Treat yourself responsibly.", votes: generateRandomVotes() },
@@ -988,7 +1000,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_john_vacation',
     creator: findUser('John Bennett'),
     question: "Dream vacation: Backpacking through Europe on a shoestring budget, or luxury resort in the Maldives? My wallet says one, my soul says the other.",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=VacationDream'], 
     options: [
         { id: 'jv_opt1', text: "Embrace the adventure, Europe!", votes: generateRandomVotes() },
         { id: 'jv_opt2', text: "Maldives, treat yourself!", votes: generateRandomVotes() },
@@ -1002,7 +1014,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_robert_llama',
     creator: findUser('Robert Wood'),
     question: "Should I quit my stable but soul-crushing job to pursue my passion for llama grooming? My parents think I'm nuts.",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=LlamaPassion'], 
     options: [
         { id: 'rl_opt1', text: "Follow your dreams, llamas await!", votes: generateRandomVotes() },
         { id: 'rl_opt2', text: "Stay put, security is key.", votes: generateRandomVotes() },
@@ -1016,7 +1028,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_ava_ex_wedding',
     creator: findUser('Ava Williams'), 
     question: "My ex just invited me to their wedding. Do I go and be the bigger person, or politely decline and avoid the drama?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=ExWedding'], 
     options: [
         { id: 'aew_opt1', text: "Go, show them you're thriving!", votes: generateRandomVotes() },
         { id: 'aew_opt2', text: "Decline, spare yourself the awkwardness.", votes: generateRandomVotes() },
@@ -1030,7 +1042,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_lily_white_dress',
     creator: findUser('Lily Roberts'), 
     question: "Is it okay to wear white after Labor Day? My grandma would have a fit, but it's such a cute outfit!",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=WhiteDress'], 
     options: [
         { id: 'lwd_opt1', text: "Fashion rules are meant to be broken!", votes: generateRandomVotes() },
         { id: 'lwd_opt2', text: "Stick to tradition, respect your elders.", votes: generateRandomVotes() },
@@ -1044,7 +1056,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_emily_cat_counter',
     creator: findUser('Emily Green'), 
     question: "My cat keeps knocking things off the counter just to get attention. Do I ignore her, or teach her a lesson (humanely, of course)?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=CatShenanigans'], 
     options: [
         { id: 'ecc_opt1', text: "Ignore the behavior, she's craving attention.", votes: generateRandomVotes() },
         { id: 'ecc_opt2', text: "Use positive reinforcement for good behavior.", votes: generateRandomVotes() },
@@ -1058,7 +1070,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_charlotte_wallet',
     creator: findUser('Charlotte Wilson'), 
     question: "I found a wallet with a huge wad of cash. Do I return it to the address inside, or 'find' a way to make it disappear?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=FoundWallet'], 
     options: [
         { id: 'cw_opt1', text: "Return it immediately, it's the right thing to do.", votes: generateRandomVotes() },
         { id: 'cw_opt2', text: "Keep it, finders keepers!", votes: generateRandomVotes() },
@@ -1072,7 +1084,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_hannah_bathroom_reno',
     creator: findUser('Hannah Baker'), 
     question: "Should I DIY my bathroom renovation and save a ton, or hire a pro and avoid a potential disaster?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=DIYReno'], 
     options: [
         { id: 'hbr_opt1', text: "DIY! You'll learn so much.", votes: generateRandomVotes() },
         { id: 'hbr_opt2', text: "Hire a pro, peace of mind is priceless.", votes: generateRandomVotes() },
@@ -1086,7 +1098,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_sophia_toddler_cape',
     creator: findUser('Sophia Miller'), 
     question: "My toddler insists on wearing their superhero cape to daycare every day. Do I let them, or make them wear 'normal' clothes?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=ToddlerFashion'], 
     options: [
         { id: 'stc_opt1', text: "Let them shine! Embrace the cape.", votes: generateRandomVotes() },
         { id: 'stc_opt2', text: "Daycare has a dress code for a reason.", votes: generateRandomVotes() },
@@ -1100,7 +1112,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_ava_matching_tattoo',
     creator: findUser('Ava Williams'), 
     question: "My partner wants to get a matching tattoo. I love them, but... forever? Should I say yes or suggest something less permanent?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=MatchingTattoo'], 
     options: [
         { id: 'amt_opt1', text: "Go for it! True love ink.", votes: generateRandomVotes() },
         { id: 'amt_opt2', text: "Suggest temporary tattoos first.", votes: generateRandomVotes() },
@@ -1114,7 +1126,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_olivia_shave_head',
     creator: findUser('Olivia Rodriguez'), 
     question: "Should I shave my head for charity, even though I've had long hair my whole life? It's for a great cause but also... my hair!",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=ShaveHead'], 
     options: [
         { id: 'osh_opt1', text: "Do it! A bold move for a good cause.", votes: generateRandomVotes() },
         { id: 'osh_opt2', text: "Donate money instead, keep the hair.", votes: generateRandomVotes() },
@@ -1128,7 +1140,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_sarah_dog_bark',
     creator: findUser('Sarah Young'), 
     question: "My neighbor's dog barks constantly. Do I confront them directly, leave a polite note, or suffer in silence?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=BarkingDog'], 
     options: [
         { id: 'sdb_opt1', text: "Direct confrontation, but be polite.", votes: generateRandomVotes() },
         { id: 'sdb_opt2', text: "Leave an anonymous, polite note.", votes: generateRandomVotes() },
@@ -1142,7 +1154,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_emma_pineapple_pizza',
     creator: findUser('Emma Davis'), 
     question: "Is pineapple on pizza an abomination or a stroke of genius? The debate rages on.",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=PineapplePizza'], 
     options: [
         { id: 'epp_opt1', text: "Genius! Sweet and savory perfection.", votes: generateRandomVotes() },
         { id: 'epp_opt2', text: "Abomination! Keep fruit off my pizza.", votes: generateRandomVotes() },
@@ -1156,7 +1168,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_amelia_senior_dog',
     creator: findUser('Amelia Taylor'), 
     question: "I'm thinking of adopting a senior dog. Is it a noble act of kindness or setting myself up for heartbreak too soon?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=SeniorDog'], 
     options: [
         { id: 'asd_opt1', text: "Noble and rewarding! Give them a good home.", votes: generateRandomVotes() },
         { id: 'asd_opt2', text: "Heartbreak is inevitable, consider a younger dog.", votes: generateRandomVotes() },
@@ -1170,7 +1182,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_grace_bridesmaid',
     creator: findUser('Grace Hall'), 
     question: "My friend wants me to be a bridesmaid, but the dress is hideous and expensive. Do I suck it up or decline?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=BridesmaidDress'], 
     options: [
         { id: 'gb_opt1', text: "Suck it up, it's their big day!", votes: generateRandomVotes() },
         { id: 'gb_opt2', text: "Decline politely, explain your reasons.", votes: generateRandomVotes() },
@@ -1184,7 +1196,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_elizabeth_regift',
     creator: findUser('Elizabeth Martin'), 
     question: "Is it okay to re-gift a present if I know the person will actually use it?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Regift'], 
     options: [
         { id: 'er_opt1', text: "Yes, practical and resourceful!", votes: generateRandomVotes() },
         { id: 'er_opt2', text: "No, it's tacky and disrespectful.", votes: generateRandomVotes() },
@@ -1198,7 +1210,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_victoria_solo_trip',
     creator: findUser('Victoria Lee'), 
     question: "I'm considering a spontaneous solo trip across the country. Brave and empowering, or reckless and lonely?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=SoloTrip'], 
     options: [
         { id: 'vst_opt1', text: "Brave! Embrace the adventure.", votes: generateRandomVotes() },
         { id: 'vst_opt2', text: "Reckless, plan it out first.", votes: generateRandomVotes() },
@@ -1212,7 +1224,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_madison_plants',
     creator: findUser('Madison Perez'), 
     question: "My plants are dying despite my best efforts. Do I give up on being a plant parent or buy more and try again?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=PlantParent'], 
     options: [
         { id: 'mp_opt1', text: "Try again! Green thumb in the making.", votes: generateRandomVotes() },
         { id: 'mp_opt2', text: "Give up, plants aren't for everyone.", votes: generateRandomVotes() },
@@ -1226,7 +1238,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_liam_crypto',
     creator: findUser('Liam Garcia'), 
     question: "Should I invest my small savings in crypto and potentially get rich quick, or put it in a boring old savings account?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=CryptoVsSavings'], 
     options: [
         { id: 'lc_opt1', text: "To the moon! Crypto all the way.", votes: generateRandomVotes() },
         { id: 'lc_opt2', text: "Play it safe, savings account.", votes: generateRandomVotes() },
@@ -1240,7 +1252,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_ben_clothes',
     creator: findUser('Ben Ross'),
     question: "My partner keeps 'borrowing' my clothes without asking. Do I hide them, or just accept it's a shared wardrobe now?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=SharedWardrobe'], 
     options: [
         { id: 'brc_opt1', text: "Hide them! These are MY clothes.", votes: generateRandomVotes() },
         { id: 'brc_opt2', text: "Accept it, sharing is caring (sometimes).", votes: generateRandomVotes() },
@@ -1254,7 +1266,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_chris_minimalism',
     creator: findUser('Chris Henderson'),
     question: "Should I embrace minimalism and declutter my entire life, or cling to my beloved possessions?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=DeclutterLife'], 
     options: [
         { id: 'chm_opt1', text: "Declutter! Freedom through less stuff.", votes: generateRandomVotes() },
         { id: 'chm_opt2', text: "Cling! Memories are priceless.", votes: generateRandomVotes() },
@@ -1268,7 +1280,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_daniel_move_in',
     creator: findUser('Daniel Coleman'),
     question: "My significant other wants to move in together, but I love my personal space. Do I agree or hit the brakes?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Cohabitation'], 
     options: [
         { id: 'dmi_opt1', text: "Agree, it's the next step!", votes: generateRandomVotes() },
         { id: 'dmi_opt2', text: "Hit the brakes, personal space is vital.", votes: generateRandomVotes() },
@@ -1282,7 +1294,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_olivia_organic_food_again', 
     creator: findUser('Olivia Rodriguez'), 
     question: "Is it worth buying organic food, or is it just a marketing gimmick?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=OrganicDebate'], 
     options: [
         { id: 'oof_opt1', text: "Definitely worth it for health and environment!", votes: generateRandomVotes() },
         { id: 'oof_opt2', text: "Marketing gimmick, save your money.", votes: generateRandomVotes() },
@@ -1296,7 +1308,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_emma_vows_again', 
     creator: findUser('Emma Davis'), 
     question: "My partner wants to renew our vows on our 10th anniversary, but I feel like we're just going through the motions. Do I go along with it or be honest?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=VowRenewal'], 
     options: [
         { id: 'eva_opt1', text: "Go along, it might rekindle something.", votes: generateRandomVotes() },
         { id: 'eva_opt2', text: "Be honest, address the underlying issues.", votes: generateRandomVotes() },
@@ -1310,7 +1322,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_chloe_secret_pet_again', 
     creator: findUser('Chloe Wright'), 
     question: "Should I get a pet without telling my landlord, and hope they don't find out?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=HiddenPet'], 
     options: [
         { id: 'csp_opt1', text: "No! Get permission first, avoid eviction.", votes: generateRandomVotes() },
         { id: 'csp_opt2', text: "Yes, easier to ask forgiveness than permission.", votes: generateRandomVotes() },
@@ -1324,7 +1336,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_lily_read_texts_again', 
     creator: findUser('Lily Roberts'), 
     question: "Is it okay to secretly read my partner's text messages if I suspect they're hiding something?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=ReadTexts'], 
     options: [
         { id: 'lrt_opt1', text: "No! Respect their privacy.", votes: generateRandomVotes() },
         { id: 'lrt_opt2', text: "Yes, if your suspicions are strong.", votes: generateRandomVotes() },
@@ -1338,7 +1350,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_ava_name_tattoo_again', 
     creator: findUser('Ava Williams'), 
     question: "Should I get a tattoo of my current partner's name? Everyone says it's bad luck, but I feel it's true love.",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=PartnerTattoo'], 
     options: [
         { id: 'ant_opt1', text: "No! Bad luck and bad ideas.", votes: generateRandomVotes() },
         { id: 'ant_opt2', text: "Yes! Declare your love boldly.", votes: generateRandomVotes() },
@@ -1352,7 +1364,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_sophia_crazy_hair_again', 
     creator: findUser('Sophia Miller'), 
     question: "I'm thinking about dying my hair a crazy, unnatural color. Bold fashion statement or future regret?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=CrazyHair'], 
     options: [
         { id: 'sch_opt1_again', text: "Bold statement! Express yourself.", votes: generateRandomVotes() },
         { id: 'sch_opt2_again', text: "Future regret, stick to natural.", votes: generateRandomVotes() },
@@ -1366,7 +1378,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_harper_school_40s_again', 
     creator: findUser('Harper Anderson'), 
     question: "Should I go back to school to switch careers in my 40s? It feels like now or never.",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=SchoolAt40'], 
     options: [
         { id: 'hs4_opt1', text: "Now or never! Invest in your future.", votes: generateRandomVotes() },
         { id: 'hs4_opt2', text: "Too late, focus on retirement.", votes: generateRandomVotes() },
@@ -1380,7 +1392,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_evelyn_laser_pet_again', 
     creator: findUser('Evelyn Thomas'), 
     question: "My pet is obsessed with chasing laser pointers. Is it fun for them, or secretly frustrating because they can never 'catch' it?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=PetLaser'], 
     options: [
         { id: 'elp_opt1', text: "Fun and good exercise!", votes: generateRandomVotes() },
         { id: 'elp_opt2', text: "Frustrating, avoid them.", votes: generateRandomVotes() },
@@ -1394,7 +1406,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_abigail_lie_resume_again', 
     creator: findUser('Abigail Jackson'), 
     question: "Is it ever okay to lie on a resume to get a job, then learn the skills quickly?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=ResumeHonesty'], 
     options: [
         { id: 'alr_opt1', text: "No, it's unethical and you'll get caught.", votes: generateRandomVotes() },
         { id: 'alr_opt2', text: "Yes, if you're confident you can learn fast.", votes: generateRandomVotes() },
@@ -1408,7 +1420,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_ella_polyamory_again', 
     creator: findUser('Ella White'), 
     question: "Should I try polyamory with my long-term partner? It sounds exciting but also terrifying.",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=TryPolyamory'], 
     options: [
         { id: 'epa_opt1', text: "Explore it, but with clear boundaries and communication.", votes: generateRandomVotes() },
         { id: 'epa_opt2', text: "No, stick to monogamy.", votes: generateRandomVotes() },
@@ -1422,7 +1434,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_scarlett_hate_fiance_again', 
     creator: findUser('Scarlett Harris'), 
     question: "My best friend just got engaged, but I secretly hate their fiancé. Do I fake enthusiasm or express my concerns?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=FriendEngagement'], 
     options: [
         { id: 'shf_opt1', text: "Fake enthusiasm, it's their happiness.", votes: generateRandomVotes() },
         { id: 'shf_opt2', text: "Express concerns gently and privately.", votes: generateRandomVotes() },
@@ -1436,7 +1448,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_elizabeth_cook_microwave_again', 
     creator: findUser('Elizabeth Martin'), 
     question: "Should I learn to cook elaborate meals, or stick to my trusty microwave dinners?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=CookOrMicrowave'], 
     options: [
         { id: 'ecm_opt1', text: "Learn to cook! It's a life skill.", votes: generateRandomVotes() },
         { id: 'ecm_opt2', text: "Microwave all the way, efficiency!", votes: generateRandomVotes() },
@@ -1450,7 +1462,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_sofia_roommate_cleans_again', 
     creator: findUser('Sophia Miller'), 
     question: "My roommate never cleans. Do I create a chore chart, or passive-aggressively clean only my side?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=MessyRoommate'], 
     options: [
         { id: 'src_opt1', text: "Chore chart! Clear expectations.", votes: generateRandomVotes() },
         { id: 'src_opt2', text: "Passive aggression wins every time.", votes: generateRandomVotes() },
@@ -1464,7 +1476,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_camila_balance_life_again', 
     creator: findUser('Camila Thompson'), 
     question: "Is it truly possible to balance a demanding career and a fulfilling family life, or is one always sacrificed for the other?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=WorkLifeBalance'], 
     options: [
         { id: 'cbl_opt1', text: "Yes, with careful planning and boundaries.", votes: generateRandomVotes() },
         { id: 'cbl_opt2', text: "No, it's an impossible dream for most.", votes: generateRandomVotes() },
@@ -1478,7 +1490,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_aria_dirty_socks_again', 
     creator: findUser('Aria Moore'), 
     question: "My partner keeps leaving their dirty socks everywhere. Do I passive-aggressively put them on their pillow, or actually talk about it?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=DirtySocksAgain'], 
     options: [
         { id: 'ads_opt1', text: "Pillow revenge! It's a classic.", votes: generateRandomVotes() },
         { id: 'ads_opt2', text: "Communicate, it's the adult thing to do.", votes: generateRandomVotes() },
@@ -1492,7 +1504,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_victoria_third_date_again', 
     creator: findUser('Victoria Lee'), 
     question: "Should I go on a third date with someone who's super hot but has absolutely no ambition, or cut my losses?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=ThirdDateDilemma'], 
     options: [
         { id: 'vtd_opt1', text: "Hotness fades, ambition lasts. Cut losses.", votes: generateRandomVotes() },
         { id: 'vtd_opt2', text: "Enjoy the hotness while it lasts!", votes: generateRandomVotes() },
@@ -1506,7 +1518,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_madison_masters_debt_again', 
     creator: findUser('Madison Perez'), 
     question: "Should I pursue a master's degree to advance my career, even if it means taking on significant student debt?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=MastersDebt'], 
     options: [
         { id: 'mmd_opt1', text: "Invest in yourself, it will pay off.", votes: generateRandomVotes() },
         { id: 'mmd_opt2', text: "Debt is a trap, explore other options.", votes: generateRandomVotes() },
@@ -1520,7 +1532,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_luna_new_city_again', 
     creator: findUser('Luna Walker'), 
     question: "I'm thinking of moving to a completely new city where I know no one. Exciting fresh start, or terrifying leap into the unknown?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=NewCityAdventure'], 
     options: [
         { id: 'lnc_opt1', text: "Exciting! Embrace the new adventure.", votes: generateRandomVotes() },
         { id: 'lnc_opt2', text: "Terrifying, build a network first.", votes: generateRandomVotes() },
@@ -1534,7 +1546,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_grace_confess_feelings_again', 
     creator: findUser('Grace Hall'), 
     question: "Should I confess my feelings to my long-time friend, even if it risks ruining our friendship?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=ConfessOrNot'], 
     options: [
         { id: 'gcf_opt1', text: "Take the leap! You'll regret not knowing.", votes: generateRandomVotes() },
         { id: 'gcf_opt2', text: "Keep it platonic, friendship is too valuable.", votes: generateRandomVotes() },
@@ -1548,7 +1560,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_natalie_car_repair_again', 
     creator: findUser('Natalie Allen'), 
     question: "My car is on its last legs. Do I repair it one last time, or finally buy a new (or used) one?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=CarRepairDecision'], 
     options: [
         { id: 'ncr_opt1', text: "Repair it, squeeze out every last mile.", votes: generateRandomVotes() },
         { id: 'ncr_opt2', text: "New car time! Enjoy the reliability.", votes: generateRandomVotes() },
@@ -1562,7 +1574,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_sarah_partner_cooking_again', 
     creator: findUser('Sarah Young'), 
     question: "Is it okay to secretly dislike my partner's cooking, or should I tell them the truth (gently, of course)?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=BadCooking'], 
     options: [
         { id: 'spc_opt1', text: "Pretend to love it, save their feelings.", votes: generateRandomVotes() },
         { id: 'spc_opt2', text: "Tell them gently, offer to cook together.", votes: generateRandomVotes() },
@@ -1576,7 +1588,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_alice_extreme_sport_again', 
     creator: findUser('Alice Wonderland'), 
     question: "Should I try a new, extreme sport like skydiving or rock climbing, or stick to my cozy hobbies?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=NewSport'], 
     options: [
         { id: 'aes_opt1', text: "Go for it! Adrenaline rush!", votes: generateRandomVotes() },
         { id: 'aes_opt2', text: "Stay cozy, safety first.", votes: generateRandomVotes() },
@@ -1590,7 +1602,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_bella_pet_surgery_again', 
     creator: findUser('Bella King'), 
     question: "My pet needs an expensive surgery. Do I drain my savings for it, or consider other options?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=PetSurgeryHelp'], 
     options: [
         { id: 'bps_opt1', text: "Save your pet, cost is secondary!", votes: generateRandomVotes() },
         { id: 'bps_opt2', text: "Consider quality of life, explore alternatives.", votes: generateRandomVotes() },
@@ -1604,7 +1616,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_lily_apology_timing_again', 
     creator: findUser('Lily Roberts'), 
     question: "Is it better to apologize immediately when you're wrong, or wait until emotions cool down?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=ApologyTiming'], 
     options: [
         { id: 'lat_opt1', text: "Immediately, clear the air.", votes: generateRandomVotes() },
         { id: 'lat_opt2', text: "Wait, a calm apology is more effective.", votes: generateRandomVotes() },
@@ -1618,7 +1630,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_emma_problematic_posts_again', 
     creator: findUser('Emma Davis'), 
     question: "Should I confront my friend about their problematic social media posts, or is it not my place?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=ProblematicPosts'], 
     options: [
         { id: 'epp_opt1_again', text: "Confront them privately, from a place of care.", votes: generateRandomVotes() },
         { id: 'epp_opt2_again', text: "It's not your place, let them be.", votes: generateRandomVotes() },
@@ -1632,7 +1644,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_olivia_freelance_client_again', 
     creator: findUser('Olivia Rodriguez'), 
     question: "I'm a freelancer and a potential client is offering a huge project but has a terrible reputation. Do I take the money or protect my peace?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=BadClient'], 
     options: [
         { id: 'ofc_opt1', text: "Take the money, deal with the headache later.", votes: generateRandomVotes() },
         { id: 'ofc_opt2', text: "Protect your peace, it's not worth it.", votes: generateRandomVotes() },
@@ -1646,7 +1658,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_charlotte_parental_pressure_again', 
     creator: findUser('Charlotte Wilson'), 
     question: "My parents are pressuring me to have kids. Do I give in or stand my ground on my childfree choice?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=ChildfreeChoice'], 
     options: [
         { id: 'cpp_opt1', text: "It's your life, stand your ground!", votes: generateRandomVotes() },
         { id: 'cpp_opt2', text: "Consider it, maybe you'll change your mind.", votes: generateRandomVotes() },
@@ -1660,7 +1672,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_amelia_designer_splurge_again', 
     creator: findUser('Amelia Taylor'), 
     question: "Should I splurge on this designer item I've been eyeing, or save that money for something more practical?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=DesignerItem'], 
     options: [
         { id: 'ads_opt1_again', text: "Treat yourself! You deserve it.", votes: generateRandomVotes() },
         { id: 'ads_opt2_again', text: "Save it, practicality wins.", votes: generateRandomVotes() },
@@ -1674,7 +1686,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_harper_job_offer_again', 
     creator: findUser('Harper Anderson'), 
     question: "I received a job offer but I'm also waiting to hear back from my dream company. Do I accept or hold out?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=DreamJobWait'], 
     options: [
         { id: 'hjo_opt1', text: "Accept the offer, a bird in hand...", votes: generateRandomVotes() },
         { id: 'hjo_opt2', text: "Hold out for the dream job, it's worth the risk.", votes: generateRandomVotes() },
@@ -1688,7 +1700,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_evelyn_natural_hair_again', 
     creator: findUser('Evelyn Thomas'), 
     question: "Should I embrace my natural hair texture, or continue with my elaborate styling routine?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=HairRoutine'], 
     options: [
         { id: 'enh_opt1', text: "Embrace the natural! Freedom awaits.", votes: generateRandomVotes() },
         { id: 'enh_opt2', text: "Stick to the routine, it's your signature.", votes: generateRandomVotes() },
@@ -1702,7 +1714,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_abigail_white_lie_again', 
     creator: findUser('Abigail Jackson'), 
     question: "Is it okay to lie to spare someone's feelings, or is brutal honesty always the best policy?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=WhiteLie'], 
     options: [
         { id: 'awl_opt1', text: "Lie gently, kindness first.", votes: generateRandomVotes() },
         { id: 'awl_opt2', text: "Honesty, even if it hurts short-term.", votes: generateRandomVotes() },
@@ -1716,7 +1728,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_ella_creative_block_again', 
     creator: findUser('Ella White'), 
     question: "My creative project is stalled. Do I push through the block, or take a break and come back later?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=CreativePush'], 
     options: [
         { id: 'ecb_opt1', text: "Push through! Discipline is key.", votes: generateRandomVotes() },
         { id: 'ecb_opt2', text: "Take a break, recharge your creativity.", votes: generateRandomVotes() },
@@ -1730,7 +1742,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_scarlett_bangs_again', 
     creator: findUser('Scarlett Harris'), 
     question: "Should I get bangs? It feels like a big commitment for my face shape.",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=ToBangOrNot'], 
     options: [
         { id: 'sb_opt1', text: "Go for it! Hair grows back.", votes: generateRandomVotes() },
         { id: 'sb_opt2', text: "No bangs, too much maintenance.", votes: generateRandomVotes() },
@@ -1744,7 +1756,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_elizabeth_coffee_spill_again', 
     creator: findUser('Elizabeth Martin'), 
     question: "I accidentally spilled coffee on my friend's expensive rug. Do I confess immediately and offer to clean/pay, or try to clean it secretly?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=CoffeeSpillOops'], 
     options: [
         { id: 'ecs_opt1_3', text: "Confess immediately, honesty is best.", votes: generateRandomVotes() },
         { id: 'ecs_opt2_3', text: "Clean it secretly, hope they don't notice.", votes: generateRandomVotes() },
@@ -1758,7 +1770,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_sofia_late_party_again', 
     creator: findUser('Sophia Miller'), 
     question: "Is it ever okay to show up late to a party, or is punctuality always king?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=LateToParty'], 
     options: [
         { id: 'slp_opt1', text: "Fashionably late is a vibe.", votes: generateRandomVotes() },
         { id: 'slp_opt2', text: "Always be on time, it's respectful.", votes: generateRandomVotes() },
@@ -1772,7 +1784,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_camila_secret_dating_again', 
     creator: findUser('Camila Thompson'), 
     question: "Should I tell my parents I'm dating someone they won't approve of, or keep it a secret?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=SecretRelationship'], 
     options: [
         { id: 'csd_opt1', text: "Tell them, honesty is the best policy.", votes: generateRandomVotes() },
         { id: 'csd_opt2', text: "Keep it secret to avoid conflict.", votes: generateRandomVotes() },
@@ -1786,7 +1798,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_aria_save_coffeeshop_again', 
     creator: findUser('Aria Moore'), 
     question: "My favorite local coffee shop is closing. Do I try to rally the community to save it, or mourn its loss quietly?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=LocalCoffeeShop'], 
     options: [
         { id: 'asc_opt1', text: "Rally the troops! Fight for your coffee!", votes: generateRandomVotes() },
         { id: 'asc_opt2', text: "Mourn quietly, some things aren't meant to last.", votes: generateRandomVotes() },
@@ -1800,7 +1812,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_leo_new_language_again', 
     creator: findUser('Leo Jenkins'),
     question: "Should I learn a new language, or focus on becoming an expert in a skill I already have?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=NewLanguageVsSkill'], 
     options: [
         { id: 'lnl_opt1', text: "New language! Expand your horizons.", votes: generateRandomVotes() },
         { id: 'lnl_opt2', text: "Master current skills, depth over breadth.", votes: generateRandomVotes() },
@@ -1814,7 +1826,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_mark_unfollow_friend_again', 
     creator: findUser('Mark Perry'),
     question: "Is it okay to unfollow a friend on social media if their content is consistently annoying/negative?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=UnfollowFriend'], 
     options: [
         { id: 'muf_opt1', text: "Yes, protect your peace.", votes: generateRandomVotes() },
         { id: 'muf_opt2', text: "No, it's rude and childish.", votes: generateRandomVotes() },
@@ -1828,7 +1840,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_nate_dog_cat_again', 
     creator: findUser('Nate Powell'),
     question: "I'm torn between getting a dog or a cat. Help me decide, fur parents!",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=DogOrCat'], 
     options: [
         { id: 'ndc_opt1', text: "Team Dog! Loyalty and adventure.", votes: generateRandomVotes() },
         { id: 'ndc_opt2', text: "Team Cat! Independent and cuddly.", votes: generateRandomVotes() },
@@ -1842,7 +1854,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_oscar_volunteer_self_again', 
     creator: findUser('Oscar Long'),
     question: "Should I volunteer my time to a cause I believe in, or focus solely on my own self-improvement right now?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=VolunteerOrSelf'], 
     options: [
         { id: 'ovs_opt1', text: "Volunteer! Give back to the community.", votes: generateRandomVotes() },
         { id: 'ovs_opt2', text: "Focus on self-improvement first, then volunteer.", votes: generateRandomVotes() },
@@ -1853,12 +1865,12 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("6 days, 2 hours, 36 minutes"),
   },
 
-  // New 2-option polls
+  // New 2-option polls from the provided list
   {
     id: 'poll_engagement_location',
     creator: findUser('Romantic Traveler'),
     question: "Engagement location in two weeks: Paris or Italy?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=Engagement'], 
     options: [
       { id: 'el_opt1', text: 'Paris, City of Love!', votes: generateRandomVotes(), affiliateLink: 'https://example.com/paris-engagement-rings' },
       { id: 'el_opt2', text: 'Italy, Under the Tuscan Sun!', votes: generateRandomVotes(), affiliateLink: 'https://example.com/italy-villas' },
@@ -1870,7 +1882,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_virginity_condom_new',
     creator: findUser('Curious Explorer'),
     question: "Losing my virginity, condom or no condom?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=FirstTime'], 
     options: [
       { id: 'vc_opt1_new', text: 'Condom: Safe is sexy!', votes: generateRandomVotes(), affiliateLink: 'https://example.com/best-condoms' },
       { id: 'vc_opt2_new', text: 'No Condom: Trust the moment (after testing!).', votes: generateRandomVotes() },
@@ -1882,10 +1894,10 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_house_to_buy',
     creator: findUser('Home Buyer'),
     question: "Which house to buy? Option A or Option B?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=HouseHunt'], 
     options: [
-      { id: 'htb_opt1', text: 'Option A: The Cozy Cottage with a large garden and needing some TLC.', votes: generateRandomVotes(), imageUrl: 'https://placehold.co/300x200.png', affiliateLink: 'https://example.com/fixer-upper-tools' },
-      { id: 'htb_opt2', text: 'Option B: The Modern Marvel, smaller yard but move-in ready and energy efficient.', votes: generateRandomVotes(), imageUrl: 'https://placehold.co/300x200.png', affiliateLink: 'https://example.com/smart-home-devices' },
+      { id: 'htb_opt1', text: 'Option A: The Cozy Cottage with a large garden and needing some TLC.', votes: generateRandomVotes(), imageUrl: 'https://placehold.co/300x200.png?text=Cottage', affiliateLink: 'https://example.com/fixer-upper-tools' },
+      { id: 'htb_opt2', text: 'Option B: The Modern Marvel, smaller yard but move-in ready and energy efficient.', votes: generateRandomVotes(), imageUrl: 'https://placehold.co/300x200.png?text=ModernHome', affiliateLink: 'https://example.com/smart-home-devices' },
     ],
     deadline: new Date(Date.now() + parseTimeRemaining("30 days")).toISOString(),
     createdAt: generateCreatedAt("30 days"),
@@ -1894,7 +1906,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_lunch_choice_new', 
     creator: findUser('Hungry Harry'),
     question: "What to eat for lunch? Tuna sandwich or grilled chicken wrap?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=LunchDecision'], 
     options: [
       { id: 'lc_opt1_new_v2', text: 'Tuna Sandwich Classic', votes: generateRandomVotes() },
       { id: 'lc_opt2_new_v2', text: 'Grilled Chicken Wrap Delight', votes: generateRandomVotes(), affiliateLink: 'https://example.com/healthy-wrap-recipes' },
@@ -1906,10 +1918,10 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_jazz_fest_dress',
     creator: findUser('Festival Fiona'),
     question: "Dress for the New Orleans Jazz Festival? (Two options)",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=JazzFest'], 
     options: [
-      { id: 'jfd_opt1', text: 'Flowy Bohemian Dress and wide-brimmed hat for sun protection and style.', votes: generateRandomVotes(), imageUrl: 'https://placehold.co/300x200.png', affiliateLink: 'https://example.com/boho-dresses' },
-      { id: 'jfd_opt2', text: 'Chic Jumpsuit with comfortable sandals, practical for dancing all day.', votes: generateRandomVotes(), imageUrl: 'https://placehold.co/300x200.png', affiliateLink: 'https://example.com/stylish-jumpsuits' },
+      { id: 'jfd_opt1', text: 'Flowy Bohemian Dress and wide-brimmed hat for sun protection and style.', votes: generateRandomVotes(), imageUrl: 'https://placehold.co/300x200.png?text=BohoDress', affiliateLink: 'https://example.com/boho-dresses' },
+      { id: 'jfd_opt2', text: 'Chic Jumpsuit with comfortable sandals, practical for dancing all day.', votes: generateRandomVotes(), imageUrl: 'https://placehold.co/300x200.png?text=Jumpsuit', affiliateLink: 'https://example.com/stylish-jumpsuits' },
     ],
     deadline: new Date(Date.now() + parseTimeRemaining("14 days")).toISOString(),
     createdAt: generateCreatedAt("14 days"),
@@ -1918,7 +1930,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_quit_job',
     creator: findUser('Career Changer'),
     question: "Should I quit my job? Yes or No?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=QuitJob'], 
     options: [
       { id: 'qj_opt1', text: 'Yes, take the leap! Life is too short to be unhappy in your career. Pursue your passion.', votes: generateRandomVotes() },
       { id: 'qj_opt2', text: 'No, stick it out a bit longer. Financial stability is important. Maybe look for ways to improve current situation.', votes: generateRandomVotes() },
@@ -1930,7 +1942,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_career_path_tech_art',
     creator: findUser('Path Seeker'),
     question: "Which career path should I pursue? Tech or Art?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=TechVsArt'], 
     options: [
       { id: 'cpta_opt1', text: 'Tech: Innovation & Impact (and potentially higher salary).', votes: generateRandomVotes(), affiliateLink: 'https://example.com/tech-career-guide' },
       { id: 'cpta_opt2', text: 'Art: Passion & Creativity (fulfillment but maybe less stability).', votes: generateRandomVotes(), affiliateLink: 'https://example.com/art-supplies' },
@@ -1942,7 +1954,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_breakup_boyfriend',
     creator: findUser('Hannah Baker'), 
     question: "Should I break up with my boyfriend? Yes or No?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=BreakupTime'], 
     options: [
       { id: 'bub_opt1', text: 'Yes, it\'s time to move on. You deserve happiness and growth.', votes: generateRandomVotes() },
       { id: 'bub_opt2', text: 'No, try to make it work. Every relationship has ups and downs. Communicate your needs.', votes: generateRandomVotes() },
@@ -1954,7 +1966,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_get_back_together_humor',
     creator: findUser('Hannah Baker'), 
     question: "Should we get back together? ... Asking for a friend who might be me. 😂",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=BackTogether'], 
     options: [
       { id: 'gbt_opt1', text: 'LOL, give it another shot! What could possibly go wrong... again?', votes: generateRandomVotes() },
       { id: 'gbt_opt2', text: 'Nah, run for the hills (again)! Some sequels are never good.', votes: generateRandomVotes() },
@@ -1966,7 +1978,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_reunite_relative',
     creator: findUser('Family Mediator'),
     question: "Should I try to reunite with a relative I haven't gotten along with in years?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=FamilyReunion'], 
     options: [
       { id: 'rr_opt1', text: 'Yes, extend the olive branch. Life is too short for grudges.', votes: generateRandomVotes() },
       { id: 'rr_opt2', text: 'No, some bridges are best left burned. Protect your peace.', votes: generateRandomVotes() },
@@ -1978,7 +1990,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_husband_cheated',
     creator: findUser('Betrayed Spouse'),
     question: "My husband cheated, should I stay and try to work it out with therapy or take this as a sign to run?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=CheatingHusband'], 
     options: [
       { id: 'hc_opt1', text: 'Therapy: Try to rebuild trust. It won\'t be easy, but might be worth it.', votes: generateRandomVotes(), affiliateLink: 'https://example.com/marriage-counseling' },
       { id: 'hc_opt2', text: 'Run: This is a dealbreaker. You deserve better than infidelity.', votes: generateRandomVotes() },
@@ -1990,13 +2002,495 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     id: 'poll_jeans_fat_workout',
     creator: findUser('Fashion Conscious'),
     question: "Do these jeans make me look fat, should I workout?",
-    imageUrls: ['https://placehold.co/600x400.png'], 
+    imageUrls: ['https://placehold.co/600x400.png?text=JeansFit'], 
     options: [
       { id: 'jfw_opt1', text: 'You look great! But workout if it makes YOU feel good, not because of jeans.', votes: generateRandomVotes() },
       { id: 'jfw_opt2', text: 'It\'s the jeans, not you! Find a better pair that celebrates your shape.', votes: generateRandomVotes(), affiliateLink: 'https://example.com/flattering-jeans' },
     ],
     deadline: new Date(Date.now() + parseTimeRemaining("3 days")).toISOString(),
     createdAt: generateCreatedAt("3 days"),
+  },
+  // Polls from the first new list
+  {
+    id: 'poll_cereal_box_art',
+    creator: findUser('Cereal Consumer'),
+    question: "Should I stop eating this brand of cereal now that they changed the box art and it feels weird?",
+    imageUrls: ['https://placehold.co/600x400.png?text=CerealArt'],
+    options: [
+        { id: 'cba_opt1', text: "Yes, follow your instincts", votes: generateRandomVotes() },
+        { id: 'cba_opt2', text: "Chill, it's just a box", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("3 days")).toISOString(),
+    createdAt: generateCreatedAt("3 days"),
+  },
+  {
+    id: 'poll_sneaky_link_bestie',
+    creator: findUser('Drama Llama'),
+    question: "Should I make my bestie's man my sneaky link if he already DMed me twice?",
+    imageUrls: ['https://placehold.co/600x400.png?text=SneakyLink'],
+    options: [
+        { id: 'slb_opt1', text: "Slide quietly", votes: generateRandomVotes() },
+        { id: 'slb_opt2', text: "You need therapy", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("1 hour")).toISOString(),
+    createdAt: generateCreatedAt("1 hour"),
+  },
+  {
+    id: 'poll_rapper_battle',
+    creator: findUser('Rap Analyst'),
+    question: "Trippie Redd vs Hurricane Wisdom — who’s the better rapper, PERIOD?",
+    imageUrls: ['https://placehold.co/600x400.png?text=RapBattle'],
+    options: [
+        { id: 'rb_opt1', text: "Trippie Redd", votes: generateRandomVotes() },
+        { id: 'rb_opt2', text: "Hurricane Wisdom", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("7 minutes")).toISOString(),
+    createdAt: generateCreatedAt("7 minutes"),
+  },
+  {
+    id: 'poll_wife_beer_permission',
+    creator: findUser('Thirsty Hubby'),
+    question: "My wife said no to another beer. Should I crack it anyway?",
+    imageUrls: ['https://placehold.co/600x400.png?text=BeerPermission'],
+    options: [
+        { id: 'wbp_opt1', text: "Yes, freedom is brewed", votes: generateRandomVotes() },
+        { id: 'wbp_opt2', text: "Nah bro, she’s your ride", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("1 minute")).toISOString(),
+    createdAt: generateCreatedAt("1 minute"),
+  },
+  {
+    id: 'poll_ghost_closure_text',
+    creator: findUser('Ghost Ponderer'),
+    question: "Should I ghost them or send a “weird but respectful” closure text?",
+    imageUrls: ['https://placehold.co/600x400.png?text=GhostOrText'],
+    options: [
+        { id: 'gct_opt1', text: "Disappear like vapor", votes: generateRandomVotes() },
+        { id: 'gct_opt2', text: "Be an adult-ish", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("6 hours")).toISOString(),
+    createdAt: generateCreatedAt("6 hours"),
+  },
+  {
+    id: 'poll_hoodie_retirement',
+    creator: findUser('Hoodie Champion'),
+    question: "I’ve worn this hoodie 5 days in a row. Should I retire it for the week?",
+    imageUrls: ['https://placehold.co/600x400.png?text=HoodieLife'],
+    options: [
+        { id: 'hr_opt1', text: "Yes, it’s time", votes: generateRandomVotes() },
+        { id: 'hr_opt2', text: "No, it’s seasoned now", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("12 hours")).toISOString(),
+    createdAt: generateCreatedAt("12 hours"),
+  },
+  {
+    id: 'poll_chicken_tenders_date',
+    creator: findUser('Tender Lover'),
+    question: "She only eats chicken tenders. Should I still take her seriously?",
+    imageUrls: ['https://placehold.co/600x400.png?text=TenderDate'],
+    options: [
+        { id: 'ctd_opt1', text: "Yes, love her anyway", votes: generateRandomVotes() },
+        { id: 'ctd_opt2', text: "No, she’s a grown toddler", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("9 minutes")).toISOString(),
+    createdAt: generateCreatedAt("9 minutes"),
+  },
+  {
+    id: 'poll_thirst_trap_respect',
+    creator: findUser('Insta Model'),
+    question: "Should I post the thirst trap or keep it respectful today?",
+    imageUrls: ['https://placehold.co/600x400.png?text=ThirstTrap'],
+    options: [
+        { id: 'ttr_opt1', text: "Trap responsibly", votes: generateRandomVotes() },
+        { id: 'ttr_opt2', text: "Respect your grandma", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("2 days")).toISOString(),
+    createdAt: generateCreatedAt("2 days"),
+  },
+  {
+    id: 'poll_ignore_message_normal',
+    creator: findUser('Message Ignorer'),
+    question: "Should I pretend I didn’t see the message or answer like a normal person?",
+    imageUrls: ['https://placehold.co/600x400.png?text=MessageDilemma'],
+    options: [
+        { id: 'imn_opt1', text: "Ignore it, power move", votes: generateRandomVotes() },
+        { id: 'imn_opt2', text: "Be a real human", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("45 minutes")).toISOString(),
+    createdAt: generateCreatedAt("45 minutes"),
+  },
+  {
+    id: 'poll_charger_return_keep',
+    creator: findUser('Charger Keeper'),
+    question: "They left their charger at my place. Return it or keep it?",
+    imageUrls: ['https://placehold.co/600x400.png?text=ChargerConundrum'],
+    options: [
+        { id: 'crk_opt1', text: "Give it back", votes: generateRandomVotes() },
+        { id: 'crk_opt2', text: "Finders keepers", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("31 days")).toISOString(),
+    createdAt: generateCreatedAt("31 days"),
+  },
+  {
+    id: 'poll_party_snacks_selfies',
+    creator: findUser('Party Planner'),
+    question: "I’m invited to two birthday parties. Do I go to the one with better snacks or the one with better lighting for selfies?",
+    imageUrls: ['https://placehold.co/600x400.png?text=PartyChoice'],
+    options: [
+        { id: 'pss_opt1', text: "Snacks always", votes: generateRandomVotes() },
+        { id: 'pss_opt2', text: "Give the gram what it needs", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("5 hours")).toISOString(),
+    createdAt: generateCreatedAt("5 hours"),
+  },
+  {
+    id: 'poll_podcast_trauma_dump',
+    creator: findUser('Podcast Dreamer'),
+    question: "Should I start a podcast or just keep trauma dumping on my friends?",
+    imageUrls: ['https://placehold.co/600x400.png?text=PodcastOrFriends'],
+    options: [
+        { id: 'ptd_opt1', text: "Start the pod", votes: generateRandomVotes() },
+        { id: 'ptd_opt2', text: "They knew the risks", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("14 days")).toISOString(),
+    createdAt: generateCreatedAt("14 days"),
+  },
+  {
+    id: 'poll_spotify_stalk_confess',
+    creator: findUser('Spotify Stalker'),
+    question: "Should I tell them I stalked their Spotify before the first date?",
+    imageUrls: ['https://placehold.co/600x400.png?text=SpotifyConfession'],
+    options: [
+        { id: 'ssc_opt1', text: "Yes, it's cute", votes: generateRandomVotes() },
+        { id: 'ssc_opt2', text: "No, you're insane", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("2 minutes")).toISOString(),
+    createdAt: generateCreatedAt("2 minutes"),
+  },
+  {
+    id: 'poll_lol_ok_meaning',
+    creator: findUser('Text Detective'),
+    question: "They said “lol ok” — are they mad or just dry texting?",
+    imageUrls: ['https://placehold.co/600x400.png?text=LolOkMystery'],
+    options: [
+        { id: 'lom_opt1', text: "Mad AF", votes: generateRandomVotes() },
+        { id: 'lom_opt2', text: "Nah they just boring", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("18 hours")).toISOString(),
+    createdAt: generateCreatedAt("18 hours"),
+  },
+  {
+    id: 'poll_hiking_touch_grass',
+    creator: findUser('Grass Avoider'),
+    question: "I don’t even like hiking. Should I still go just to say I touched grass?",
+    imageUrls: ['https://placehold.co/600x400.png?text=TouchGrass'],
+    options: [
+        { id: 'htg_opt1', text: "Yes, impress your feed", votes: generateRandomVotes() },
+        { id: 'htg_opt2', text: "No, stay dusty", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("1 day")).toISOString(),
+    createdAt: generateCreatedAt("1 day"),
+  },
+  {
+    id: 'poll_tattoo_idea_list_new_person',
+    creator: findUser('Tattoo Thinker'),
+    question: "I just met them. Should I add their name to my tattoo idea list or chill tf out?",
+    imageUrls: ['https://placehold.co/600x400.png?text=NewPersonTattoo'],
+    options: [
+        { id: 'tilnp_opt1', text: "Ink the risk", votes: generateRandomVotes() },
+        { id: 'tilnp_opt2', text: "Breathe and block", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("3 days")).toISOString(),
+    createdAt: generateCreatedAt("3 days"),
+  },
+  {
+    id: 'poll_ex_dog_pic_like',
+    creator: findUser('Dog Pic Defender'),
+    question: "My ex just liked my dog’s pic. Should I block or bark back?",
+    imageUrls: ['https://placehold.co/600x400.png?text=ExDogLike'],
+    options: [
+        { id: 'edpl_opt1', text: "Block them", votes: generateRandomVotes() },
+        { id: 'edpl_opt2', text: "Bark respectfully", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("22 minutes")).toISOString(),
+    createdAt: generateCreatedAt("22 minutes"),
+  },
+  {
+    id: 'poll_quit_job_spiritually_dead',
+    creator: findUser('Job Quitter Pro'),
+    question: "Should I quit my job or keep collecting the paycheck while spiritually dead inside?",
+    imageUrls: ['https://placehold.co/600x400.png?text=SoulCrushingJob'],
+    options: [
+        { id: 'qjsd_opt1', text: "Quit. Die loud.", votes: generateRandomVotes() },
+        { id: 'qjsd_opt2', text: "Stay. Die silent.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("31 days")).toISOString(),
+    createdAt: generateCreatedAt("31 days"),
+  },
+  {
+    id: 'poll_playlist_string_cheese',
+    creator: findUser('Cheese Critic'),
+    question: "Their playlist is 🔥 but they eat string cheese sideways. Should I still date them?",
+    imageUrls: ['https://placehold.co/600x400.png?text=StringCheeseCrime'],
+    options: [
+        { id: 'psc_opt1', text: "Let it slide", votes: generateRandomVotes() },
+        { id: 'psc_opt2', text: "Absolute jail", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("7 hours")).toISOString(),
+    createdAt: generateCreatedAt("7 hours"),
+  },
+  {
+    id: 'poll_feet_pics_gas_money',
+    creator: findUser('Feet Pic Financier'),
+    question: "Should I sell feet pics to afford gas or just start walking like it’s 1852?",
+    imageUrls: ['https://placehold.co/600x400.png?text=FeetPicsForGas'],
+    options: [
+        { id: 'fpgm_opt1', text: "Secure the bag", votes: generateRandomVotes() },
+        { id: 'fpgm_opt2', text: "Pioneer mode", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("4 days")).toISOString(),
+    createdAt: generateCreatedAt("4 days"),
+  },
+  // Polls from the second new list
+  {
+    id: 'poll_toxic_trait_closure_ghosted',
+    creator: findUser('Toxic Trait Tom'),
+    question: "My toxic trait is thinking I need closure from someone I ghosted. Should I message them?",
+    imageUrls: ['https://placehold.co/600x400.png?text=ToxicClosure'],
+    options: [
+        { id: 'ttcg_opt1', text: "Yes, give them whiplash", votes: generateRandomVotes() },
+        { id: 'ttcg_opt2', text: "No, vanish like smoke", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("3 hours")).toISOString(),
+    createdAt: generateCreatedAt("3 hours"),
+  },
+  {
+    id: 'poll_forgave_drunk_reminder',
+    creator: findUser('Delulu Deb'),
+    question: "She said she forgave me but still brings it up when she’s drunk. Should I leave or stay delusional?",
+    imageUrls: ['https://placehold.co/600x400.png?text=DrunkForgiveness'],
+    options: [
+        { id: 'fdr_opt1', text: "Pack your pride", votes: generateRandomVotes() },
+        { id: 'fdr_opt2', text: "Stay & gaslight back", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("1 day")).toISOString(),
+    createdAt: generateCreatedAt("1 day"),
+  },
+  {
+    id: 'poll_charger_9_months',
+    creator: findUser('Charger Hoarder'),
+    question: "I haven’t returned their charger for 9 months. Is it mine now?",
+    imageUrls: ['https://placehold.co/600x400.png?text=ChargerPossession'],
+    options: [
+        { id: 'c9m_opt1', text: "Yes, it’s inherited", votes: generateRandomVotes() },
+        { id: 'c9m_opt2', text: "No, be a person", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("2 days")).toISOString(),
+    createdAt: generateCreatedAt("2 days"),
+  },
+  {
+    id: 'poll_cold_spaghetti_standards',
+    creator: findUser('Fridge Raider'),
+    question: "Should I eat this cold spaghetti straight out the fridge or pretend I have standards?",
+    imageUrls: ['https://placehold.co/600x400.png?text=ColdSpaghetti'],
+    options: [
+        { id: 'css_opt1', text: "Fork it up", votes: generateRandomVotes() },
+        { id: 'css_opt2', text: "Microwave your self-worth", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("1 hour")).toISOString(),
+    createdAt: generateCreatedAt("1 hour"),
+  },
+  {
+    id: 'poll_rewatch_texts_wounds',
+    creator: findUser('Archive Diver'),
+    question: "Should I rewatch our texts from 2021 or let my emotional wounds scab?",
+    imageUrls: ['https://placehold.co/600x400.png?text=RewatchTexts'],
+    options: [
+        { id: 'rtw_opt1', text: "Open the archive", votes: generateRandomVotes() },
+        { id: 'rtw_opt2', text: "Block and breathe", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("45 minutes")).toISOString(),
+    createdAt: generateCreatedAt("45 minutes"),
+  },
+  {
+    id: 'poll_you_up_reply',
+    creator: findUser('Late Night Texter'),
+    question: "They said “you up?” at 2:47am. Should I reply or rise above it?",
+    imageUrls: ['https://placehold.co/600x400.png?text=YouUpText'],
+    options: [
+        { id: 'yur_opt1', text: "Text back “hi 😈”", votes: generateRandomVotes() },
+        { id: 'yur_opt2', text: "Unfollow with grace", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("5 minutes")).toISOString(),
+    createdAt: generateCreatedAt("5 minutes"),
+  },
+  {
+    id: 'poll_situationship_risk',
+    creator: findUser('Chaos Agent'),
+    question: "Should I risk it all for a situationship with someone who doesn’t know my last name?",
+    imageUrls: ['https://placehold.co/600x400.png?text=SituationshipChaos'],
+    options: [
+        { id: 'sr_opt1', text: "Yes, chaos is hot", votes: generateRandomVotes() },
+        { id: 'sr_opt2', text: "No, heal please", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("6 days")).toISOString(),
+    createdAt: generateCreatedAt("6 days"),
+  },
+  {
+    id: 'poll_toothbrush_confront',
+    creator: findUser('Toothbrush Sharer'),
+    question: "He said he’s not ready for a relationship, but we share a toothbrush. Should I confront him?",
+    imageUrls: ['https://placehold.co/600x400.png?text=ToothbrushRelationship'],
+    options: [
+        { id: 'tc_opt1', text: "Ask him boldly", votes: generateRandomVotes() },
+        { id: 'tc_opt2', text: "Just take the brush", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("1 minute")).toISOString(),
+    createdAt: generateCreatedAt("1 minute"),
+  },
+  {
+    id: 'poll_bestie_ex_stories',
+    creator: findUser('Story Blocker'),
+    question: "My bestie’s ex keeps watching my stories. Should I block or flirt harder?",
+    imageUrls: ['https://placehold.co/600x400.png?text=ExWatchingStories'],
+    options: [
+        { id: 'bes_opt1', text: "Block with honor", votes: generateRandomVotes() },
+        { id: 'bes_opt2', text: "Tap in for revenge", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("12 hours")).toISOString(),
+    createdAt: generateCreatedAt("12 hours"),
+  },
+  {
+    id: 'poll_venmo_fries_request',
+    creator: findUser('Fries Fighter'),
+    question: "They Venmo requested $4.37 for fries. Should I pay or fight?",
+    imageUrls: ['https://placehold.co/600x400.png?text=VenmoFries'],
+    options: [
+        { id: 'vfr_opt1', text: "Pay it, peasant", votes: generateRandomVotes() },
+        { id: 'vfr_opt2', text: "Block them and fry back", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("2 minutes")).toISOString(),
+    createdAt: generateCreatedAt("2 minutes"),
+  },
+  {
+    id: 'poll_text_ex_mom',
+    creator: findUser('Ex Mom Texter'),
+    question: "Should I finally stop texting my ex’s mom or is that still fair game?",
+    imageUrls: ['https://placehold.co/600x400.png?text=ExMomTexts'],
+    options: [
+        { id: 'tem_opt1', text: "Let go of the fam", votes: generateRandomVotes() },
+        { id: 'tem_opt2', text: "She was cool tho", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("3 days")).toISOString(),
+    createdAt: generateCreatedAt("3 days"),
+  },
+  {
+    id: 'poll_not_like_other_people',
+    creator: findUser('Red Flag Racer'),
+    question: "They said “I’m not like other people.” Should I run or give them a shot?",
+    imageUrls: ['https://placehold.co/600x400.png?text=NotLikeOthers'],
+    options: [
+        { id: 'nlop_opt1', text: "Run", votes: generateRandomVotes() },
+        { id: 'nlop_opt2', text: "Date the red flag", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("31 days")).toISOString(),
+    createdAt: generateCreatedAt("31 days"),
+  },
+  {
+    id: 'poll_podcast_group_chat_dump',
+    creator: findUser('Group Chat Guru'),
+    question: "Should I start a podcast or just trauma-dump in the group chat again?",
+    imageUrls: ['https://placehold.co/600x400.png?text=PodcastOrGroupChat'],
+    options: [
+        { id: 'pgcd_opt1', text: "Start the show", votes: generateRandomVotes() },
+        { id: 'pgcd_opt2', text: "The GC knew the risk", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("7 days")).toISOString(),
+    createdAt: generateCreatedAt("7 days"),
+  },
+  {
+    id: 'poll_kitkat_eating_method',
+    creator: findUser('KitKat Connoisseur'),
+    question: "They eat Kit Kats without breaking them. Is this relationship sustainable?",
+    imageUrls: ['https://placehold.co/600x400.png?text=KitKatCrime'],
+    options: [
+        { id: 'kem_opt1', text: "No, that’s psychotic", votes: generateRandomVotes() },
+        { id: 'kem_opt2', text: "Yes, love is layered", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("4 hours")).toISOString(),
+    createdAt: generateCreatedAt("4 hours"),
+  },
+  {
+    id: 'poll_hoodie_hostage_return',
+    creator: findUser('Hoodie Hostage'),
+    question: "I wore their hoodie after the breakup. Should I give it back or hold it hostage?",
+    imageUrls: ['https://placehold.co/600x400.png?text=HoodieHostage'],
+    options: [
+        { id: 'hhr_opt1', text: "Return it with tears", votes: generateRandomVotes() },
+        { id: 'hhr_opt2', text: "It’s yours now", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("6 minutes")).toISOString(),
+    createdAt: generateCreatedAt("6 minutes"),
+  },
+  {
+    id: 'poll_dm_after_likes',
+    creator: findUser('DM Slider'),
+    question: "Should I DM the person who just liked 6 of my posts in a row?",
+    imageUrls: ['https://placehold.co/600x400.png?text=DMTheLiker'],
+    options: [
+        { id: 'dal_opt1', text: "Slide while it’s warm", votes: generateRandomVotes() },
+        { id: 'dal_opt2', text: "Don’t feed the thirst", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("9 hours")).toISOString(),
+    createdAt: generateCreatedAt("9 hours"),
+  },
+  {
+    id: 'poll_wyd_mid_crisis_reply',
+    creator: findUser('Crisis Responder'),
+    question: "They hit me with “wyd” but I was mid-crisis. Should I reply or disappear again?",
+    imageUrls: ['https://placehold.co/600x400.png?text=WydCrisis'],
+    options: [
+        { id: 'wmcr_opt1', text: "Reply “just vibing”", votes: generateRandomVotes() },
+        { id: 'wmcr_opt2', text: "Don’t explain yourself", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("1 day")).toISOString(),
+    createdAt: generateCreatedAt("1 day"),
+  },
+  {
+    id: 'poll_friend_bad_breath',
+    creator: findUser('Breath Buddy'),
+    question: "My friend has bad breath. Should I say something or let God handle it?",
+    imageUrls: ['https://placehold.co/600x400.png?text=BadBreathFriend'],
+    options: [
+        { id: 'fbb_opt1', text: "Be honest, gentle", votes: generateRandomVotes() },
+        { id: 'fbb_opt2', text: "Not your ministry", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("18 minutes")).toISOString(),
+    createdAt: generateCreatedAt("18 minutes"),
+  },
+  {
+    id: 'poll_cancel_plans_ugly_day',
+    creator: findUser('Ugly Day Canceller'),
+    question: "Should I cancel plans because I feel 2% ugly today?",
+    imageUrls: ['https://placehold.co/600x400.png?text=UglyDayPlans'],
+    options: [
+        { id: 'cpud_opt1', text: "Cancel with pride", votes: generateRandomVotes() },
+        { id: 'cpud_opt2', text: "Push through the mid", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("10 hours")).toISOString(),
+    createdAt: generateCreatedAt("10 hours"),
+  },
+  {
+    id: 'poll_create_own_poll_unhinged',
+    creator: findUser('Poll Progenitor'),
+    question: "Should I create my own poll because I’m tired of pretending I don’t have unhinged opinions too?",
+    imageUrls: ['https://placehold.co/600x400.png?text=UnhingedPoll'],
+    options: [
+        { id: 'copu_opt1', text: "Do it now", votes: generateRandomVotes() },
+        { id: 'copu_opt2', text: "This is your sign", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("2 days")).toISOString(),
+    createdAt: generateCreatedAt("2 days"),
   },
 ];
 
@@ -2010,25 +2504,57 @@ const allPollsFull: Poll[] = initialPolls.map((pollSkeleton, index) => {
     determinedVotedOptionId = pollSkeleton.options[Math.floor(Math.random() * pollSkeleton.options.length)].id; 
   }
 
-  let pledgeAmount = generateRandomPledge();
+  let pledgeAmount = generateRandomPledge(false); // Default to no pledge unless specified
   let tipCountGenerated = generateRandomTips();
   
   const likes = (index * 17 % 250) + 10; 
   const commentsCount = (index * 7 % 35) + 2;
 
-
-  if (pollSkeleton.id === 'poll_sophia_vcard_main') {
-    pledgeAmount = 100;
-    tipCountGenerated = 16;
-  } else if (pollSkeleton.id === 'poll_sophia_houseplant') {
-    pledgeAmount = 30;
-    tipCountGenerated = 12;
-  } else if (pollSkeleton.id === 'poll_alex_code') {
-    pledgeAmount = 5;
-    tipCountGenerated = 4;
-  } else if (pollSkeleton.id === 'poll_emma_ghosting') {
-    pledgeAmount = 50;
-  }
+  // Specific pledges and tips from your list
+  if (pollSkeleton.id === 'poll_sophia_vcard_main') { pledgeAmount = 100; tipCountGenerated = 16; }
+  else if (pollSkeleton.id === 'poll_sophia_houseplant') { pledgeAmount = 30; tipCountGenerated = 12; }
+  else if (pollSkeleton.id === 'poll_alex_code') { pledgeAmount = 5; tipCountGenerated = 4; }
+  else if (pollSkeleton.id === 'poll_emma_ghosting') { pledgeAmount = 50; }
+  else if (pollSkeleton.id === 'poll_cereal_box_art') { pledgeAmount = 7; tipCountGenerated = 2; }
+  else if (pollSkeleton.id === 'poll_sneaky_link_bestie') { pledgeAmount = 50; tipCountGenerated = 8; }
+  else if (pollSkeleton.id === 'poll_rapper_battle') { pledgeAmount = 3; tipCountGenerated = 1; }
+  else if (pollSkeleton.id === 'poll_wife_beer_permission') { pledgeAmount = 100; tipCountGenerated = 12; }
+  else if (pollSkeleton.id === 'poll_ghost_closure_text') { pledgeAmount = 15; tipCountGenerated = 5; }
+  else if (pollSkeleton.id === 'poll_hoodie_retirement') { pledgeAmount = 4; tipCountGenerated = 0; }
+  else if (pollSkeleton.id === 'poll_chicken_tenders_date') { pledgeAmount = 22; tipCountGenerated = 3; }
+  else if (pollSkeleton.id === 'poll_thirst_trap_respect') { pledgeAmount = 13; tipCountGenerated = 1; }
+  else if (pollSkeleton.id === 'poll_ignore_message_normal') { pledgeAmount = 6; tipCountGenerated = 0; }
+  else if (pollSkeleton.id === 'poll_charger_return_keep') { pledgeAmount = 5; tipCountGenerated = 6; }
+  else if (pollSkeleton.id === 'poll_party_snacks_selfies') { pledgeAmount = 20; tipCountGenerated = 3; }
+  else if (pollSkeleton.id === 'poll_podcast_trauma_dump') { pledgeAmount = 27; tipCountGenerated = 2; }
+  else if (pollSkeleton.id === 'poll_spotify_stalk_confess') { pledgeAmount = 2; tipCountGenerated = 1; }
+  else if (pollSkeleton.id === 'poll_lol_ok_meaning') { pledgeAmount = 8; tipCountGenerated = 9; }
+  else if (pollSkeleton.id === 'poll_hiking_touch_grass') { pledgeAmount = 11; tipCountGenerated = 4; }
+  else if (pollSkeleton.id === 'poll_tattoo_idea_list_new_person') { pledgeAmount = 30; tipCountGenerated = 7; }
+  else if (pollSkeleton.id === 'poll_ex_dog_pic_like') { pledgeAmount = 9; tipCountGenerated = 0; }
+  else if (pollSkeleton.id === 'poll_quit_job_spiritually_dead') { pledgeAmount = 75; tipCountGenerated = 15; }
+  else if (pollSkeleton.id === 'poll_playlist_string_cheese') { pledgeAmount = 10; tipCountGenerated = 2; }
+  else if (pollSkeleton.id === 'poll_feet_pics_gas_money') { pledgeAmount = 40; tipCountGenerated = 6; }
+  else if (pollSkeleton.id === 'poll_toxic_trait_closure_ghosted') { pledgeAmount = 15; tipCountGenerated = 4; }
+  else if (pollSkeleton.id === 'poll_forgave_drunk_reminder') { pledgeAmount = 22; tipCountGenerated = 6; }
+  else if (pollSkeleton.id === 'poll_charger_9_months') { pledgeAmount = 8; tipCountGenerated = 1; }
+  else if (pollSkeleton.id === 'poll_cold_spaghetti_standards') { pledgeAmount = 5; tipCountGenerated = 0; }
+  else if (pollSkeleton.id === 'poll_rewatch_texts_wounds') { pledgeAmount = 13; tipCountGenerated = 2; }
+  else if (pollSkeleton.id === 'poll_you_up_reply') { pledgeAmount = 40; tipCountGenerated = 3; }
+  else if (pollSkeleton.id === 'poll_situationship_risk') { pledgeAmount = 50; tipCountGenerated = 7; }
+  else if (pollSkeleton.id === 'poll_toothbrush_confront') { pledgeAmount = 100; tipCountGenerated = 12; }
+  else if (pollSkeleton.id === 'poll_bestie_ex_stories') { pledgeAmount = 33; tipCountGenerated = 9; }
+  else if (pollSkeleton.id === 'poll_venmo_fries_request') { pledgeAmount = 4.37; tipCountGenerated = 0; }
+  else if (pollSkeleton.id === 'poll_text_ex_mom') { pledgeAmount = 18; tipCountGenerated = 5; }
+  else if (pollSkeleton.id === 'poll_not_like_other_people') { pledgeAmount = 11; tipCountGenerated = 1; }
+  else if (pollSkeleton.id === 'poll_podcast_group_chat_dump') { pledgeAmount = 27; tipCountGenerated = 4; }
+  else if (pollSkeleton.id === 'poll_kitkat_eating_method') { pledgeAmount = 6; tipCountGenerated = 2; }
+  else if (pollSkeleton.id === 'poll_hoodie_hostage_return') { pledgeAmount = 15; tipCountGenerated = 3; }
+  else if (pollSkeleton.id === 'poll_dm_after_likes') { pledgeAmount = 10; tipCountGenerated = 1; }
+  else if (pollSkeleton.id === 'poll_wyd_mid_crisis_reply') { pledgeAmount = 20; tipCountGenerated = 2; }
+  else if (pollSkeleton.id === 'poll_friend_bad_breath') { pledgeAmount = 8; tipCountGenerated = 6; }
+  else if (pollSkeleton.id === 'poll_cancel_plans_ugly_day') { pledgeAmount = 14; tipCountGenerated = 3; }
+  else if (pollSkeleton.id === 'poll_create_own_poll_unhinged') { pledgeAmount = 0; tipCountGenerated = 0; }
 
 
   return {
