@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   name: string;
@@ -33,7 +34,9 @@ export interface Poll {
   totalVotes: number;
   commentsCount: number;
   isVoted?: boolean; 
-  votedOptionId?: string; 
+  votedOptionId?: string;
+  pledgeAmount?: number; // Amount pledged by the creator
+  tipCount?: number; // Number of tips received for this poll/creator
 }
 
 export type NavItem = {
@@ -41,4 +44,3 @@ export type NavItem = {
   label: string;
   icon: React.ElementType;
 };
-
