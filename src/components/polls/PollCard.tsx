@@ -224,6 +224,7 @@ export default function PollCard({ poll, onVote, onPollActionComplete }: PollCar
   };
 
   const handleShare = async () => {
+    if (typeof window === 'undefined') return;
     const shareUrl = `${window.location.origin}/polls/${poll.id}`;
     const shareData = {
       title: 'Check out this poll on PollitAGo!',
@@ -231,14 +232,19 @@ export default function PollCard({ poll, onVote, onPollActionComplete }: PollCar
       url: shareUrl,
     };
 
+    let sharedNatively = false;
     if (navigator.share) {
       try {
         await navigator.share(shareData);
-        console.log('Poll shared successfully');
+        console.log('Poll shared successfully via native share.');
+        sharedNatively = true;
       } catch (error) {
-        console.error('Error sharing poll:', error);
+        console.error('Error sharing poll via native share:', error);
+        // Fall through to clipboard copy if native share fails (e.g., permission denied, or user cancels)
       }
-    } else {
+    }
+    
+    if (!sharedNatively) {
       try {
         await navigator.clipboard.writeText(shareUrl);
         toast({
