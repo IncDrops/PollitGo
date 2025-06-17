@@ -1,25 +1,23 @@
 
-'use client'; // This page now uses client-side state for the modal
+'use client'; 
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { mockPolls, mockUsers } from "@/lib/mockData";
 import type { Poll, PollOption as PollOptionType, Comment as CommentType, User } from "@/types";
 import { formatDistanceToNowStrict, parseISO } from "date-fns";
-import { Clock, Heart, MessageSquare, Share2, Gift, Send, Image as ImageIconLucide Shadcn, Video as VideoIconLucide, ThumbsUp, Film, Info } from "lucide-react";
+import { Clock, Heart, MessageSquare, Share2, Gift, Send, Image as ImageIconLucideShadcn, Video as VideoIconLucide, ThumbsUp, Film, Info, CheckCircle2, Loader2 } from "lucide-react";
 import Image from "next/image";
-import NextLink from "next/link"; // Renamed to avoid conflict
+import NextLink from "next/link"; 
 import { cn } from "@/lib/utils";
-import React, { useState, useEffect, use } from 'react'; // Added useState, useEffect
-import OptionDetailsDialog from "@/components/polls/OptionDetailsDialog"; // Import the new dialog
+import React, { useState, useEffect } from 'react'; 
+import OptionDetailsDialog from "@/components/polls/OptionDetailsDialog"; 
 
-// Simulate fetching poll data and comments - Modified to be a client component hook
 async function getPollDetails(pollId: string): Promise<{ poll: Poll | null; comments: CommentType[] }> {
-  // In a real app, this would be an API call
   const poll = mockPolls.find(p => p.id === pollId) || null;
   const commentUser1 = mockUsers.find(u => u.id === 'user2') || mockUsers[1] || getRandomUser();
   const commentUser2 = mockUsers.find(u => u.id === 'user3') || mockUsers[2] || getRandomUser();
@@ -41,7 +39,7 @@ const PollOptionDisplay: React.FC<{
   isVoted: boolean; 
   isSelectedOption: boolean; 
   deadlinePassed: boolean; 
-  onVote: () => void;
+  onVote: () => Promise<void>; // Ensure onVote is async or remove async from its usage
   pollHasTwoOptions: boolean;
   onShowDetails: () => void;
 }> = ({ option, totalVotes, isVoted, isSelectedOption, deadlinePassed, onVote, pollHasTwoOptions, onShowDetails }) => {
@@ -52,16 +50,16 @@ const PollOptionDisplay: React.FC<{
     ? `${option.text.substring(0, OPTION_TEXT_TRUNCATE_LENGTH)}...`
     : option.text;
 
-  const handleOptionClick = () => {
+  const handleOptionClick = async () => {
     if (!isVoted && !deadlinePassed) {
-      onVote();
+      await onVote(); // Call the vote action
     } else {
-      onShowDetails(); // Show details if already voted or deadline passed
+      onShowDetails(); 
     }
   };
 
   const handleDetailsIconClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Prevent outer button's onClick
     onShowDetails();
   };
 
@@ -72,10 +70,10 @@ const PollOptionDisplay: React.FC<{
         className={cn(
           "w-full justify-between h-auto p-3 text-left relative disabled:opacity-100 disabled:cursor-default",
            pollHasTwoOptions && "aspect-square flex flex-col items-center justify-center text-center",
-           (isVoted || deadlinePassed) && "cursor-pointer hover:bg-accent/60"
+           (isVoted || deadlinePassed || isTruncated || option.affiliateLink) && "cursor-pointer hover:bg-accent/60" // Make clickable if details available
         )}
         onClick={handleOptionClick}
-        disabled={(isVoted || deadlinePassed) && !pollHasTwoOptions && !(isTruncated || option.affiliateLink) } // Only truly disable if no details to show
+        disabled={(isVoted || deadlinePassed) && !pollHasTwoOptions && !(isTruncated || option.affiliateLink) } 
         aria-pressed={isSelectedOption}
       >
         <div className={cn("flex w-full", pollHasTwoOptions ? "flex-col items-center" : "items-center")}>
@@ -88,18 +86,21 @@ const PollOptionDisplay: React.FC<{
           {isSelectedOption && showResults && <CheckCircle2 className={cn("w-4 h-4", pollHasTwoOptions ? "mt-1 text-primary-foreground" : "ml-1 text-primary")} />}
 
           {(isTruncated || option.affiliateLink) && (
-             <Button 
-              variant="ghost" 
-              size="icon" 
-              onClick={handleDetailsIconClick} 
+             <div // Changed from Button to div
+              onClick={handleDetailsIconClick}
               className={cn(
                 "h-6 w-6 opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
-                pollHasTwoOptions ? "absolute top-1 right-1" : "ml-2 shrink-0" 
+                pollHasTwoOptions ? "absolute top-1 right-1" : "ml-2 shrink-0",
+                "flex items-center justify-center rounded-md cursor-pointer", // Basic styling
+                "hover:bg-accent hover:text-accent-foreground" // Hover effect
               )}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && handleDetailsIconClick(e as any)}
               aria-label="View option details"
             >
               <Info className="h-4 w-4 text-muted-foreground" />
-            </Button>
+            </div>
           )}
         </div>
       </Button>
@@ -123,7 +124,8 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
       setLoading(true);
       const data = await getPollDetails(params.pollId);
       setPollData(data);
-      setCurrentUser(mockUsers.find(u => u.id === 'user1') || mockUsers[0] || getRandomUser());
+      const user1 = mockUsers.find(u => u.id === 'user1') || mockUsers[0] || getRandomUser();
+      setCurrentUser(user1);
       setLoading(false);
     };
     fetchData();
@@ -147,16 +149,14 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
         }
       };
       checkDeadline();
-      const interval = setInterval(checkDeadline, 60000); // Update time remaining every minute
+      const interval = setInterval(checkDeadline, 60000); 
       return () => clearInterval(interval);
     }
   }, [poll]);
 
   const handleVote = async (optionId: string) => {
-    // This would be a server action or API call in a real app
     console.log(`Vote action for poll ${poll?.id}, option ${optionId}`);
     if (poll) {
-      // Simulate vote update locally
       setPollData(prevData => {
         if (!prevData.poll || prevData.poll.isVoted) return prevData;
         const newPoll = {
@@ -177,7 +177,6 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
     const commentText = formData.get('comment') as string;
     if (commentText && commentText.trim() !== "" && poll && currentUser) {
       console.log(`New comment for poll ${poll.id}: ${commentText}`);
-      // Simulate comment addition
       const newComment: CommentType = {
         id: `comment${Date.now()}`,
         user: currentUser,
@@ -188,10 +187,8 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
         ...prevData,
         comments: [newComment, ...prevData.comments],
       }));
-      // Reset textarea - this needs to be handled by making form a controlled component or using form.reset()
-      const form = (formData as any).form; // Not standard, but works for demo
-      if(form) form.reset();
-
+      const formElement = document.getElementById('comment-form') as HTMLFormElement | null;
+      formElement?.reset();
     }
   };
 
@@ -265,7 +262,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
                   isVoted={!!poll.isVoted}
                   isSelectedOption={poll.votedOptionId === option.id}
                   deadlinePassed={deadlinePassed}
-                  onVote={() => handleVote(option.id)}
+                  onVote={async () => handleVote(option.id)}
                   pollHasTwoOptions={pollHasTwoOptions}
                   onShowDetails={() => handleShowOptionDetails(option)}
                 />
@@ -294,7 +291,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
 
             <div>
               <h3 className="text-lg font-semibold mb-3 text-foreground">Comments ({comments.length})</h3>
-              <form action={handleCommentSubmit} className="flex items-start space-x-2 mb-6">
+              <form action={handleCommentSubmit} id="comment-form" className="flex items-start space-x-2 mb-6">
                 {currentUser && (
                   <Avatar className="h-10 w-10 border">
                     <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} data-ai-hint="profile avatar" /> 

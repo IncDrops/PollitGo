@@ -14,7 +14,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useSwipeable } from 'react-swipeable';
 import OptionDetailsDialog from './OptionDetailsDialog';
-import { motion, useAnimationControls } from 'framer-motion';
+import { motion, useAnimationControls, AnimatePresence } from 'framer-motion';
 
 interface PollCardProps {
   poll: Poll;
@@ -51,7 +51,7 @@ const PollOption: React.FC<{
   };
 
   const handleDetailsIconClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Prevent outer button's onClick if this is nested
     onShowDetails();
   };
 
@@ -91,17 +91,24 @@ const PollOption: React.FC<{
           {showResults && <span className={cn("text-xs font-semibold", pollHasTwoOptions ? "mt-1" : "ml-2 pl-1")}>{percentage.toFixed(0)}%</span>}
 
           {isSelectedOption && showResults && <CheckCircle2 className={cn("w-4 h-4", pollHasTwoOptions ? "mt-1 text-primary-foreground" : "ml-1 text-primary")} />}
-
-           {(!pollHasTwoOptions && (isTruncated || option.affiliateLink)) && (
-            <Button
-              variant="ghost"
-              size="icon"
+          
+          {/* This is for >2 option polls (non-swipeable cards) OR for 2-option polls where details are needed */}
+          {/* It should appear if text is truncated OR an affiliate link exists */}
+          {(!pollHasTwoOptions && (isTruncated || option.affiliateLink)) && (
+            <div // Changed from Button to div
               onClick={handleDetailsIconClick}
-              className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+              className={cn(
+                "absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+                "flex items-center justify-center rounded-md cursor-pointer", // Basic styling to mimic an icon button
+                "hover:bg-accent hover:text-accent-foreground" // Hover effect
+              )}
+              role="button" // Keep accessibility
+              tabIndex={0} // Make it focusable
+              onKeyDown={(e) => e.key === 'Enter' && handleDetailsIconClick(e as any)}
               aria-label="View option details"
             >
               <Info className="h-4 w-4 text-muted-foreground" />
-            </Button>
+            </div>
           )}
         </div>
       </Button>
@@ -123,11 +130,6 @@ export default function PollCard({ poll, onVote, onPollActionComplete }: PollCar
   const canSwipe = poll.options.length === 2 && !poll.isVoted && !deadlinePassed && !!onPollActionComplete;
 
   const handlers = useSwipeable({
-    onSwiping: (eventData) => {
-      if (!canSwipe) return;
-      // Optionally, provide visual feedback during swipe (e.g., move card slightly)
-      // This would require managing a temporary offset state and applying it via `controls.start`
-    },
     onSwiped: async (eventData) => {
       if (!canSwipe) return;
 
@@ -138,13 +140,10 @@ export default function PollCard({ poll, onVote, onPollActionComplete }: PollCar
         if (eventData.dir === 'Right') {
           swipeDirection = 'right';
           onVote(poll.id, poll.options[0].id);
-          // await controls.start("exitRight"); // Framer Motion will handle exit via AnimatePresence in parent
         } else if (eventData.dir === 'Left') {
           swipeDirection = 'left';
           onVote(poll.id, poll.options[1].id);
-          // await controls.start("exitLeft");
         }
-        // Notify parent to remove, parent's AnimatePresence will handle exit
         onPollActionComplete?.(poll.id, swipeDirection);
       }
     },
@@ -174,12 +173,14 @@ export default function PollCard({ poll, onVote, onPollActionComplete }: PollCar
     if (days > 0) parts.push(`${days}d`);
     if (hours > 0 || (days > 0 && (minutes > 0 || seconds > 0))) parts.push(`${hours}h`);
     if (minutes > 0 || ((days > 0 || hours > 0) && seconds > 0)) parts.push(`${minutes}m`);
-    if (days === 0 && hours === 0 && minutes < 5) {
+    if (days === 0 && hours === 0 && minutes < 5 && parts.length === 0) { // only show seconds if less than 5 mins AND no other unit shown
        parts.push(`${seconds}s`);
-    } else if (parts.length === 0) {
+    } else if (parts.length === 0 && diff > 0) { // if nothing shown but time still remains (e.g. 0d 0h 0m but some seconds)
+       return `${seconds}s`;
+    } else if (parts.length === 0 && diff <=0) {
        return "Ending soon";
     }
-
+    
     return parts.join(' ') || "0s";
   }, []);
 
@@ -194,7 +195,6 @@ export default function PollCard({ poll, onVote, onPollActionComplete }: PollCar
   useEffect(() => {
     try {
       const createdDate = parseISO(poll.createdAt);
-      // Using a state for formatted date to avoid hydration issues
       setCreatedAtFormatted(new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(createdDate));
     } catch (error) {
       console.error("Error parsing createdAt date:", error);
@@ -209,7 +209,12 @@ export default function PollCard({ poll, onVote, onPollActionComplete }: PollCar
   };
 
   const onCardClick = (e: React.MouseEvent) => {
+    // Check if the click target or its parents up to the card element itself is the info button
+    if ((e.target as HTMLElement).closest('[aria-label="View option details"]')) {
+        return; // Don't navigate if info button was clicked
+    }
     if ((e.target as HTMLElement).closest('button, a, [data-swipe-handler]') || (canSwipe && (e.target as HTMLElement).closest('[role="button"]'))) {
+      // If it's already a button (like a poll option button), or a link, or swipe handler, let them handle it
       return;
     }
     router.push(`/polls/${poll.id}`);
@@ -227,9 +232,9 @@ export default function PollCard({ poll, onVote, onPollActionComplete }: PollCar
     <>
       <motion.div
         {...(canSwipe ? handlers : {})}
-        data-swipe-handler={canSwipe ? "true" : undefined} // to help onCardClick ignore swipe area
-        className="w-full touch-pan-y" // touch-pan-y allows vertical scroll while capturing horizontal swipes
-        animate={controls} // For potential direct animation control if needed later
+        data-swipe-handler={canSwipe ? "true" : undefined} 
+        className="w-full touch-pan-y" 
+        animate={controls}
       >
         <Card className="w-full max-w-md mx-auto shadow-lg rounded-xl overflow-hidden mb-4 bg-card active:shadow-2xl active:scale-[1.01] transition-transform duration-100 ease-out">
           <CardHeader className="p-4 cursor-pointer" onClick={onCardClick}>
@@ -279,7 +284,7 @@ export default function PollCard({ poll, onVote, onPollActionComplete }: PollCar
                   totalVotes={poll.totalVotes}
                   onVote={() => {
                      if (canVoteOnPoll && !pollHasTwoOptions) onVote(poll.id, option.id);
-                     else handleShowOptionDetails(option); // If swipeable or already voted, click shows details
+                     else handleShowOptionDetails(option);
                   }}
                   isVoted={!!poll.isVoted}
                   isSelectedOption={poll.votedOptionId === option.id}
