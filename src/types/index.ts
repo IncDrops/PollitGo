@@ -12,6 +12,7 @@ export interface PollOption {
   imageUrl?: string;
   videoUrl?: string; // For thumbnail of video option
   votes: number;
+  affiliateLink?: string;
 }
 
 export interface Comment {
@@ -44,3 +45,4 @@ export type NavItem = {
   label: string;
   icon: React.ElementType;
 };
+

@@ -10,19 +10,21 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CalendarIcon, ImagePlus, VideoIcon, X, PlusCircle, ImageIcon, Film } from 'lucide-react';
+import { CalendarIcon, ImagePlus, VideoIcon, X, PlusCircle, ImageIcon, Film, LinkIcon } from 'lucide-react';
 import { format } from "date-fns"
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 
 const MAX_OPTIONS = 4;
 const MAX_POLL_IMAGES = 4;
+const MAX_OPTION_TEXT_LENGTH = 365;
 
 interface PollOptionState {
   id: string;
   text: string;
   imageUrl?: string;
   videoUrl?: string;
+  affiliateLink?: string;
 }
 
 export default function NewPollPage() {
@@ -55,13 +57,13 @@ export default function NewPollPage() {
     }
   };
 
-  const handleOptionTextChange = (id: string, value: string) => {
-    setOptions(options.map(option => option.id === id ? { ...option, text: value } : option));
+  const handleOptionChange = (id: string, field: keyof Omit<PollOptionState, 'id'>, value: string) => {
+    setOptions(options.map(option => option.id === id ? { ...option, [field]: value } : option));
   };
+
 
   const handleAddPollImage = useCallback(() => {
     if (pollImageUrls.length < MAX_POLL_IMAGES) {
-      // Using a unique query param for placeholder to ensure distinct images if needed, though placeholder.co might not differentiate
       setPollImageUrls(prev => [...prev, `https://placehold.co/600x400.png?ts=${Date.now()}${prev.length}`]);
     } else {
       toast({
@@ -78,7 +80,7 @@ export default function NewPollPage() {
 
   const handleAddPollVideo = useCallback(() => {
     if (!pollVideoUrl) {
-      setPollVideoUrl("placeholder-video-url"); // Actual video upload handling would be more complex
+      setPollVideoUrl("placeholder-video-url"); 
     } else {
       toast({
         title: "Video Limit Reached",
@@ -128,6 +130,10 @@ export default function NewPollPage() {
        toast({ title: "Error", description: "All poll options must have text.", variant: "destructive" });
       return;
     }
+    if (options.some(opt => opt.text.length > MAX_OPTION_TEXT_LENGTH)) {
+      toast({ title: "Error", description: `One or more options exceed the ${MAX_OPTION_TEXT_LENGTH} character limit.`, variant: "destructive" });
+      return;
+    }
     if (!deadline) {
       toast({ title: "Error", description: "Please set a deadline.", variant: "destructive" });
       return;
@@ -135,7 +141,7 @@ export default function NewPollPage() {
 
     const pollData = {
       question,
-      options: options.map(({id, ...rest}) => rest),
+      options: options.map(({id, ...rest}) => rest), // remove client-side id before submitting
       deadline: deadline.toISOString(),
       pollImageUrls: pollImageUrls.length > 0 ? pollImageUrls : undefined,
       pollVideoUrl,
@@ -145,6 +151,7 @@ export default function NewPollPage() {
       title: 'Poll Created!',
       description: 'Your poll has been successfully submitted.',
     });
+    // Reset form
     setQuestion('');
     setOptions([{ id: `option-${Date.now()}`, text: '' }, { id: `option-${Date.now() + 1}`, text: '' }]);
     setDeadline(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
@@ -173,7 +180,7 @@ export default function NewPollPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-base">Poll Media</Label>
+              <Label className="text-base">Poll Media (Optional)</Label>
               <div className="grid grid-cols-2 gap-2">
                 <Button type="button" variant="outline" onClick={handleAddPollImage} disabled={pollImageUrls.length >= MAX_POLL_IMAGES}>
                   <ImagePlus className="mr-2 h-4 w-4" /> Add Image ({pollImageUrls.length}/{MAX_POLL_IMAGES})
@@ -220,14 +227,15 @@ export default function NewPollPage() {
             <div className="space-y-2">
               <Label className="text-base">Options ({options.length}/{MAX_OPTIONS})</Label>
               {options.map((option, index) => (
-                <div key={option.id} className="space-y-2 p-3 border rounded-md bg-muted/20">
+                <div key={option.id} className="space-y-3 p-3 border rounded-md bg-muted/20">
                   <div className="flex items-center space-x-2">
                     <Input
                       type="text"
                       value={option.text}
-                      onChange={(e) => handleOptionTextChange(option.id, e.target.value)}
+                      onChange={(e) => handleOptionChange(option.id, 'text', e.target.value)}
                       placeholder={`Option ${index + 1}`}
                       required
+                      maxLength={MAX_OPTION_TEXT_LENGTH}
                       className="flex-grow bg-background"
                     />
                     {options.length > 2 && (
@@ -236,8 +244,18 @@ export default function NewPollPage() {
                       </Button>
                     )}
                   </div>
+                  <div className="relative">
+                     <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                     <Input
+                        type="url"
+                        value={option.affiliateLink || ''}
+                        onChange={(e) => handleOptionChange(option.id, 'affiliateLink', e.target.value)}
+                        placeholder="Optional: Affiliate Link (e.g., https://amzn.to/xyz)"
+                        className="pl-10 bg-background text-sm"
+                      />
+                  </div>
                   <div className="flex items-center space-x-2">
-                    <span className="text-xs text-muted-foreground">Media:</span>
+                    <span className="text-xs text-muted-foreground">Media (Optional):</span>
                     {!option.videoUrl && ( 
                       option.imageUrl ? (
                         <Button type="button" variant="outline" size="sm" onClick={() => removeOptionImage(option.id)} aria-label="Remove option image" className="h-auto py-1 px-2 text-xs">
@@ -341,4 +359,3 @@ export default function NewPollPage() {
     </div>
   );
 }
-

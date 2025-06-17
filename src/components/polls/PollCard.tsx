@@ -1,56 +1,74 @@
 
 'use client';
 
-import type { Poll, PollOption as PollOptionType, User } from '@/types';
+import type { Poll, PollOption as PollOptionType } from '@/types';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Clock, MessageSquare, Heart, Share2, DollarSign, Image as ImageIcon, Video as VideoIcon, CheckCircle2, Film } from 'lucide-react';
-import { formatDistanceToNowStrict, parseISO } from 'date-fns';
+import { Clock, MessageSquare, Heart, Share2, Gift, CheckCircle2, Film, Video as VideoIcon } from 'lucide-react';
+import { parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { cn } from '@/lib/utils';
 
 interface PollCardProps {
   poll: Poll;
   onVote: (pollId: string, optionId: string) => void;
 }
 
-const PollOption: React.FC<{ option: PollOptionType; totalVotes: number; onVote: () => void; isVoted: boolean; isSelectedOption: boolean; deadlinePassed: boolean }> = ({ option, totalVotes, onVote, isVoted, isSelectedOption, deadlinePassed }) => {
+const OPTION_TEXT_TRUNCATE_LENGTH = 100;
+
+const PollOption: React.FC<{ 
+  option: PollOptionType; 
+  totalVotes: number; 
+  onVote: () => void; 
+  isVoted: boolean; 
+  isSelectedOption: boolean; 
+  deadlinePassed: boolean;
+  pollHasTwoOptions: boolean;
+}> = ({ option, totalVotes, onVote, isVoted, isSelectedOption, deadlinePassed, pollHasTwoOptions }) => {
   const percentage = totalVotes > 0 && (isVoted || deadlinePassed) ? (option.votes / totalVotes) * 100 : 0;
+  const truncatedText = option.text.length > OPTION_TEXT_TRUNCATE_LENGTH 
+    ? `${option.text.substring(0, OPTION_TEXT_TRUNCATE_LENGTH)}...` 
+    : option.text;
 
   return (
-    <div className="mb-2 relative">
+    <div className={cn("relative", pollHasTwoOptions ? "flex-1" : "mb-2 w-full")}>
       <Button
         variant={isSelectedOption ? "default" : "outline"}
-        className="w-full justify-start h-auto p-3 text-left relative overflow-hidden disabled:opacity-100 disabled:cursor-default"
+        className={cn(
+          "w-full justify-start h-auto p-3 text-left relative overflow-hidden disabled:opacity-100 disabled:cursor-default",
+          pollHasTwoOptions && "aspect-square flex flex-col items-center justify-center text-center" // Square for 2 options
+        )}
         onClick={onVote}
         disabled={isVoted || deadlinePassed}
         aria-pressed={isSelectedOption}
       >
-        {(isVoted || deadlinePassed) && (
+        {(isVoted || deadlinePassed) && !pollHasTwoOptions && ( // Progress bar only for non-2-option layout
           <div
             className="absolute top-0 left-0 h-full bg-primary/30 dark:bg-primary/40"
             style={{ width: `${percentage}%` }}
           />
         )}
-        <div className="relative z-10 flex items-center w-full">
+        <div className={cn("relative z-10 flex w-full", pollHasTwoOptions ? "flex-col items-center" : "items-center")}>
           {option.imageUrl && (
             <Image 
               src={option.imageUrl} 
               alt={option.text} 
-              width={40} 
-              height={40} 
-              className="rounded mr-2 object-cover"
+              width={pollHasTwoOptions ? 60 : 40} 
+              height={pollHasTwoOptions ? 60 : 40} 
+              className={cn("rounded object-cover", pollHasTwoOptions ? "mb-2" : "mr-2")}
               data-ai-hint="poll option" 
             />
           )}
-          {option.videoUrl && !option.imageUrl && <VideoIcon className="w-5 h-5 mr-2 text-muted-foreground" />}
-          <span className="flex-grow">{option.text}</span>
-          {(isVoted || deadlinePassed) && <span className="text-xs ml-2 font-semibold">{percentage.toFixed(0)}%</span>}
-          {isSelectedOption && <CheckCircle2 className="w-5 h-5 ml-2 text-primary-foreground" />}
+          {option.videoUrl && !option.imageUrl && <VideoIcon className={cn("w-5 h-5 text-muted-foreground", pollHasTwoOptions ? "mb-2 h-8 w-8" : "mr-2")} />}
+          <span className={cn("flex-grow", pollHasTwoOptions ? "text-sm" : "")}>{truncatedText}</span>
+          {(isVoted || deadlinePassed) && (
+             <span className={cn("text-xs font-semibold", pollHasTwoOptions ? "mt-1" : "ml-2")}>{percentage.toFixed(0)}%</span>
+          )}
+          {isSelectedOption && <CheckCircle2 className={cn("w-5 h-5", pollHasTwoOptions ? "mt-1 text-primary-foreground" : "ml-2 text-primary-foreground")} />}
         </div>
       </Button>
     </div>
@@ -60,37 +78,70 @@ const PollOption: React.FC<{ option: PollOptionType; totalVotes: number; onVote:
 export default function PollCard({ poll, onVote: handleVote }: PollCardProps) {
   const router = useRouter();
   const [deadlinePassed, setDeadlinePassed] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState('');
+  const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [createdAtFormatted, setCreatedAtFormatted] = useState<string | null>(null);
 
+  const formatTimeDifference = useCallback((targetDate: Date): string => {
+    const now = new Date();
+    let diff = targetDate.getTime() - now.getTime();
+
+    if (diff <= 0) {
+      setDeadlinePassed(true);
+      return "Ended";
+    }
+    setDeadlinePassed(false);
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    diff -= days * (1000 * 60 * 60 * 24);
+
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    diff -= hours * (1000 * 60 * 60);
+
+    const minutes = Math.floor(diff / (1000 * 60));
+    diff -= minutes * (1000 * 60);
+
+    const seconds = Math.floor(diff / 1000);
+
+    let parts = [];
+    if (days > 0) parts.push(`${days}d`);
+    if (hours > 0 || days > 0) parts.push(`${hours}h`); // show hours if days are shown or if hours > 0
+    if (minutes > 0 || hours > 0 || days > 0) parts.push(`${minutes}m`); // show minutes if above are shown
+    parts.push(`${seconds}s`);
+    
+    return parts.join(':');
+  }, []);
+
   useEffect(() => {
-    const checkDeadline = () => {
-      const deadlineDate = parseISO(poll.deadline);
-      if (new Date() > deadlineDate) {
-        setDeadlinePassed(true);
-        setTimeRemaining("Ended");
-      } else {
-        setDeadlinePassed(false);
-        setTimeRemaining(formatDistanceToNowStrict(deadlineDate, { addSuffix: true }));
-      }
+    const deadlineDate = parseISO(poll.deadline);
+    
+    const updateTimer = () => {
+      setTimeRemaining(formatTimeDifference(deadlineDate));
     };
 
-    checkDeadline();
-    const interval = setInterval(checkDeadline, 60000); // Update every minute
-    return () => clearInterval(interval);
-  }, [poll.deadline]);
+    updateTimer(); // Initial call
+    const intervalId = setInterval(updateTimer, 1000); // Update every second
+
+    return () => clearInterval(intervalId);
+  }, [poll.deadline, formatTimeDifference]);
 
   useEffect(() => {
-    // Format createdAt time on client side to avoid hydration mismatch
-    setCreatedAtFormatted(formatDistanceToNowStrict(parseISO(poll.createdAt), { addSuffix: true }));
+    try {
+        const createdDate = parseISO(poll.createdAt);
+        // Basic format, can be expanded if needed
+        setCreatedAtFormatted(new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(createdDate));
+    } catch (error) {
+        console.error("Error formatting poll.createdAt:", error);
+        setCreatedAtFormatted("Date unavailable");
+    }
   }, [poll.createdAt]);
+
 
   const onCardClick = () => {
     router.push(`/polls/${poll.id}`);
   };
 
   const onCreatorClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click
+    e.stopPropagation(); 
     router.push(`/profile/${poll.creator.id}`);
   };
   
@@ -100,6 +151,8 @@ export default function PollCard({ poll, onVote: handleVote }: PollCardProps) {
       router.push(`/profile/${poll.creator.id}`);
     }
   };
+
+  const hasTwoOptions = poll.options.length === 2;
 
   return (
     <Card className="w-full max-w-md mx-auto shadow-lg rounded-xl overflow-hidden mb-4 bg-card">
@@ -112,7 +165,7 @@ export default function PollCard({ poll, onVote: handleVote }: PollCardProps) {
           <div>
             <p className="text-sm font-semibold text-foreground">{poll.creator.name}</p>
             <p className="text-xs text-muted-foreground">
-              @{poll.creator.username} &middot; {createdAtFormatted || 'Loading time...'}
+              @{poll.creator.username} &middot; {createdAtFormatted || 'Loading...'}
             </p>
           </div>
         </div>
@@ -121,7 +174,7 @@ export default function PollCard({ poll, onVote: handleVote }: PollCardProps) {
 
       {poll.imageUrls && poll.imageUrls.length > 0 && (
         <div className="w-full h-64 relative cursor-pointer" onClick={onCardClick}>
-          <Image src={poll.imageUrls[0]} alt={poll.question} layout="fill" objectFit="cover" data-ai-hint="poll image" />
+          <Image src={poll.imageUrls[0]} alt={poll.question} layout="fill" objectFit="cover" data-ai-hint="poll image content" />
           {poll.videoUrl && (
             <div className="absolute bottom-2 right-2 bg-black/60 p-1.5 rounded-md backdrop-blur-sm" title="Video available">
               <Film className="w-5 h-5 text-white" />
@@ -137,7 +190,7 @@ export default function PollCard({ poll, onVote: handleVote }: PollCardProps) {
       )}
 
       <CardContent className="p-4">
-        <div>
+        <div className={cn(hasTwoOptions ? "flex gap-2" : "")}>
           {poll.options.map((option) => (
             <PollOption
               key={option.id}
@@ -147,12 +200,13 @@ export default function PollCard({ poll, onVote: handleVote }: PollCardProps) {
               isVoted={!!poll.isVoted}
               isSelectedOption={poll.votedOptionId === option.id}
               deadlinePassed={deadlinePassed}
+              pollHasTwoOptions={hasTwoOptions}
             />
           ))}
         </div>
         <div className="mt-3 flex items-center text-xs text-muted-foreground">
           <Clock className="w-4 h-4 mr-1.5" />
-          <span>{deadlinePassed ? `Ended ${formatDistanceToNowStrict(parseISO(poll.deadline), { addSuffix: true })}` : `Ends ${timeRemaining}`} &middot; {poll.totalVotes} votes</span>
+          <span>{deadlinePassed ? `Ended` : timeRemaining || 'Calculating...'} &middot; {poll.totalVotes} votes</span>
         </div>
       </CardContent>
 
@@ -164,7 +218,7 @@ export default function PollCard({ poll, onVote: handleVote }: PollCardProps) {
           <MessageSquare className="w-5 h-5 mr-1.5" /> {poll.commentsCount}
         </Button>
         <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
-          <DollarSign className="w-5 h-5 mr-1.5" /> Tip
+          <Gift className="w-5 h-5 mr-1.5" /> {poll.tipCount || 0}
         </Button>
         <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
           <Share2 className="w-5 h-5" />
@@ -173,4 +227,3 @@ export default function PollCard({ poll, onVote: handleVote }: PollCardProps) {
     </Card>
   );
 }
-

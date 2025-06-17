@@ -6,16 +6,16 @@ import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { mockPolls, mockUsers } from "@/lib/mockData";
-import type { Poll, PollOption as PollOptionType, Comment as CommentType } from "@/types";
+import type { Poll, PollOption as PollOptionType, Comment as CommentType, User } from "@/types";
 import { formatDistanceToNowStrict, parseISO } from "date-fns";
-import { Clock, Heart, MessageSquare, Share2, DollarSign, Send, Image as ImageIcon, Video as VideoIcon, ThumbsUp, Film } from "lucide-react";
+import { Clock, Heart, MessageSquare, Share2, Gift, Send, Image as ImageIcon, Video as VideoIconLucide, ThumbsUp, Film } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 // Simulate fetching poll data and comments
 async function getPollDetails(pollId: string): Promise<{ poll: Poll | null; comments: CommentType[] }> {
   const poll = mockPolls.find(p => p.id === pollId) || null;
-  // Ensure consistent mock users for comments
   const commentUser1 = mockUsers.find(u => u.id === 'user2') || mockUsers[1] || getRandomUser();
   const commentUser2 = mockUsers.find(u => u.id === 'user3') || mockUsers[2] || getRandomUser();
   
@@ -26,30 +26,44 @@ async function getPollDetails(pollId: string): Promise<{ poll: Poll | null; comm
   return { poll, comments };
 }
 
-// Helper to get a random user if specific one not found
 const getRandomUser = (): User => mockUsers[Math.floor(Math.random() * mockUsers.length)];
 
+const OPTION_TEXT_TRUNCATE_LENGTH = 100;
 
-const PollOptionDisplay: React.FC<{ option: PollOptionType; totalVotes: number; isVoted: boolean; isSelectedOption: boolean; deadlinePassed: boolean; onVote: () => void }> = ({ option, totalVotes, isVoted, isSelectedOption, deadlinePassed, onVote }) => {
+const PollOptionDisplay: React.FC<{ 
+  option: PollOptionType; 
+  totalVotes: number; 
+  isVoted: boolean; 
+  isSelectedOption: boolean; 
+  deadlinePassed: boolean; 
+  onVote: () => void;
+  pollHasTwoOptions: boolean;
+}> = ({ option, totalVotes, isVoted, isSelectedOption, deadlinePassed, onVote, pollHasTwoOptions }) => {
   const percentage = totalVotes > 0 ? (option.votes / totalVotes) * 100 : 0;
   const showResults = isVoted || deadlinePassed;
+  const truncatedText = option.text.length > OPTION_TEXT_TRUNCATE_LENGTH 
+    ? `${option.text.substring(0, OPTION_TEXT_TRUNCATE_LENGTH)}... (more)`
+    : option.text;
 
   return (
-    <div className="mb-3">
+    <div className={cn(pollHasTwoOptions ? "flex-1" : "mb-3 w-full")}>
       <Button 
         variant={isSelectedOption && showResults ? "default" : "outline"}
-        className="w-full justify-between h-auto p-3 text-left relative disabled:opacity-100 disabled:cursor-default group"
+        className={cn(
+          "w-full justify-between h-auto p-3 text-left relative disabled:opacity-100 disabled:cursor-default group",
+           pollHasTwoOptions && "aspect-square flex flex-col items-center justify-center text-center"
+        )}
         onClick={onVote}
         disabled={isVoted || deadlinePassed}
       >
-        <div className="flex items-center">
-          {option.imageUrl && <Image src={option.imageUrl} alt={option.text} width={30} height={30} className="rounded mr-2 object-cover" data-ai-hint="poll option" />}
-          {option.videoUrl && !option.imageUrl && <VideoIcon className="w-5 h-5 mr-2 text-muted-foreground" />}
-          <span>{option.text}</span>
+        <div className={cn("flex w-full", pollHasTwoOptions ? "flex-col items-center" : "items-center")}>
+          {option.imageUrl && <Image src={option.imageUrl} alt={option.text} width={pollHasTwoOptions ? 60 : 30} height={pollHasTwoOptions ? 60 : 30} className={cn("rounded object-cover", pollHasTwoOptions ? "mb-2" : "mr-2")} data-ai-hint="poll option" />}
+          {option.videoUrl && !option.imageUrl && <VideoIconLucide className={cn("text-muted-foreground", pollHasTwoOptions ? "mb-2 h-10 w-10" : "w-5 h-5 mr-2")} />}
+          <span className={cn(pollHasTwoOptions ? "text-sm mt-1" : "")}>{truncatedText}</span>
         </div>
-        {showResults && <span className="font-semibold text-sm">{percentage.toFixed(0)}%</span>}
+        {showResults && <span className={cn("font-semibold text-sm", pollHasTwoOptions ? "mt-2" : "ml-auto")}>{percentage.toFixed(0)}%</span>}
       </Button>
-      {showResults && <Progress value={percentage} className="h-1.5 mt-1 bg-accent/30 [&>div]:bg-primary" />}
+      {showResults && !pollHasTwoOptions && <Progress value={percentage} className="h-1.5 mt-1 bg-accent/30 [&>div]:bg-primary" />}
     </div>
   );
 };
@@ -68,8 +82,6 @@ export default async function PollDetailsPage({ params }: { params: { pollId: st
   const handleVote = async (optionId: string) => {
     "use server";
     console.log(`Vote action for poll ${poll.id}, option ${optionId}`);
-    // This would be a server action to record the vote
-    // Revalidate path or update data as needed
   };
 
   const handleCommentSubmit = async (formData: FormData) => {
@@ -77,13 +89,11 @@ export default async function PollDetailsPage({ params }: { params: { pollId: st
     const commentText = formData.get('comment') as string;
     if (commentText && commentText.trim() !== "") {
       console.log(`New comment for poll ${poll.id}: ${commentText}`);
-      // This would be a server action to post the comment
-      // Revalidate path or update data as needed
     }
   };
   
   const currentUser = mockUsers.find(u => u.id === 'user1') || mockUsers[0] || getRandomUser();
-
+  const pollHasTwoOptions = poll.options.length === 2;
 
   return (
     <div className="container mx-auto px-2 sm:px-4 py-8 max-w-2xl">
@@ -108,11 +118,13 @@ export default async function PollDetailsPage({ params }: { params: { pollId: st
           {poll.imageUrls && poll.imageUrls.length > 0 && (
             <div className="mt-4 space-y-3">
               <p className="text-sm font-medium text-muted-foreground">Images ({poll.imageUrls.length}):</p>
-              {poll.imageUrls.map((url, index) => (
-                <div key={index} className="w-full aspect-video relative rounded-lg overflow-hidden shadow-md">
-                  <Image src={url} alt={`${poll.question} - image ${index + 1}`} layout="fill" objectFit="cover" data-ai-hint="poll image content" />
-                </div>
-              ))}
+              <div className="grid grid-cols-2 gap-2">
+                {poll.imageUrls.map((url, index) => (
+                  <div key={index} className="w-full aspect-video relative rounded-lg overflow-hidden shadow-md">
+                    <Image src={url} alt={`${poll.question} - image ${index + 1}`} layout="fill" objectFit="cover" data-ai-hint="poll image content" />
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -127,8 +139,8 @@ export default async function PollDetailsPage({ params }: { params: { pollId: st
           )}
         </CardHeader>
 
-        <CardContent className="pt-4"> {/* Added pt-4 as media is in header now */}
-          <div className="space-y-3">
+        <CardContent className="pt-4"> 
+          <div className={cn("space-y-3", pollHasTwoOptions && "flex gap-2 space-y-0")}>
             {poll.options.map((option) => (
               <PollOptionDisplay
                 key={option.id}
@@ -138,6 +150,7 @@ export default async function PollDetailsPage({ params }: { params: { pollId: st
                 isSelectedOption={poll.votedOptionId === option.id}
                 deadlinePassed={deadlinePassed}
                 onVote={handleVote.bind(null, option.id)}
+                pollHasTwoOptions={pollHasTwoOptions}
               />
             ))}
           </div>
@@ -153,7 +166,7 @@ export default async function PollDetailsPage({ params }: { params: { pollId: st
               <Heart className="w-5 h-5 mr-1.5" /> {poll.likes} Likes
             </Button>
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
-              <DollarSign className="w-5 h-5 mr-1.5" /> Tip Creator
+              <Gift className="w-5 h-5 mr-1.5" /> {poll.tipCount || 0} Tip Creator
             </Button>
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
               <Share2 className="w-5 h-5 mr-1.5" /> Share
