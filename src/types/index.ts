@@ -25,8 +25,8 @@ export interface Poll {
   creator: User;
   question: string;
   options: PollOption[];
-  imageUrl?: string; // Image for the poll itself
-  videoUrl?: string; // Video for the poll itself (e.g. context video)
+  imageUrls?: string[]; // Images for the poll itself (up to 4)
+  videoUrl?: string; // Video for the poll itself (e.g. context video, up to 60s)
   deadline: string; // ISO string
   createdAt: string; // ISO string
   likes: number;
@@ -41,3 +41,4 @@ export type NavItem = {
   label: string;
   icon: React.ElementType;
 };
+

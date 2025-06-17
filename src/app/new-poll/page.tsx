@@ -10,11 +10,13 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CalendarIcon, ImagePlus, VideoIcon, X, PlusCircle, ImageIcon } from 'lucide-react';
+import { CalendarIcon, ImagePlus, VideoIcon, X, PlusCircle, ImageIcon, Film } from 'lucide-react';
 import { format } from "date-fns"
 import { useToast } from '@/hooks/use-toast';
+import Image from 'next/image';
 
 const MAX_OPTIONS = 4;
+const MAX_POLL_IMAGES = 4;
 
 interface PollOptionState {
   id: string;
@@ -31,7 +33,8 @@ export default function NewPollPage() {
     { id: `option-${Date.now() + 1}`, text: '' },
   ]);
   const [deadline, setDeadline] = useState<Date | undefined>(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)); // Default 7 days
-  const [pollImageUrl, setPollImageUrl] = useState<string | undefined>();
+  
+  const [pollImageUrls, setPollImageUrls] = useState<string[]>([]);
   const [pollVideoUrl, setPollVideoUrl] = useState<string | undefined>();
 
   const handleAddOption = () => {
@@ -56,23 +59,39 @@ export default function NewPollPage() {
     setOptions(options.map(option => option.id === id ? { ...option, text: value } : option));
   };
 
-  const setPollImage = useCallback(() => {
-    setPollImageUrl("https://placehold.co/600x400.png");
+  const handleAddPollImage = useCallback(() => {
+    if (pollImageUrls.length < MAX_POLL_IMAGES) {
+      // Using a unique query param for placeholder to ensure distinct images if needed, though placeholder.co might not differentiate
+      setPollImageUrls(prev => [...prev, `https://placehold.co/600x400.png?ts=${Date.now()}${prev.length}`]);
+    } else {
+      toast({
+        title: "Image Limit Reached",
+        description: `You can add up to ${MAX_POLL_IMAGES} images for the poll.`,
+        variant: "destructive",
+      });
+    }
+  }, [pollImageUrls.length, toast]);
+
+  const handleRemovePollImage = useCallback((indexToRemove: number) => {
+    setPollImageUrls(prev => prev.filter((_, index) => index !== indexToRemove));
+  }, []);
+
+  const handleAddPollVideo = useCallback(() => {
+    if (!pollVideoUrl) {
+      setPollVideoUrl("placeholder-video-url"); // Actual video upload handling would be more complex
+    } else {
+      toast({
+        title: "Video Limit Reached",
+        description: "You can add only one video for the poll.",
+        variant: "destructive",
+      });
+    }
+  }, [pollVideoUrl, toast]);
+
+  const handleRemovePollVideo = useCallback(() => {
     setPollVideoUrl(undefined);
   }, []);
 
-  const removePollImage = useCallback(() => {
-    setPollImageUrl(undefined);
-  }, []);
-
-  const setPollVideo = useCallback(() => {
-    setPollVideoUrl("placeholder-video-url"); // Not an actual image, just a marker
-    setPollImageUrl(undefined);
-  }, []);
-
-  const removePollVideo = useCallback(() => {
-    setPollVideoUrl(undefined);
-  }, []);
 
   const setOptionImage = useCallback((optionId: string) => {
     setOptions(prevOptions => prevOptions.map(opt => 
@@ -118,7 +137,7 @@ export default function NewPollPage() {
       question,
       options: options.map(({id, ...rest}) => rest),
       deadline: deadline.toISOString(),
-      pollImageUrl,
+      pollImageUrls: pollImageUrls.length > 0 ? pollImageUrls : undefined,
       pollVideoUrl,
     };
     console.log('Submitting poll:', pollData);
@@ -129,7 +148,7 @@ export default function NewPollPage() {
     setQuestion('');
     setOptions([{ id: `option-${Date.now()}`, text: '' }, { id: `option-${Date.now() + 1}`, text: '' }]);
     setDeadline(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
-    setPollImageUrl(undefined);
+    setPollImageUrls([]);
     setPollVideoUrl(undefined);
   };
 
@@ -154,35 +173,46 @@ export default function NewPollPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-base">Poll Image/Video (Optional - Choose One)</Label>
-              <div className="flex space-x-2">
-                <Button type="button" variant="outline" className="flex-1" onClick={setPollImage} disabled={!!pollVideoUrl}>
-                  <ImagePlus className="mr-2 h-4 w-4" /> Add Image
+              <Label className="text-base">Poll Media</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button type="button" variant="outline" onClick={handleAddPollImage} disabled={pollImageUrls.length >= MAX_POLL_IMAGES}>
+                  <ImagePlus className="mr-2 h-4 w-4" /> Add Image ({pollImageUrls.length}/{MAX_POLL_IMAGES})
                 </Button>
-                <Button type="button" variant="outline" className="flex-1" onClick={setPollVideo} disabled={!!pollImageUrl}>
-                  <VideoIcon className="mr-2 h-4 w-4" /> Add Video
+                <Button type="button" variant="outline" onClick={handleAddPollVideo} disabled={!!pollVideoUrl}>
+                  <VideoIcon className="mr-2 h-4 w-4" /> Add Video {pollVideoUrl ? '(1/1)' : '(0/1)'}
                 </Button>
               </div>
-              {pollImageUrl && (
+               {pollVideoUrl && (
                 <div className="mt-2 p-2 border rounded-md flex justify-between items-center bg-muted/20">
                   <div className="flex items-center text-sm">
-                    <ImageIcon className="h-5 w-5 mr-2 text-primary" />
-                    <span>Poll Image Selected</span>
+                    <Film className="h-5 w-5 mr-2 text-primary" />
+                    <span>Poll Video Added (max 60s)</span>
                   </div>
-                  <Button type="button" variant="ghost" size="icon" onClick={removePollImage} aria-label="Remove poll image">
+                  <Button type="button" variant="ghost" size="icon" onClick={handleRemovePollVideo} aria-label="Remove poll video">
                     <X className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
               )}
-              {pollVideoUrl && (
-                <div className="mt-2 p-2 border rounded-md flex justify-between items-center bg-muted/20">
-                  <div className="flex items-center text-sm">
-                    <VideoIcon className="h-5 w-5 mr-2 text-primary" />
-                    <span>Poll Video Selected</span>
+              {pollImageUrls.length > 0 && (
+                <div className="mt-2 space-y-2">
+                  <Label className="text-sm">Selected Images:</Label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {pollImageUrls.map((url, index) => (
+                      <div key={index} className="relative group aspect-square">
+                        <Image src={url} alt={`Poll image ${index + 1}`} layout="fill" objectFit="cover" className="rounded-md" data-ai-hint="poll image preview" />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={() => handleRemovePollImage(index)}
+                          aria-label={`Remove image ${index + 1}`}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ))}
                   </div>
-                  <Button type="button" variant="ghost" size="icon" onClick={removePollVideo} aria-label="Remove poll video">
-                    <X className="h-4 w-4 text-destructive" />
-                  </Button>
                 </div>
               )}
             </div>
@@ -208,7 +238,7 @@ export default function NewPollPage() {
                   </div>
                   <div className="flex items-center space-x-2">
                     <span className="text-xs text-muted-foreground">Media:</span>
-                    {!option.videoUrl && ( // Show Add/Remove Image only if no video for this option
+                    {!option.videoUrl && ( 
                       option.imageUrl ? (
                         <Button type="button" variant="outline" size="sm" onClick={() => removeOptionImage(option.id)} aria-label="Remove option image" className="h-auto py-1 px-2 text-xs">
                           <X className="h-3 w-3 mr-1 text-destructive" /> Remove Image
@@ -219,7 +249,7 @@ export default function NewPollPage() {
                         </Button>
                       )
                     )}
-                    {!option.imageUrl && ( // Show Add/Remove Video only if no image for this option
+                    {!option.imageUrl && ( 
                       option.videoUrl ? (
                         <Button type="button" variant="outline" size="sm" onClick={() => removeOptionVideo(option.id)} aria-label="Remove option video" className="h-auto py-1 px-2 text-xs">
                            <X className="h-3 w-3 mr-1 text-destructive" /> Remove Video

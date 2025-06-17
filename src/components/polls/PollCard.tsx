@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Poll, PollOption as PollOptionType, User } from '@/types';
@@ -7,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Clock, MessageSquare, Heart, Share2, DollarSign, Image as ImageIcon, Video as VideoIcon, CheckCircle2 } from 'lucide-react';
+import { Clock, MessageSquare, Heart, Share2, DollarSign, Image as ImageIcon, Video as VideoIcon, CheckCircle2, Film } from 'lucide-react';
 import { formatDistanceToNowStrict, parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
@@ -88,10 +89,7 @@ export default function PollCard({ poll, onVote: handleVote }: PollCardProps) {
   };
   
   const onLongPress = (e: React.TouchEvent | React.MouseEvent) => {
-     // Basic long press detection (could be improved with timers)
     if ('touches' in e && e.touches.length > 0 || 'buttons' in e && e.buttons === 1) {
-      // Holding for a bit, then release can trigger this. True long press is more complex.
-      // For now, this allows testing the navigation.
       e.stopPropagation();
       router.push(`/profile/${poll.creator.id}`);
     }
@@ -113,12 +111,17 @@ export default function PollCard({ poll, onVote: handleVote }: PollCardProps) {
         <CardTitle className="text-lg font-headline mt-3 text-foreground">{poll.question}</CardTitle>
       </CardHeader>
 
-      {poll.imageUrl && (
+      {poll.imageUrls && poll.imageUrls.length > 0 && (
         <div className="w-full h-64 relative cursor-pointer" onClick={onCardClick}>
-          <Image src={poll.imageUrl} alt={poll.question} layout="fill" objectFit="cover" data-ai-hint="poll image" />
+          <Image src={poll.imageUrls[0]} alt={poll.question} layout="fill" objectFit="cover" data-ai-hint="poll image" />
+          {poll.videoUrl && (
+            <div className="absolute bottom-2 right-2 bg-black/60 p-1.5 rounded-md backdrop-blur-sm" title="Video available">
+              <Film className="w-5 h-5 text-white" />
+            </div>
+          )}
         </div>
       )}
-      {poll.videoUrl && !poll.imageUrl && (
+      {(!poll.imageUrls || poll.imageUrls.length === 0) && poll.videoUrl && (
          <div className="w-full h-64 relative bg-black flex items-center justify-center cursor-pointer" onClick={onCardClick}>
           <VideoIcon className="w-16 h-16 text-white/70" />
           <p className="absolute bottom-2 right-2 text-xs text-white/80 bg-black/50 px-1 py-0.5 rounded">Video</p>
@@ -141,7 +144,7 @@ export default function PollCard({ poll, onVote: handleVote }: PollCardProps) {
         </div>
         <div className="mt-3 flex items-center text-xs text-muted-foreground">
           <Clock className="w-4 h-4 mr-1.5" />
-          <span>{deadlinePassed ? `Ended ${timeRemaining}` : `Ends ${timeRemaining}`} &middot; {poll.totalVotes} votes</span>
+          <span>{deadlinePassed ? `Ended ${formatDistanceToNowStrict(parseISO(poll.deadline), { addSuffix: true })}` : `Ends ${timeRemaining}`} &middot; {poll.totalVotes} votes</span>
         </div>
       </CardContent>
 

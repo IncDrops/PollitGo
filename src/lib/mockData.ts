@@ -11,7 +11,7 @@ export const mockPolls: Poll[] = [
     id: 'poll1',
     creator: mockUsers[0],
     question: 'What is your favorite season?',
-    imageUrl: 'https://placehold.co/600x400.png',
+    imageUrls: ['https://placehold.co/600x400.png'],
     options: [
       { id: 'opt1a', text: 'Spring', votes: 120, imageUrl: 'https://placehold.co/300x200.png' },
       { id: 'opt1b', text: 'Summer', votes: 250, imageUrl: 'https://placehold.co/300x200.png' },
@@ -29,6 +29,7 @@ export const mockPolls: Poll[] = [
     id: 'poll2',
     creator: mockUsers[1],
     question: 'Best programming language for beginners in 2024?',
+    // No imageUrls for this poll, videoUrl could be added
     options: [
       { id: 'opt2a', text: 'Python', votes: 300 },
       { id: 'opt2b', text: 'JavaScript', votes: 280 },
@@ -47,11 +48,12 @@ export const mockPolls: Poll[] = [
     id: 'poll3',
     creator: mockUsers[2],
     question: 'Which travel destination for next summer?',
-    videoUrl: 'https://placehold.co/600x400.png', // Placeholder for video thumbnail
+    videoUrl: 'placeholder-video-url', // Placeholder for video
+    // imageUrls could also be added here
     options: [
-      { id: 'opt3a', text: 'Paris, France', votes: 180, videoUrl: 'https://placehold.co/300x200.png' },
-      { id: 'opt3b', text: 'Tokyo, Japan', votes: 220, videoUrl: 'https://placehold.co/300x200.png' },
-      { id: 'opt3c', text: 'Rome, Italy', votes: 160, videoUrl: 'https://placehold.co/300x200.png' },
+      { id: 'opt3a', text: 'Paris, France', votes: 180, videoUrl: 'placeholder-option-video-url' },
+      { id: 'opt3b', text: 'Tokyo, Japan', votes: 220, videoUrl: 'placeholder-option-video-url' },
+      { id: 'opt3c', text: 'Rome, Italy', votes: 160, videoUrl: 'placeholder-option-video-url' },
     ],
     deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), // 30 days from now
     createdAt: new Date().toISOString(),
@@ -64,7 +66,7 @@ export const mockPolls: Poll[] = [
     id: 'poll4',
     creator: mockUsers[0],
     question: 'Favorite type of movie?',
-    imageUrl: 'https://placehold.co/600x400.png',
+    imageUrls: ['https://placehold.co/600x400.png'],
     options: [
       { id: 'opt4a', text: 'Action', votes: 300 },
       { id: 'opt4b', text: 'Comedy', votes: 250 },
@@ -94,6 +96,8 @@ export const fetchMorePolls = async (offset: number, limit: number): Promise<Pol
         creator: mockUsers[(offset + i) % mockUsers.length],
         createdAt: new Date().toISOString(),
         deadline: new Date(Date.now() + (i+1) * 24 * 60 * 60 * 1000).toISOString(),
+        imageUrls: Math.random() > 0.5 ? [`https://placehold.co/600x400.png?id=${offset+i}`] : undefined,
+        videoUrl: Math.random() > 0.7 ? 'placeholder-video-url' : undefined,
       }));
       resolve(newPolls);
     }, 500); // Simulate network delay

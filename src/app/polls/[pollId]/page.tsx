@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
 import { mockPolls, mockUsers } from "@/lib/mockData";
 import type { Poll, PollOption as PollOptionType, Comment as CommentType } from "@/types";
 import { formatDistanceToNowStrict, parseISO } from "date-fns";
-import { Clock, Heart, MessageSquare, Share2, DollarSign, Send, Image as ImageIcon, Video as VideoIcon, ThumbsUp } from "lucide-react";
+import { Clock, Heart, MessageSquare, Share2, DollarSign, Send, Image as ImageIcon, Video as VideoIcon, ThumbsUp, Film } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -89,20 +90,30 @@ export default async function PollDetailsPage({ params }: { params: { pollId: st
             </div>
           </div>
           <CardTitle className="text-2xl font-headline text-foreground">{poll.question}</CardTitle>
-          {poll.imageUrl && (
-            <div className="mt-4 w-full aspect-video relative rounded-lg overflow-hidden">
-              <Image src={poll.imageUrl} alt={poll.question} layout="fill" objectFit="cover" data-ai-hint="poll image"/>
+          
+          {poll.imageUrls && poll.imageUrls.length > 0 && (
+            <div className="mt-4 space-y-3">
+              <p className="text-sm font-medium text-muted-foreground">Images ({poll.imageUrls.length}):</p>
+              {poll.imageUrls.map((url, index) => (
+                <div key={index} className="w-full aspect-video relative rounded-lg overflow-hidden shadow-md">
+                  <Image src={url} alt={`${poll.question} - image ${index + 1}`} layout="fill" objectFit="cover" data-ai-hint="poll image content" />
+                </div>
+              ))}
             </div>
           )}
-          {poll.videoUrl && !poll.imageUrl && (
-            <div className="mt-4 w-full aspect-video relative bg-black flex items-center justify-center rounded-lg overflow-hidden">
-              <VideoIcon className="w-16 h-16 text-white/70" />
-               <p className="absolute bottom-2 right-2 text-xs text-white/80 bg-black/50 px-1 py-0.5 rounded">Video</p>
+
+          {poll.videoUrl && (
+            <div className="mt-4">
+              <p className="text-sm font-medium text-muted-foreground mb-1">Video:</p>
+              <div className="w-full aspect-video relative bg-black flex items-center justify-center rounded-lg overflow-hidden shadow-md">
+                <Film className="w-16 h-16 text-white/70" />
+                <p className="absolute bottom-2 right-2 text-xs text-white/80 bg-black/50 px-1 py-0.5 rounded">Video (up to 60s)</p>
+              </div>
             </div>
           )}
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="pt-4"> {/* Added pt-4 as media is in header now */}
           <div className="space-y-3">
             {poll.options.map((option) => (
               <PollOptionDisplay
@@ -141,7 +152,6 @@ export default async function PollDetailsPage({ params }: { params: { pollId: st
             <h3 className="text-lg font-semibold mb-3 text-foreground">Comments ({comments.length})</h3>
             <form action={handleCommentSubmit} className="flex items-start space-x-2 mb-6">
               <Avatar className="h-10 w-10 border">
-                {/* Assuming current user avatar */}
                 <AvatarImage src={mockUsers[0].avatarUrl} alt="Current user" data-ai-hint="profile avatar" /> 
                 <AvatarFallback>{mockUsers[0].name.substring(0,1)}</AvatarFallback>
               </Avatar>
@@ -181,3 +191,4 @@ export default async function PollDetailsPage({ params }: { params: { pollId: st
     </div>
   );
 }
+
