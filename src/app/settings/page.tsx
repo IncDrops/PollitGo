@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,16 +12,32 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { UserCircle2, Bell, ShieldCheck, Palette, LogOut, HelpCircle, Info, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "next-themes";
 
 export default function SettingsPage() {
   const { toast } = useToast();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
+  // Ensure the select value is updated when the theme changes programmatically or via system preference
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
+      // Basic validation (e.g., file type, size) can be added here
+      if (!file.type.startsWith('image/')) {
+        toast({ title: "Invalid File Type", description: "Please select an image.", variant: "destructive" });
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast({ title: "File Too Large", description: "Image size should be less than 5MB.", variant: "destructive" });
+        return;
+      }
       setAvatarFile(file);
       setAvatarPreview(URL.createObjectURL(file));
     }
@@ -35,6 +51,12 @@ export default function SettingsPage() {
       description: "Your preferences have been updated.",
     });
   };
+  
+  if (!mounted) {
+    // Render nothing or a skeleton UI until the component is mounted
+    // This prevents hydration mismatch for theme-dependent UI before client-side theme resolution
+    return null; 
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
@@ -124,7 +146,7 @@ export default function SettingsPage() {
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="theme">Theme</Label>
-              <Select defaultValue="system">
+              <Select value={theme} onValueChange={setTheme}>
                 <SelectTrigger id="theme">
                   <SelectValue placeholder="Select theme" />
                 </SelectTrigger>
