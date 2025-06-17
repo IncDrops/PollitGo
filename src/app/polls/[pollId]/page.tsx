@@ -16,6 +16,7 @@ import NextLink from "next/link";
 import { cn } from "@/lib/utils";
 import React, { useState, useEffect } from 'react'; 
 import OptionDetailsDialog from "@/components/polls/OptionDetailsDialog"; 
+import { useToast } from "@/hooks/use-toast";
 
 async function getPollDetails(pollId: string): Promise<{ poll: Poll | null; comments: CommentType[] }> {
   const poll = mockPolls.find(p => p.id === pollId) || null;
@@ -39,7 +40,7 @@ const PollOptionDisplay: React.FC<{
   isVoted: boolean; 
   isSelectedOption: boolean; 
   deadlinePassed: boolean; 
-  onVote: () => Promise<void>; // Ensure onVote is async or remove async from its usage
+  onVote: () => Promise<void>; 
   pollHasTwoOptions: boolean;
   onShowDetails: () => void;
 }> = ({ option, totalVotes, isVoted, isSelectedOption, deadlinePassed, onVote, pollHasTwoOptions, onShowDetails }) => {
@@ -52,14 +53,14 @@ const PollOptionDisplay: React.FC<{
 
   const handleOptionClick = async () => {
     if (!isVoted && !deadlinePassed) {
-      await onVote(); // Call the vote action
+      await onVote(); 
     } else {
       onShowDetails(); 
     }
   };
 
   const handleDetailsIconClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent outer button's onClick
+    e.stopPropagation(); 
     onShowDetails();
   };
 
@@ -70,7 +71,7 @@ const PollOptionDisplay: React.FC<{
         className={cn(
           "w-full justify-between h-auto p-3 text-left relative disabled:opacity-100 disabled:cursor-default",
            pollHasTwoOptions && "aspect-square flex flex-col items-center justify-center text-center",
-           (isVoted || deadlinePassed || isTruncated || option.affiliateLink) && "cursor-pointer hover:bg-accent/60" // Make clickable if details available
+           (isVoted || deadlinePassed || isTruncated || option.affiliateLink) && "cursor-pointer hover:bg-accent/60"
         )}
         onClick={handleOptionClick}
         disabled={(isVoted || deadlinePassed) && !pollHasTwoOptions && !(isTruncated || option.affiliateLink) } 
@@ -86,20 +87,20 @@ const PollOptionDisplay: React.FC<{
           {isSelectedOption && showResults && <CheckCircle2 className={cn("w-4 h-4", pollHasTwoOptions ? "mt-1 text-primary-foreground" : "ml-1 text-primary")} />}
 
           {(isTruncated || option.affiliateLink) && (
-             <div // Changed from Button to div
+             <div 
               onClick={handleDetailsIconClick}
               className={cn(
                 "h-6 w-6 opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
                 pollHasTwoOptions ? "absolute top-1 right-1" : "ml-2 shrink-0",
-                "flex items-center justify-center rounded-md cursor-pointer", // Basic styling
-                "hover:bg-accent hover:text-accent-foreground" // Hover effect
+                "flex items-center justify-center rounded-full cursor-pointer p-1", 
+                "hover:bg-accent/70 hover:text-accent-foreground" 
               )}
               role="button"
               tabIndex={0}
               onKeyDown={(e) => e.key === 'Enter' && handleDetailsIconClick(e as any)}
               aria-label="View option details"
             >
-              <Info className="h-4 w-4 text-muted-foreground" />
+              <Info className="h-4 w-4 text-muted-foreground group-hover:text-accent-foreground" />
             </div>
           )}
         </div>
@@ -115,6 +116,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
   const [deadlinePassed, setDeadlinePassed] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState('');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const { toast } = useToast();
 
   const [selectedOptionForModal, setSelectedOptionForModal] = useState<PollOptionType | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -192,6 +194,40 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
     }
   };
 
+  const handleShare = async () => {
+    if (!poll) return;
+    const shareUrl = `${window.location.origin}/polls/${poll.id}`;
+    const shareData = {
+      title: 'Check out this poll on PollitAGo!',
+      text: `"${poll.question}" - Vote now!`,
+      url: shareUrl,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        console.log('Poll shared successfully');
+      } catch (error) {
+        console.error('Error sharing poll:', error);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: 'Link Copied!',
+          description: 'Poll link copied to your clipboard.',
+        });
+      } catch (error) {
+        console.error('Failed to copy poll link:', error);
+        toast({
+          title: 'Error Copying Link',
+          description: 'Could not copy link to clipboard.',
+          variant: 'destructive',
+        });
+      }
+    }
+  };
+
   const handleShowOptionDetails = (option: PollOptionType) => {
     setSelectedOptionForModal(option);
     setIsModalOpen(true);
@@ -262,7 +298,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
                   isVoted={!!poll.isVoted}
                   isSelectedOption={poll.votedOptionId === option.id}
                   deadlinePassed={deadlinePassed}
-                  onVote={async () => handleVote(option.id)}
+                  onVote={handleVote.bind(null, option.id)}
                   pollHasTwoOptions={pollHasTwoOptions}
                   onShowDetails={() => handleShowOptionDetails(option)}
                 />
@@ -271,6 +307,9 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
             <div className="mt-4 flex items-center text-sm text-muted-foreground">
               <Clock className="w-4 h-4 mr-1.5" />
               <span>{deadlinePassed ? `Ended ${formatDistanceToNowStrict(parseISO(poll.deadline), { addSuffix: true })}` : `Ends ${timeRemaining}`} &middot; {poll.totalVotes.toLocaleString()} votes</span>
+               {poll.pledgeAmount && poll.pledgeAmount > 0 && (
+                 <span className="ml-1 text-green-600 font-semibold">&middot; ${poll.pledgeAmount.toLocaleString()} Pledged</span>
+              )}
             </div>
           </CardContent>
 
@@ -282,7 +321,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
                 <Gift className="w-5 h-5 mr-1.5" /> {poll.tipCount ? poll.tipCount.toLocaleString() : 0} Tip Creator
               </Button>
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" onClick={handleShare}>
                 <Share2 className="w-5 h-5 mr-1.5" /> Share
               </Button>
             </div>

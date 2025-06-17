@@ -14,7 +14,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useSwipeable } from 'react-swipeable';
 import OptionDetailsDialog from './OptionDetailsDialog';
-import { motion, useAnimationControls, AnimatePresence } from 'framer-motion';
+import { motion, useAnimationControls } from 'framer-motion';
+import { useToast } from '@/hooks/use-toast';
 
 interface PollCardProps {
   poll: Poll;
@@ -43,15 +44,15 @@ const PollOption: React.FC<{
     : option.text;
 
   const handleOptionClick = () => {
-    if (canVote && !isVoted && !deadlinePassed && !pollHasTwoOptions) { // For non-2-option polls, button click is vote
+    if (canVote && !isVoted && !deadlinePassed && !pollHasTwoOptions) {
       onVote();
-    } else { // For 2-option polls, or if already voted/deadline passed, or if truncated/has link, show details
+    } else { 
       onShowDetails();
     }
   };
 
   const handleDetailsIconClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent outer button's onClick if this is nested
+    e.stopPropagation(); 
     onShowDetails();
   };
 
@@ -92,22 +93,20 @@ const PollOption: React.FC<{
 
           {isSelectedOption && showResults && <CheckCircle2 className={cn("w-4 h-4", pollHasTwoOptions ? "mt-1 text-primary-foreground" : "ml-1 text-primary")} />}
           
-          {/* This is for >2 option polls (non-swipeable cards) OR for 2-option polls where details are needed */}
-          {/* It should appear if text is truncated OR an affiliate link exists */}
           {(!pollHasTwoOptions && (isTruncated || option.affiliateLink)) && (
-            <div // Changed from Button to div
+             <div 
               onClick={handleDetailsIconClick}
               className={cn(
                 "absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
-                "flex items-center justify-center rounded-md cursor-pointer", // Basic styling to mimic an icon button
-                "hover:bg-accent hover:text-accent-foreground" // Hover effect
+                "flex items-center justify-center rounded-full cursor-pointer p-1", 
+                "hover:bg-accent/70 hover:text-accent-foreground" 
               )}
-              role="button" // Keep accessibility
-              tabIndex={0} // Make it focusable
+              role="button" 
+              tabIndex={0} 
               onKeyDown={(e) => e.key === 'Enter' && handleDetailsIconClick(e as any)}
               aria-label="View option details"
             >
-              <Info className="h-4 w-4 text-muted-foreground" />
+              <Info className="h-4 w-4 text-muted-foreground group-hover:text-accent-foreground" />
             </div>
           )}
         </div>
@@ -118,6 +117,7 @@ const PollOption: React.FC<{
 
 export default function PollCard({ poll, onVote, onPollActionComplete }: PollCardProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [deadlinePassed, setDeadlinePassed] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [createdAtFormatted, setCreatedAtFormatted] = useState<string | null>(null);
@@ -133,7 +133,7 @@ export default function PollCard({ poll, onVote, onPollActionComplete }: PollCar
     onSwiped: async (eventData) => {
       if (!canSwipe) return;
 
-      const threshold = 80;
+      const threshold = 80; 
       let swipeDirection: 'left' | 'right' | undefined = undefined;
 
       if (Math.abs(eventData.deltaX) > threshold) {
@@ -173,9 +173,9 @@ export default function PollCard({ poll, onVote, onPollActionComplete }: PollCar
     if (days > 0) parts.push(`${days}d`);
     if (hours > 0 || (days > 0 && (minutes > 0 || seconds > 0))) parts.push(`${hours}h`);
     if (minutes > 0 || ((days > 0 || hours > 0) && seconds > 0)) parts.push(`${minutes}m`);
-    if (days === 0 && hours === 0 && minutes < 5 && parts.length === 0) { // only show seconds if less than 5 mins AND no other unit shown
+    if (days === 0 && hours === 0 && minutes < 5 && parts.length === 0) { 
        parts.push(`${seconds}s`);
-    } else if (parts.length === 0 && diff > 0) { // if nothing shown but time still remains (e.g. 0d 0h 0m but some seconds)
+    } else if (parts.length === 0 && diff > 0) { 
        return `${seconds}s`;
     } else if (parts.length === 0 && diff <=0) {
        return "Ending soon";
@@ -209,12 +209,10 @@ export default function PollCard({ poll, onVote, onPollActionComplete }: PollCar
   };
 
   const onCardClick = (e: React.MouseEvent) => {
-    // Check if the click target or its parents up to the card element itself is the info button
     if ((e.target as HTMLElement).closest('[aria-label="View option details"]')) {
-        return; // Don't navigate if info button was clicked
+        return; 
     }
     if ((e.target as HTMLElement).closest('button, a, [data-swipe-handler]') || (canSwipe && (e.target as HTMLElement).closest('[role="button"]'))) {
-      // If it's already a button (like a poll option button), or a link, or swipe handler, let them handle it
       return;
     }
     router.push(`/polls/${poll.id}`);
@@ -223,6 +221,39 @@ export default function PollCard({ poll, onVote, onPollActionComplete }: PollCar
   const onCreatorClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     router.push(`/profile/${poll.creator.id}`);
+  };
+
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}/polls/${poll.id}`;
+    const shareData = {
+      title: 'Check out this poll on PollitAGo!',
+      text: `"${poll.question}" - Vote now!`,
+      url: shareUrl,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        console.log('Poll shared successfully');
+      } catch (error) {
+        console.error('Error sharing poll:', error);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: 'Link Copied!',
+          description: 'Poll link copied to your clipboard.',
+        });
+      } catch (error) {
+        console.error('Failed to copy poll link:', error);
+        toast({
+          title: 'Error Copying Link',
+          description: 'Could not copy link to clipboard.',
+          variant: 'destructive',
+        });
+      }
+    }
   };
 
   const pollHasTwoOptions = poll.options.length === 2;
@@ -298,6 +329,9 @@ export default function PollCard({ poll, onVote, onPollActionComplete }: PollCar
             <div className="mt-3 flex items-center text-xs text-muted-foreground">
               <Clock className="w-4 h-4 mr-1.5" />
               <span>{deadlinePassed ? `Ended` : timeRemaining || 'Calculating...'} &middot; {poll.totalVotes.toLocaleString()} votes</span>
+              {poll.pledgeAmount && poll.pledgeAmount > 0 && (
+                 <span className="ml-1 text-green-600 font-semibold">&middot; ${poll.pledgeAmount.toLocaleString()} Pledged</span>
+              )}
             </div>
           </CardContent>
 
@@ -311,7 +345,7 @@ export default function PollCard({ poll, onVote, onPollActionComplete }: PollCar
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
               <Gift className="w-5 h-5 mr-1.5" /> {poll.tipCount ? poll.tipCount.toLocaleString() : 0}
             </Button>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" onClick={handleShare}>
               <Share2 className="w-5 h-5" />
             </Button>
           </CardFooter>
