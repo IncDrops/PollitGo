@@ -1,5 +1,7 @@
+
 'use client';
 
+import { useState, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,13 +9,27 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { UserCircle2, Bell, ShieldCheck, Palette, LogOut, HelpCircle, Info } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserCircle2, Bell, ShieldCheck, Palette, LogOut, HelpCircle, Info, Camera } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function SettingsPage() {
   const { toast } = useToast();
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+    }
+  };
 
   const handleSaveChanges = () => {
+    // In a real app, you'd upload avatarFile here if it exists
+    console.log("Saving settings. Avatar file to upload:", avatarFile);
     toast({
       title: "Settings Saved",
       description: "Your preferences have been updated.",
@@ -28,18 +44,44 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center text-xl font-headline"><UserCircle2 className="mr-2 h-5 w-5 text-primary" /> Account</CardTitle>
-            <CardDescription>Manage your account information.</CardDescription>
+            <CardDescription>Manage your account information and profile picture.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="username">Username</Label>
-              <Input id="username" defaultValue="current_user" />
+            <div className="flex flex-col items-center space-y-4 sm:flex-row sm:space-y-0 sm:space-x-6">
+              <div className="relative group">
+                <Avatar className="h-24 w-24 ring-2 ring-primary ring-offset-2 ring-offset-background">
+                  <AvatarImage src={avatarPreview || 'https://placehold.co/100x100.png?text=User'} alt="User avatar" data-ai-hint="profile avatar" />
+                  <AvatarFallback>U</AvatarFallback>
+                </Avatar>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="absolute bottom-0 right-0 rounded-full h-8 w-8 bg-background group-hover:bg-accent"
+                  onClick={() => avatarInputRef.current?.click()}
+                  aria-label="Change profile picture"
+                >
+                  <Camera className="h-4 w-4" />
+                </Button>
+                <input
+                  type="file"
+                  ref={avatarInputRef}
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarChange}
+                />
+              </div>
+              <div className="flex-grow w-full space-y-4">
+                <div>
+                  <Label htmlFor="username">Username</Label>
+                  <Input id="username" defaultValue="current_user" />
+                </div>
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" defaultValue="user@example.com" />
+                </div>
+              </div>
             </div>
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" defaultValue="user@example.com" />
-            </div>
-            <Button variant="outline">Change Password</Button>
+            <Button variant="outline" className="mt-4 sm:mt-0">Change Password</Button>
           </CardContent>
         </Card>
 
@@ -122,7 +164,7 @@ export default function SettingsPage() {
             <HelpCircle className="mr-2 h-5 w-5" /> Help & Support
           </Button>
           <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-foreground">
-            <Info className="mr-2 h-5 w-5" /> About PollitGo
+            <Info className="mr-2 h-5 w-5" /> About PollitAGo
           </Button>
         </div>
 
