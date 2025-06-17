@@ -1,3 +1,4 @@
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -92,7 +93,7 @@ export default async function UserProfilePage({ params }: { params: { userId: st
           <TabsContent value="polls" className="mt-6">
             {polls.length > 0 ? (
               <div className="space-y-0"> {/* Removed space-y-4 */}
-                {polls.map(poll => <PollCard key={poll.id} poll={poll} onVote={async (pollId, optionId) => handleVote(pollId, optionId)} />)}
+                {polls.map(poll => <PollCard key={poll.id} poll={poll} onVote={handleVote} />)}
               </div>
             ) : (
               <p className="text-center text-muted-foreground py-10">This user hasn't created any polls yet.</p>
