@@ -61,6 +61,7 @@ export default function PollCard({ poll, onVote: handleVote }: PollCardProps) {
   const router = useRouter();
   const [deadlinePassed, setDeadlinePassed] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState('');
+  const [createdAtFormatted, setCreatedAtFormatted] = useState<string | null>(null);
 
   useEffect(() => {
     const checkDeadline = () => {
@@ -78,6 +79,11 @@ export default function PollCard({ poll, onVote: handleVote }: PollCardProps) {
     const interval = setInterval(checkDeadline, 60000); // Update every minute
     return () => clearInterval(interval);
   }, [poll.deadline]);
+
+  useEffect(() => {
+    // Format createdAt time on client side to avoid hydration mismatch
+    setCreatedAtFormatted(formatDistanceToNowStrict(parseISO(poll.createdAt), { addSuffix: true }));
+  }, [poll.createdAt]);
 
   const onCardClick = () => {
     router.push(`/polls/${poll.id}`);
@@ -105,7 +111,9 @@ export default function PollCard({ poll, onVote: handleVote }: PollCardProps) {
           </Avatar>
           <div>
             <p className="text-sm font-semibold text-foreground">{poll.creator.name}</p>
-            <p className="text-xs text-muted-foreground">@{poll.creator.username} &middot; {formatDistanceToNowStrict(parseISO(poll.createdAt), { addSuffix: true })}</p>
+            <p className="text-xs text-muted-foreground">
+              @{poll.creator.username} &middot; {createdAtFormatted || 'Loading time...'}
+            </p>
           </div>
         </div>
         <CardTitle className="text-lg font-headline mt-3 text-foreground">{poll.question}</CardTitle>
@@ -165,3 +173,4 @@ export default function PollCard({ poll, onVote: handleVote }: PollCardProps) {
     </Card>
   );
 }
+
