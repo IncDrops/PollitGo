@@ -1,3 +1,4 @@
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,12 +15,20 @@ import Link from "next/link";
 // Simulate fetching poll data and comments
 async function getPollDetails(pollId: string): Promise<{ poll: Poll | null; comments: CommentType[] }> {
   const poll = mockPolls.find(p => p.id === pollId) || null;
+  // Ensure consistent mock users for comments
+  const commentUser1 = mockUsers.find(u => u.id === 'user2') || mockUsers[1] || getRandomUser();
+  const commentUser2 = mockUsers.find(u => u.id === 'user3') || mockUsers[2] || getRandomUser();
+  
   const comments: CommentType[] = poll ? [
-    { id: 'comment1', user: mockUsers[1], text: "Great question! I'm leaning towards Summer.", createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() },
-    { id: 'comment2', user: mockUsers[2], text: "Definitely Autumn for me, the colors are amazing.", createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
+    { id: 'comment1', user: commentUser1, text: "Great question! I'm leaning towards Summer.", createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() },
+    { id: 'comment2', user: commentUser2, text: "Definitely Autumn for me, the colors are amazing.", createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
   ] : [];
   return { poll, comments };
 }
+
+// Helper to get a random user if specific one not found
+const getRandomUser = (): User => mockUsers[Math.floor(Math.random() * mockUsers.length)];
+
 
 const PollOptionDisplay: React.FC<{ option: PollOptionType; totalVotes: number; isVoted: boolean; isSelectedOption: boolean; deadlinePassed: boolean; onVote: () => void }> = ({ option, totalVotes, isVoted, isSelectedOption, deadlinePassed, onVote }) => {
   const percentage = totalVotes > 0 ? (option.votes / totalVotes) * 100 : 0;
@@ -60,6 +69,7 @@ export default async function PollDetailsPage({ params }: { params: { pollId: st
     "use server";
     console.log(`Vote action for poll ${poll.id}, option ${optionId}`);
     // This would be a server action to record the vote
+    // Revalidate path or update data as needed
   };
 
   const handleCommentSubmit = async (formData: FormData) => {
@@ -68,8 +78,12 @@ export default async function PollDetailsPage({ params }: { params: { pollId: st
     if (commentText && commentText.trim() !== "") {
       console.log(`New comment for poll ${poll.id}: ${commentText}`);
       // This would be a server action to post the comment
+      // Revalidate path or update data as needed
     }
   };
+  
+  const currentUser = mockUsers.find(u => u.id === 'user1') || mockUsers[0] || getRandomUser();
+
 
   return (
     <div className="container mx-auto px-2 sm:px-4 py-8 max-w-2xl">
@@ -123,7 +137,7 @@ export default async function PollDetailsPage({ params }: { params: { pollId: st
                 isVoted={!!poll.isVoted}
                 isSelectedOption={poll.votedOptionId === option.id}
                 deadlinePassed={deadlinePassed}
-                onVote={async () => handleVote(option.id)}
+                onVote={handleVote.bind(null, option.id)}
               />
             ))}
           </div>
@@ -152,8 +166,8 @@ export default async function PollDetailsPage({ params }: { params: { pollId: st
             <h3 className="text-lg font-semibold mb-3 text-foreground">Comments ({comments.length})</h3>
             <form action={handleCommentSubmit} className="flex items-start space-x-2 mb-6">
               <Avatar className="h-10 w-10 border">
-                <AvatarImage src={mockUsers[0].avatarUrl} alt="Current user" data-ai-hint="profile avatar" /> 
-                <AvatarFallback>{mockUsers[0].name.substring(0,1)}</AvatarFallback>
+                <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} data-ai-hint="profile avatar" /> 
+                <AvatarFallback>{currentUser.name.substring(0,1)}</AvatarFallback>
               </Avatar>
               <Textarea name="comment" placeholder="Add a comment..." className="flex-grow min-h-[40px] max-h-[120px]" rows={1}/>
               <Button type="submit" size="icon" variant="default" className="h-10 w-10 bg-primary hover:bg-primary/90 text-primary-foreground">
@@ -191,4 +205,3 @@ export default async function PollDetailsPage({ params }: { params: { pollId: st
     </div>
   );
 }
-
