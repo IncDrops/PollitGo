@@ -1,6 +1,7 @@
+
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useState, type FormEvent, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CalendarIcon, ImagePlus, VideoIcon, X, PlusCircle } from 'lucide-react';
+import { CalendarIcon, ImagePlus, VideoIcon, X, PlusCircle, ImageIcon } from 'lucide-react';
 import { format } from "date-fns"
 import { useToast } from '@/hooks/use-toast';
 
@@ -40,7 +41,7 @@ export default function NewPollPage() {
   };
 
   const handleRemoveOption = (id: string) => {
-    if (options.length > 2) { // Minimum 2 options
+    if (options.length > 2) {
       setOptions(options.filter(option => option.id !== id));
     } else {
       toast({
@@ -51,13 +52,55 @@ export default function NewPollPage() {
     }
   };
 
-  const handleOptionChange = (id: string, field: 'text' | 'imageUrl' | 'videoUrl', value: string) => {
-    setOptions(options.map(option => option.id === id ? { ...option, [field]: value } : option));
+  const handleOptionTextChange = (id: string, value: string) => {
+    setOptions(options.map(option => option.id === id ? { ...option, text: value } : option));
   };
+
+  const setPollImage = useCallback(() => {
+    setPollImageUrl("https://placehold.co/600x400.png");
+    setPollVideoUrl(undefined);
+  }, []);
+
+  const removePollImage = useCallback(() => {
+    setPollImageUrl(undefined);
+  }, []);
+
+  const setPollVideo = useCallback(() => {
+    setPollVideoUrl("placeholder-video-url"); // Not an actual image, just a marker
+    setPollImageUrl(undefined);
+  }, []);
+
+  const removePollVideo = useCallback(() => {
+    setPollVideoUrl(undefined);
+  }, []);
+
+  const setOptionImage = useCallback((optionId: string) => {
+    setOptions(prevOptions => prevOptions.map(opt => 
+      opt.id === optionId ? { ...opt, imageUrl: "https://placehold.co/100x100.png", videoUrl: undefined } : opt
+    ));
+  }, []);
+
+  const removeOptionImage = useCallback((optionId: string) => {
+    setOptions(prevOptions => prevOptions.map(opt =>
+      opt.id === optionId ? { ...opt, imageUrl: undefined } : opt
+    ));
+  }, []);
+
+  const setOptionVideo = useCallback((optionId: string) => {
+    setOptions(prevOptions => prevOptions.map(opt =>
+      opt.id === optionId ? { ...opt, videoUrl: "placeholder-option-video-url", imageUrl: undefined } : opt
+    ));
+  }, []);
+
+  const removeOptionVideo = useCallback((optionId: string) => {
+    setOptions(prevOptions => prevOptions.map(opt =>
+      opt.id === optionId ? { ...opt, videoUrl: undefined } : opt
+    ));
+  }, []);
+
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    // Basic validation
     if (!question.trim()) {
       toast({ title: "Error", description: "Poll question cannot be empty.", variant: "destructive" });
       return;
@@ -73,7 +116,7 @@ export default function NewPollPage() {
 
     const pollData = {
       question,
-      options: options.map(({id, ...rest}) => rest), // remove client-side id
+      options: options.map(({id, ...rest}) => rest),
       deadline: deadline.toISOString(),
       pollImageUrl,
       pollVideoUrl,
@@ -83,7 +126,6 @@ export default function NewPollPage() {
       title: 'Poll Created!',
       description: 'Your poll has been successfully submitted.',
     });
-    // Reset form or redirect
     setQuestion('');
     setOptions([{ id: `option-${Date.now()}`, text: '' }, { id: `option-${Date.now() + 1}`, text: '' }]);
     setDeadline(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
@@ -111,42 +153,86 @@ export default function NewPollPage() {
               />
             </div>
 
-            <div className="space-y-1">
-              <Label className="text-base">Poll Image/Video (Optional)</Label>
+            <div className="space-y-2">
+              <Label className="text-base">Poll Image/Video (Optional - Choose One)</Label>
               <div className="flex space-x-2">
-                <Button type="button" variant="outline" className="flex-1">
+                <Button type="button" variant="outline" className="flex-1" onClick={setPollImage} disabled={!!pollVideoUrl}>
                   <ImagePlus className="mr-2 h-4 w-4" /> Add Image
-                  {/* Placeholder for file input */}
                 </Button>
-                <Button type="button" variant="outline" className="flex-1">
+                <Button type="button" variant="outline" className="flex-1" onClick={setPollVideo} disabled={!!pollImageUrl}>
                   <VideoIcon className="mr-2 h-4 w-4" /> Add Video
-                  {/* Placeholder for file input */}
                 </Button>
               </div>
-               {/* Show placeholder if image/video is added */}
+              {pollImageUrl && (
+                <div className="mt-2 p-2 border rounded-md flex justify-between items-center bg-muted/20">
+                  <div className="flex items-center text-sm">
+                    <ImageIcon className="h-5 w-5 mr-2 text-primary" />
+                    <span>Poll Image Selected</span>
+                  </div>
+                  <Button type="button" variant="ghost" size="icon" onClick={removePollImage} aria-label="Remove poll image">
+                    <X className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              )}
+              {pollVideoUrl && (
+                <div className="mt-2 p-2 border rounded-md flex justify-between items-center bg-muted/20">
+                  <div className="flex items-center text-sm">
+                    <VideoIcon className="h-5 w-5 mr-2 text-primary" />
+                    <span>Poll Video Selected</span>
+                  </div>
+                  <Button type="button" variant="ghost" size="icon" onClick={removePollVideo} aria-label="Remove poll video">
+                    <X className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label className="text-base">Options ({options.length}/{MAX_OPTIONS})</Label>
               {options.map((option, index) => (
-                <div key={option.id} className="flex items-center space-x-2">
-                  <Input
-                    type="text"
-                    value={option.text}
-                    onChange={(e) => handleOptionChange(option.id, 'text', e.target.value)}
-                    placeholder={`Option ${index + 1}`}
-                    required
-                    className="flex-grow"
-                  />
-                  {/* Placeholder for option image/video upload */}
-                  <Button type="button" variant="ghost" size="icon" aria-label="Add media to option">
-                     <ImagePlus className="h-5 w-5 text-muted-foreground" />
-                  </Button>
-                  {options.length > 2 && (
-                    <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveOption(option.id)} aria-label="Remove option">
-                      <X className="h-5 w-5 text-destructive" />
-                    </Button>
-                  )}
+                <div key={option.id} className="space-y-2 p-3 border rounded-md bg-muted/20">
+                  <div className="flex items-center space-x-2">
+                    <Input
+                      type="text"
+                      value={option.text}
+                      onChange={(e) => handleOptionTextChange(option.id, e.target.value)}
+                      placeholder={`Option ${index + 1}`}
+                      required
+                      className="flex-grow bg-background"
+                    />
+                    {options.length > 2 && (
+                      <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveOption(option.id)} aria-label="Remove option">
+                        <X className="h-5 w-5 text-destructive" />
+                      </Button>
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-muted-foreground">Media:</span>
+                    {!option.videoUrl && ( // Show Add/Remove Image only if no video for this option
+                      option.imageUrl ? (
+                        <Button type="button" variant="outline" size="sm" onClick={() => removeOptionImage(option.id)} aria-label="Remove option image" className="h-auto py-1 px-2 text-xs">
+                          <X className="h-3 w-3 mr-1 text-destructive" /> Remove Image
+                        </Button>
+                      ) : (
+                        <Button type="button" variant="ghost" size="icon" onClick={() => setOptionImage(option.id)} aria-label="Add image to option" disabled={!!option.videoUrl} className="h-7 w-7">
+                          <ImagePlus className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      )
+                    )}
+                    {!option.imageUrl && ( // Show Add/Remove Video only if no image for this option
+                      option.videoUrl ? (
+                        <Button type="button" variant="outline" size="sm" onClick={() => removeOptionVideo(option.id)} aria-label="Remove option video" className="h-auto py-1 px-2 text-xs">
+                           <X className="h-3 w-3 mr-1 text-destructive" /> Remove Video
+                        </Button>
+                      ) : (
+                        <Button type="button" variant="ghost" size="icon" onClick={() => setOptionVideo(option.id)} aria-label="Add video to option" disabled={!!option.imageUrl} className="h-7 w-7">
+                          <VideoIcon className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      )
+                    )}
+                     {option.imageUrl && <ImageIcon className="h-4 w-4 text-primary ml-auto" title="Image added"/>}
+                     {option.videoUrl && <VideoIcon className="h-4 w-4 text-primary ml-auto" title="Video added"/>}
+                  </div>
                 </div>
               ))}
               {options.length < MAX_OPTIONS && (
@@ -174,9 +260,8 @@ export default function NewPollPage() {
                     selected={deadline}
                     onSelect={setDeadline}
                     initialFocus
-                    fromDate={new Date()} // Can't select past dates
+                    fromDate={new Date()} 
                   />
-                  {/* Basic Time selection - could be improved with dedicated time picker */}
                   <div className="p-2 border-t">
                      <Input type="time" defaultValue={deadline ? format(deadline, "HH:mm") : "12:00"} onChange={(e) => {
                        if (deadline) {
@@ -226,3 +311,4 @@ export default function NewPollPage() {
     </div>
   );
 }
+
