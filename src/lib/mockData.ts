@@ -17,7 +17,7 @@ const usersData: { name: string }[] = [
   { name: 'Penny Campbell' }, { name: 'Quinn Evans' }, { name: 'Ruby Edwards' }, { name: 'Tina Collins' },
   { name: 'Ursula Stewart' }, { name: 'Violet Morris' }, { name: 'Wendy Rogers' }, { name: 'Zara Reed' },
   { name: 'Zoe Cook' }, { name: 'Ethan Morgan' }, { name: 'Frank Bell' }, { name: 'Gary Murphy' },
-  { name: 'Henry Bailey' }, { name: 'Ian Cooper' }, { name: 'Jack Rivera' }, { name: 'Justin Howard' },
+  { name: 'Henry Bailey' }, { name: 'Ian Cooper' }, { name: 'Jack Howard' }, { name: 'Justin Kelly' }, // Changed from Jack to avoid duplicate, then Justin
   { name: 'David Kelly' }, { name: 'Michael Sanders' }, { name: 'James Price' }, { name: 'John Bennett' },
   { name: 'Robert Wood' }, { name: 'Ben Ross' }, { name: 'Chris Henderson' }, { name: 'Daniel Coleman' },
   { name: 'Leo Jenkins' }, { name: 'Mark Perry' }, { name: 'Nate Powell' }, { name: 'Oscar Long' }
@@ -26,8 +26,8 @@ const usersData: { name: string }[] = [
 export const mockUsers: User[] = usersData.map((user, index) => ({
   id: `user${index + 1}`,
   name: user.name,
-  avatarUrl: 'https://placehold.co/100x100.png', // data-ai-hint="profile avatar" will be in component
-  username: user.name.toLowerCase().replace(/\s+/g, '').substring(0, 6) + (Math.floor(Math.random() * 90) + 10),
+  avatarUrl: 'https://placehold.co/100x100.png',
+  username: user.name.toLowerCase().replace(/\s+/g, '').substring(0, 6) + (index % 90 + 10), // Deterministic username
 }));
 
 const parseTimeRemaining = (timeString: string): number => {
@@ -105,12 +105,11 @@ const initialPolls: Poll[] = [
     isVoted: false,
     tipCount: Math.floor(Math.random() * 15),
   },
-  // Sophia V-card poll (was Jack in user list)
   {
     id: 'poll_sophia_vcard',
-    creator: findUser('Sophia Miller'), // Ensuring Sophia is the creator
+    creator: findUser('Sophia Miller'),
     question: "Finna lose my V-card, besties. To wrap it or not to wrap it? Low-key kinda nervous but also wanna YOLO. What's the tea?",
-    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="young adult girl thoughtful"
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="young adult thoughtful"
     options: [
       { id: 'sv_opt1', text: "Wrap it like it's your favorite mixtape ('cause STIs are NOT a vibe).", votes: generateRandomVotes() },
       { id: 'sv_opt2', text: "The stars whisper secrets of protection... and pleasure. Choose wisely.", votes: generateRandomVotes() },
@@ -120,18 +119,17 @@ const initialPolls: Poll[] = [
     deadline: new Date(Date.now() + parseTimeRemaining("6 hours, 38 minutes")).toISOString(),
     createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
     likes: Math.floor(Math.random() * 200) + 50,
-    totalVotes: 0, // Will be calculated
+    totalVotes: 0, 
     commentsCount: Math.floor(Math.random() * 20) + 5,
     isVoted: Math.random() > 0.5,
     pledgeAmount: 100,
     tipCount: 16,
   },
-  // Sophia houseplant poll
   {
     id: 'poll_sophia_houseplant',
     creator: findUser('Sophia Miller'),
     question: 'My houseplant is getting too big for its pot. Do I repot it, or prune it back aggressively?',
-    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="houseplant pot growth"
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="houseplant growth"
     options: [
       { id: 'sh_opt1', text: 'Repot it! Let it flourish.', votes: generateRandomVotes() },
       { id: 'sh_opt2', text: 'Prune it, keep it manageable.', votes: generateRandomVotes() },
@@ -147,12 +145,11 @@ const initialPolls: Poll[] = [
     pledgeAmount: 30,
     tipCount: 12,
   },
-  // Alex code poll
   {
     id: 'poll_alex_code',
     creator: findUser('Alex Johnson'),
     question: 'Should I learn to code to boost my career, or is it too late for an old dog to learn new tricks?',
-    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="coding career computer"
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="coding career"
     options: [
       { id: 'ac_opt1', text: 'Never too late! Code away!', votes: generateRandomVotes() },
       { id: 'ac_opt2', text: 'Focus on refining current skills.', votes: generateRandomVotes() },
@@ -168,12 +165,11 @@ const initialPolls: Poll[] = [
     pledgeAmount: 5,
     tipCount: 4,
   },
-  // Emma ghosting poll
   {
     id: 'poll_emma_ghosting',
     creator: findUser('Emma Davis'),
     question: 'My best friend keeps ghosting me for their new significant other. Do I confront them or just accept our friendship has changed?',
-    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="friendship conflict couple"
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="friendship conflict"
     options: [
       { id: 'eg_opt1', text: 'Confront them, open communication is vital.', votes: generateRandomVotes() },
       { id: 'eg_opt2', text: 'Give them space, they\'ll come back around.', votes: generateRandomVotes() },
@@ -187,14 +183,13 @@ const initialPolls: Poll[] = [
     commentsCount: Math.floor(Math.random() * 25),
     isVoted: Math.random() > 0.5,
     pledgeAmount: 50,
-    tipCount: Math.floor(Math.random() * 20), // Random tip count
+    tipCount: Math.floor(Math.random() * 20),
   },
-  // Liam cold pizza poll
   {
     id: 'poll_liam_pizza',
     creator: findUser('Liam Garcia'),
     question: "Is it ever okay to eat cold pizza for breakfast? Asking for a friend who's currently staring at a leftover slice.",
-    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="pizza breakfast food"
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="pizza breakfast"
     options: [
       { id: 'lp_opt1', text: "Absolutely, it's a breakfast staple!", votes: generateRandomVotes() },
       { id: 'lp_opt2', text: "No, heat it up or don't bother.", votes: generateRandomVotes() },
@@ -207,14 +202,14 @@ const initialPolls: Poll[] = [
     totalVotes: 0,
     commentsCount: Math.floor(Math.random() * 30),
     isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
     tipCount: Math.floor(Math.random() * 10),
   },
-  // Olivia roommate poll
   {
     id: 'poll_olivia_roommate',
     creator: findUser('Olivia Rodriguez'),
     question: 'My roommate never cleans. Do I create a chore chart, or passive-aggressively clean only my side?',
-    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="roommate cleaning chores"
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="roommate cleaning"
     options: [
       { id: 'or_opt1', text: 'Chore chart! Clear expectations.', votes: generateRandomVotes() },
       { id: 'or_opt2', text: 'Passive aggression wins every time.', votes: generateRandomVotes() },
@@ -227,14 +222,14 @@ const initialPolls: Poll[] = [
     totalVotes: 0,
     commentsCount: Math.floor(Math.random() * 18),
     isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
     tipCount: Math.floor(Math.random() * 8),
   },
-  // Noah bangs poll
   {
     id: 'poll_noah_bangs',
     creator: findUser('Noah Smith'),
     question: 'Should I get bangs? It feels like a big commitment for my face shape.',
-    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="haircut bangs style"
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="haircut style"
     options: [
       { id: 'nb_opt1', text: 'Go for it! Hair grows back.', votes: generateRandomVotes() },
       { id: 'nb_opt2', text: 'No bangs, too much maintenance.', votes: generateRandomVotes() },
@@ -247,14 +242,14 @@ const initialPolls: Poll[] = [
     totalVotes: 0,
     commentsCount: Math.floor(Math.random() * 12),
     isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
     tipCount: Math.floor(Math.random() * 5),
   },
-  // Ava lunch poll
   {
     id: 'poll_ava_lunch',
     creator: findUser('Ava Williams'),
     question: "I've got 5 minutes to decide on lunch. Pizza or a sad desk salad? My stomach is conflicted.",
-    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="lunch food decision"
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="lunch decision"
     options: [
       { id: 'al_opt1', text: 'Pizza! Always pizza.', votes: generateRandomVotes() },
       { id: 'al_opt2', text: 'Salad, gotta be healthy today.', votes: generateRandomVotes() },
@@ -267,14 +262,14 @@ const initialPolls: Poll[] = [
     totalVotes: 0,
     commentsCount: Math.floor(Math.random() * 5),
     isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
     tipCount: Math.floor(Math.random() * 3),
   },
-  // Isabella socks poll
   {
     id: 'poll_isabella_socks',
     creator: findUser('Isabella Brown'),
     question: "My partner keeps leaving their dirty socks everywhere. Do I passive-aggressively put them on their pillow, or actually talk about it?",
-    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="socks couple conflict"
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="couple conflict"
     options: [
         { id: 'is_opt1', text: "Pillow revenge! It's a classic.", votes: generateRandomVotes() },
         { id: 'is_opt2', text: "Communicate, it's the adult thing to do.", votes: generateRandomVotes() },
@@ -287,14 +282,14 @@ const initialPolls: Poll[] = [
     totalVotes: 0,
     commentsCount: Math.floor(Math.random() * 20),
     isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
     tipCount: Math.floor(Math.random() * 7),
   },
-  // Mia bedroom poll
    {
     id: 'poll_mia_bedroom',
     creator: findUser('Mia Jones'),
     question: "Thinking about spicing things up in the bedroom tonight. Should we try that new position from the internet, or stick to our faves?",
-    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="couple bedroom intimacy"
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="bedroom intimacy"
     options: [
         { id: 'mb_opt1', text: "Go for the new! Adventure awaits.", votes: generateRandomVotes() },
         { id: 'mb_opt2', text: "Stick to the classics, they're classics for a reason.", votes: generateRandomVotes() },
@@ -307,14 +302,14 @@ const initialPolls: Poll[] = [
     totalVotes: 0,
     commentsCount: Math.floor(Math.random() * 35),
     isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
     tipCount: Math.floor(Math.random() * 12),
   },
-  // Charlotte third date poll
   {
     id: 'poll_charlotte_date',
     creator: findUser('Charlotte Wilson'),
     question: "Should I go on a third date with someone who's super hot but has absolutely no ambition, or cut my losses?",
-    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="dating relationship ambition"
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="dating ambition"
     options: [
         { id: 'cd_opt1', text: "Hotness fades, ambition lasts. Cut losses.", votes: generateRandomVotes() },
         { id: 'cd_opt2', text: "Enjoy the hotness while it lasts!", votes: generateRandomVotes() },
@@ -327,9 +322,9 @@ const initialPolls: Poll[] = [
     totalVotes: 0,
     commentsCount: Math.floor(Math.random() * 22),
     isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
     tipCount: Math.floor(Math.random() * 9),
   },
-    // Amelia career/family poll
   {
     id: 'poll_amelia_balance',
     creator: findUser('Amelia Taylor'),
@@ -347,14 +342,14 @@ const initialPolls: Poll[] = [
     totalVotes: 0,
     commentsCount: Math.floor(Math.random() * 40),
     isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
     tipCount: Math.floor(Math.random() * 18),
   },
-  // Harper master's degree poll
   {
     id: 'poll_harper_masters',
     creator: findUser('Harper Anderson'),
     question: "Should I pursue a master's degree to advance my career, even if it means taking on significant student debt?",
-    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="education career debt"
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="education debt"
     options: [
         { id: 'hm_opt1', text: "Invest in yourself, it will pay off.", votes: generateRandomVotes() },
         { id: 'hm_opt2', text: "Debt is a trap, explore other options.", votes: generateRandomVotes() },
@@ -367,14 +362,14 @@ const initialPolls: Poll[] = [
     totalVotes: 0,
     commentsCount: Math.floor(Math.random() * 28),
     isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
     tipCount: Math.floor(Math.random() * 11),
   },
-    // Evelyn new city poll
   {
     id: 'poll_evelyn_city',
     creator: findUser('Evelyn Thomas'),
     question: "I'm thinking of moving to a completely new city where I know no one. Exciting fresh start, or terrifying leap into the unknown?",
-    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="moving city adventure"
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="moving city"
     options: [
         { id: 'ec_opt1', text: "Exciting! Embrace the new adventure.", votes: generateRandomVotes() },
         { id: 'ec_opt2', text: "Terrifying, build a network first.", votes: generateRandomVotes() },
@@ -387,14 +382,14 @@ const initialPolls: Poll[] = [
     totalVotes: 0,
     commentsCount: Math.floor(Math.random() * 33),
     isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
     tipCount: Math.floor(Math.random() * 13),
   },
-  // Abigail confess feelings poll
   {
     id: 'poll_abigail_feelings',
     creator: findUser('Abigail Jackson'),
     question: "Should I confess my feelings to my long-time friend, even if it risks ruining our friendship?",
-    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="love friendship risk"
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="love friendship"
     options: [
         { id: 'af_opt1', text: "Take the leap! You'll regret not knowing.", votes: generateRandomVotes() },
         { id: 'af_opt2', text: "Keep it platonic, friendship is too valuable.", votes: generateRandomVotes() },
@@ -407,19 +402,759 @@ const initialPolls: Poll[] = [
     totalVotes: 0,
     commentsCount: Math.floor(Math.random() * 26),
     isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
     tipCount: Math.floor(Math.random() * 10),
   },
-  // Ethan career switch poll
+   {
+    id: 'poll_ella_car',
+    creator: findUser('Ella White'),
+    question: "My car is on its last legs. Do I repair it one last time, or finally buy a new (or used) one?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="car repair"
+    options: [
+        { id: 'elc_opt1', text: "Repair it, squeeze out every last mile.", votes: generateRandomVotes() },
+        { id: 'elc_opt2', text: "New car time! Enjoy the reliability.", votes: generateRandomVotes() },
+        { id: 'elc_opt3', text: "Used car, better value.", votes: generateRandomVotes() },
+        { id: 'elc_opt4', text: "Public transport is the way!", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("18 days, 8 hours, 31 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 140),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 19),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 6),
+  },
   {
-    id: 'poll_ethan_career',
+    id: 'poll_scarlett_cooking',
+    creator: findUser('Scarlett Harris'),
+    question: "Is it okay to secretly dislike my partner's cooking, or should I tell them the truth (gently, of course)?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="cooking partner"
+    options: [
+        { id: 'sch_opt1', text: "Pretend to love it, save their feelings.", votes: generateRandomVotes() },
+        { id: 'sch_opt2', text: "Tell them gently, offer to cook together.", votes: generateRandomVotes() },
+        { id: 'sch_opt3', text: "Suggest takeout more often.", votes: generateRandomVotes() },
+        { id: 'sch_opt4', text: "Just eat less of it.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("7 days, 17 hours, 26 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 110),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 16),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 7),
+  },
+  {
+    id: 'poll_elizabeth_sport',
+    creator: findUser('Elizabeth Martin'),
+    question: "Should I try a new, extreme sport like skydiving or rock climbing, or stick to my cozy hobbies?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="extreme sport"
+    options: [
+        { id: 'els_opt1', text: "Go for it! Adrenaline rush!", votes: generateRandomVotes() },
+        { id: 'els_opt2', text: "Stay cozy, safety first.", votes: generateRandomVotes() },
+        { id: 'els_opt3', text: "Start small, try bouldering first.", votes: generateRandomVotes() },
+        { id: 'els_opt4', text: "Live vicariously through YouTube.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("9 hours, 4 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 10 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 100),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 13),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 4),
+  },
+  {
+    id: 'poll_sofia_pet_surgery', // Note: Changed creator from 'Sofia' to 'Sophia Miller' if intended to be the same, or use a different 'Sofia' from mockUsers if available
+    creator: findUser('Sophia Miller'), // Assuming this is the same Sophia as earlier. If a different 'Sofia', adjust accordingly or add 'Sofia' to usersData.
+    question: "My pet needs an expensive surgery. Do I drain my savings for it, or consider other options?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="pet surgery"
+    options: [
+        { id: 'sps_opt1', text: "Save your pet, cost is secondary!", votes: generateRandomVotes() },
+        { id: 'sps_opt2', text: "Consider quality of life, explore alternatives.", votes: generateRandomVotes() },
+        { id: 'sps_opt3', text: "Look for financial aid/pet charities.", votes: generateRandomVotes() },
+        { id: 'sps_opt4', text: "It's just a pet, be practical.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("25 days, 1 hour, 35 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 240),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 31),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 17),
+  },
+  {
+    id: 'poll_camila_apology',
+    creator: findUser('Camila Thompson'),
+    question: "Is it better to apologize immediately when you're wrong, or wait until emotions cool down?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="apology conflict"
+    options: [
+        { id: 'ca_opt1', text: "Immediately, clear the air.", votes: generateRandomVotes() },
+        { id: 'ca_opt2', text: "Wait, a calm apology is more effective.", votes: generateRandomVotes() },
+        { id: 'ca_opt3', text: "It depends on the situation.", votes: generateRandomVotes() },
+        { id: 'ca_opt4', text: "Never apologize, assert dominance!", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("12 days, 11 hours, 51 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 160),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 21),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 10),
+  },
+  {
+    id: 'poll_aria_social_media',
+    creator: findUser('Aria Moore'),
+    question: "Should I confront my friend about their problematic social media posts, or is it not my place?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="social media"
+    options: [
+        { id: 'asm_opt1', text: "Confront them privately, from a place of care.", votes: generateRandomVotes() },
+        { id: 'asm_opt2', text: "It's not your place, let them be.", votes: generateRandomVotes() },
+        { id: 'asm_opt3', text: "Unfollow/mute them.", votes: generateRandomVotes() },
+        { id: 'asm_opt4', text: "Publicly call them out.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("1 day, 8 hours, 37 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 18 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 130),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 18),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 8),
+  },
+  {
+    id: 'poll_victoria_client',
+    creator: findUser('Victoria Lee'),
+    question: "I'm a freelancer and a potential client is offering a huge project but has a terrible reputation. Do I take the money or protect my peace?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="freelance work"
+    options: [
+        { id: 'vc_opt1', text: "Take the money, deal with the headache later.", votes: generateRandomVotes() },
+        { id: 'vc_opt2', text: "Protect your peace, it's not worth it.", votes: generateRandomVotes() },
+        { id: 'vc_opt3', text: "Negotiate stricter terms and upfront payment.", votes: generateRandomVotes() },
+        { id: 'vc_opt4', text: "Get a lawyer to review the contract.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("19 days, 20 hours, 2 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 200),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 27),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 12),
+  },
+  {
+    id: 'poll_madison_kids',
+    creator: findUser('Madison Perez'),
+    question: "My parents are pressuring me to have kids. Do I give in or stand my ground on my childfree choice?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="family pressure"
+    options: [
+        { id: 'mk_opt1', text: "It's your life, stand your ground!", votes: generateRandomVotes() },
+        { id: 'mk_opt2', text: "Consider it, maybe you'll change your mind.", votes: generateRandomVotes() },
+        { id: 'mk_opt3', text: "Compromise: get a pet instead.", votes: generateRandomVotes() },
+        { id: 'mk_opt4', text: "Tell them you're infertile (jk... mostly).", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("30 days, 2 hours, 18 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 11 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 260),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 33),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 15),
+  },
+  {
+    id: 'poll_luna_splurge',
+    creator: findUser('Luna Walker'),
+    question: "Should I splurge on this designer item I've been eyeing, or save that money for something more practical?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="shopping money"
+    options: [
+        { id: 'ls_opt1', text: "Treat yourself! You deserve it.", votes: generateRandomVotes() },
+        { id: 'ls_opt2', text: "Save it, practicality wins.", votes: generateRandomVotes() },
+        { id: 'ls_opt3', text: "Set a budget and stick to it.", votes: generateRandomVotes() },
+        { id: 'ls_opt4', text: "Buy a high-quality dupe.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("8 hours, 44 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 90),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 11),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 6),
+  },
+  {
+    id: 'poll_grace_job',
+    creator: findUser('Grace Hall'),
+    question: "I received a job offer but I'm also waiting to hear back from my dream company. Do I accept or hold out?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="job offer"
+    options: [
+        { id: 'gj_opt1', text: "Accept the offer, a bird in hand...", votes: generateRandomVotes() },
+        { id: 'gj_opt2', text: "Hold out for the dream job, it's worth the risk.", votes: generateRandomVotes() },
+        { id: 'gj_opt3', text: "Ask for an extension on the offer.", votes: generateRandomVotes() },
+        { id: 'gj_opt4', text: "Negotiate for a later start date.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("14 days, 15 hours, 7 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 180),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 24),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 9),
+  },
+  {
+    id: 'poll_natalie_hair',
+    creator: findUser('Natalie Allen'),
+    question: "Should I embrace my natural hair texture, or continue with my elaborate styling routine?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="natural hair"
+    options: [
+        { id: 'nh_opt1', text: "Embrace the natural! Freedom awaits.", votes: generateRandomVotes() },
+        { id: 'nh_opt2', text: "Stick to the routine, it's your signature.", votes: generateRandomVotes() },
+        { id: 'nh_opt3', text: "Mix it up: natural some days, styled others.", votes: generateRandomVotes() },
+        { id: 'nh_opt4', text: "Consult a stylist for low-maintenance options.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("6 days, 23 hours, 29 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 150),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 20),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 7),
+  },
+  {
+    id: 'poll_sarah_lie',
+    creator: findUser('Sarah Young'),
+    question: "Is it okay to lie to spare someone's feelings, or is brutal honesty always the best policy?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="honesty lie"
+    options: [
+        { id: 'sl_opt1', text: "Lie gently, kindness first.", votes: generateRandomVotes() },
+        { id: 'sl_opt2', text: "Honesty, even if it hurts short-term.", votes: generateRandomVotes() },
+        { id: 'sl_opt3', text: "It depends on the severity of the lie/truth.", votes: generateRandomVotes() },
+        { id: 'sl_opt4', text: "Use white lies sparingly.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("2 days, 18 hours, 3 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 120),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 17),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 6),
+  },
+  {
+    id: 'poll_alice_creative', // Original Alice
+    creator: findUser('Alice Wonderland'),
+    question: "My creative project is stalled. Do I push through the block, or take a break and come back later?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="creative block"
+    options: [
+        { id: 'acr_opt1', text: "Push through! Discipline is key.", votes: generateRandomVotes() },
+        { id: 'acr_opt2', text: "Take a break, recharge your creativity.", votes: generateRandomVotes() },
+        { id: 'acr_opt3', text: "Seek inspiration from others.", votes: generateRandomVotes() },
+        { id: 'acr_opt4', text: "Collaborate with someone new.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("11 hours, 52 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 100),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 14),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 5),
+  },
+  {
+    id: 'poll_bella_spill',
+    creator: findUser('Bella King'),
+    question: "I accidentally spilled coffee on my friend's expensive rug. Do I confess immediately and offer to clean/pay, or try to clean it secretly?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="accident oops"
+    options: [
+        { id: 'bs_opt1', text: "Confess immediately, honesty is best.", votes: generateRandomVotes() },
+        { id: 'bs_opt2', text: "Clean it secretly, hope they don't notice.", votes: generateRandomVotes() },
+        { id: 'bs_opt3', text: "Blame the dog.", votes: generateRandomVotes() },
+        { id: 'bs_opt4', text: "Offer to buy them a new rug.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("5 days, 10 hours, 1 minute")).toISOString(),
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 140),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 19),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 6),
+  },
+  {
+    id: 'poll_chloe_party',
+    creator: findUser('Chloe Wright'),
+    question: "Is it ever okay to show up late to a party, or is punctuality always king?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="party punctuality"
+    options: [
+        { id: 'cp_opt1', text: "Fashionably late is a vibe.", votes: generateRandomVotes() },
+        { id: 'cp_opt2', text: "Always be on time, it's respectful.", votes: generateRandomVotes() },
+        { id: 'cp_opt3', text: "Only if you have a good excuse.", votes: generateRandomVotes() },
+        { id: 'cp_opt4', text: "Show up early to help set up!", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("20 days, 7 hours, 24 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 190),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 25),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 10),
+  },
+  {
+    id: 'poll_daisy_dating',
+    creator: findUser('Daisy Scott'),
+    question: "Should I tell my parents I'm dating someone they won't approve of, or keep it a secret?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="dating secret"
+    options: [
+        { id: 'dd_opt1', text: "Tell them, honesty is the best policy.", votes: generateRandomVotes() },
+        { id: 'dd_opt2', text: "Keep it secret to avoid conflict.", votes: generateRandomVotes() },
+        { id: 'dd_opt3', text: "Introduce them gradually.", votes: generateRandomVotes() },
+        { id: 'dd_opt4', text: "Wait until it's serious.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("3 days, 12 hours, 13 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 130),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 18),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 7),
+  },
+  {
+    id: 'poll_emily_coffeeshop',
+    creator: findUser('Emily Green'),
+    question: "My favorite local coffee shop is closing. Do I try to rally the community to save it, or mourn its loss quietly?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="local business"
+    options: [
+        { id: 'ecs_opt1', text: "Rally the troops! Fight for your coffee!", votes: generateRandomVotes() },
+        { id: 'ecs_opt2', text: "Mourn quietly, some things aren't meant to last.", votes: generateRandomVotes() },
+        { id: 'ecs_opt3', text: "Support other local businesses.", votes: generateRandomVotes() },
+        { id: 'ecs_opt4', text: "Start your own coffee shop.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("24 days, 16 hours, 39 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 210),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 29),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 11),
+  },
+  {
+    id: 'poll_fiona_language',
+    creator: findUser('Fiona Adams'),
+    question: "Should I learn a new language, or focus on becoming an expert in a skill I already have?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="language skill"
+    options: [
+        { id: 'fl_opt1', text: "New language! Expand your horizons.", votes: generateRandomVotes() },
+        { id: 'fl_opt2', text: "Master current skills, depth over breadth.", votes: generateRandomVotes() },
+        { id: 'fl_opt3', text: "Do both, slowly but surely.", votes: generateRandomVotes() },
+        { id: 'fl_opt4', text: "Learn a language relevant to your existing skill.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("16 hours, 5 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 90),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 12),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 5),
+  },
+  {
+    id: 'poll_grace_unfollow', // Second Grace poll
+    creator: findUser('Grace Hall'),
+    question: "Is it okay to unfollow a friend on social media if their content is consistently annoying/negative?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="social media friend"
+    options: [
+        { id: 'gu_opt1', text: "Yes, protect your peace.", votes: generateRandomVotes() },
+        { id: 'gu_opt2', text: "No, it's rude and childish.", votes: generateRandomVotes() },
+        { id: 'gu_opt3', text: "Mute them instead of unfollowing.", votes: generateRandomVotes() },
+        { id: 'gu_opt4', text: "Talk to them about it first.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("9 days, 22 hours, 47 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 170),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 22),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 9),
+  },
+  {
+    id: 'poll_hannah_pet_choice',
+    creator: findUser('Hannah Baker'),
+    question: "I'm torn between getting a dog or a cat. Help me decide, fur parents!",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="dog cat pet"
+    options: [
+        { id: 'hpc_opt1', text: "Team Dog! Loyalty and adventure.", votes: generateRandomVotes() },
+        { id: 'hpc_opt2', text: "Team Cat! Independent and cuddly.", votes: generateRandomVotes() },
+        { id: 'hpc_opt3', text: "Get both if you can handle it!", votes: generateRandomVotes() },
+        { id: 'hpc_opt4', text: "Neither, get a fish.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("1 day, 7 hours, 28 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 15 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 110),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 15),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 6),
+  },
+  {
+    id: 'poll_ivy_volunteer',
+    creator: findUser('Ivy Nelson'),
+    question: "Should I volunteer my time to a cause I believe in, or focus solely on my own self-improvement right now?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="volunteer self improvement"
+    options: [
+        { id: 'iv_opt1', text: "Volunteer! Give back to the community.", votes: generateRandomVotes() },
+        { id: 'iv_opt2', text: "Focus on self-improvement first, then volunteer.", votes: generateRandomVotes() },
+        { id: 'iv_opt3', text: "Do a little of both.", votes: generateRandomVotes() },
+        { id: 'iv_opt4', text: "Join a group that combines both!", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("17 days, 13 hours, 40 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 180),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 23),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 9),
+  },
+  {
+    id: 'poll_jessie_family',
+    creator: findUser('Jessie Carter'),
+    question: "Should I cut ties with a toxic family member, or try to maintain a relationship for the sake of 'family'?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="toxic family"
+    options: [
+        { id: 'jf_opt1', text: "Cut ties, your mental health comes first.", votes: generateRandomVotes() },
+        { id: 'jf_opt2', text: "Maintain, family is important no matter what.", votes: generateRandomVotes() },
+        { id: 'jf_opt3', text: "Set strict boundaries, limit contact.", votes: generateRandomVotes() },
+        { id: 'jf_opt4', text: "Seek family counseling.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("7 days, 2 hours, 53 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 160),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 21),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 8),
+  },
+  {
+    id: 'poll_kayla_parties',
+    creator: findUser('Kayla Mitchell'),
+    question: "I'm invited to two parties on the same night. Which one do I go to: the wild one with all my party friends, or the chill one with deep conversations?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="party choice"
+    options: [
+        { id: 'kp_opt1', text: "Wild party! YOLO!", votes: generateRandomVotes() },
+        { id: 'kp_opt2', text: "Chill party, for the soul.", votes: generateRandomVotes() },
+        { id: 'kp_opt3', text: "Go to both, make a grand entrance at each.", votes: generateRandomVotes() },
+        { id: 'kp_opt4', text: "Flip a coin.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("27 days, 19 hours, 16 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 230),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 30),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 12),
+  },
+  {
+    id: 'poll_lily_instrument',
+    creator: findUser('Lily Roberts'),
+    question: "Should I learn to play a musical instrument, even if I have no natural talent?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="music instrument"
+    options: [
+        { id: 'li_opt1', text: "Go for it! Passion over talent.", votes: generateRandomVotes() },
+        { id: 'li_opt2', text: "No, focus on what you're good at.", votes: generateRandomVotes() },
+        { id: 'li_opt3', text: "Start with something easy like ukulele.", votes: generateRandomVotes() },
+        { id: 'li_opt4', text: "Just listen to music, don't try to make it.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("18 hours, 36 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 100),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 14),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 5),
+  },
+  {
+    id: 'poll_mia_talking_self', // Second Mia poll
+    creator: findUser('Mia Jones'),
+    question: "Is it okay to talk to yourself out loud when you're alone? Asking for a friend... who is me.",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="talking self alone"
+    options: [
+        { id: 'mts_opt1', text: "Totally normal! It helps organize thoughts.", votes: generateRandomVotes() },
+        { id: 'mts_opt2', text: "Only if you don't answer yourself back.", votes: generateRandomVotes() },
+        { id: 'mts_opt3', text: "Maybe get a therapist.", votes: generateRandomVotes() },
+        { id: 'mts_opt4', text: "Only if it's in a foreign language.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("10 days, 14 hours, 49 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 170),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 22),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 9),
+  },
+  {
+    id: 'poll_nora_book_club',
+    creator: findUser('Nora Phillips'),
+    question: "Should I join a book club even though I barely read? I want to be more cultured.",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="book club reading"
+    options: [
+        { id: 'nbc_opt1', text: "Join! It'll motivate you to read.", votes: generateRandomVotes() },
+        { id: 'nbc_opt2', text: "No, don't pretend to be someone you're not.", votes: generateRandomVotes() },
+        { id: 'nbc_opt3', text: "Start with audiobooks.", votes: generateRandomVotes() },
+        { id: 'nbc_opt4', text: "Just attend the social events.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("4 days, 1 hour, 22 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 140),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 19),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 7),
+  },
+  {
+    id: 'poll_olivia_travel_world', // Second Olivia poll
+    creator: findUser('Olivia Rodriguez'),
+    question: "My dream is to travel the world. Do I save every penny, or take out a loan and go now?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="travel world money"
+    options: [
+        { id: 'otw_opt1', text: "Save every penny, travel debt-free.", votes: generateRandomVotes() },
+        { id: 'otw_opt2', text: "Go now! Life is short.", votes: generateRandomVotes() },
+        { id: 'otw_opt3', text: "Do a mix: save some, borrow a little.", votes: generateRandomVotes() },
+        { id: 'otw_opt4', text: "Find remote work and travel while working.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("29 days, 21 hours, 5 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 11 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 250),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 32),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 13),
+  },
+  {
+    id: 'poll_penny_pajamas',
+    creator: findUser('Penny Campbell'),
+    question: "Is it acceptable to wear pajamas all day if you're working from home and have no video calls?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="work from home"
+    options: [
+        { id: 'pp_opt1', text: "Absolutely, peak WFH comfort!", votes: generateRandomVotes() },
+        { id: 'pp_opt2', text: "No, get dressed, it boosts productivity.", votes: generateRandomVotes() },
+        { id: 'pp_opt3', text: "Only if they're stylish pajamas.", votes: generateRandomVotes() },
+        { id: 'pp_opt4', text: "It's a slippery slope to never changing.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("1 day, 16 hours, 30 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 20 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 120),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 17),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 6),
+  },
+  {
+    id: 'poll_quinn_cooking_elaborate',
+    creator: findUser('Quinn Evans'),
+    question: "Should I learn to cook elaborate meals, or stick to my trusty microwave dinners?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="cooking microwave"
+    options: [
+        { id: 'qce_opt1', text: "Learn to cook! It's a life skill.", votes: generateRandomVotes() },
+        { id: 'qce_opt2', text: "Microwave all the way, efficiency!", votes: generateRandomVotes() },
+        { id: 'qce_opt3', text: "Start with simple recipes, then level up.", votes: generateRandomVotes() },
+        { id: 'qce_opt4', text: "Order takeout!", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("13 days, 10 hours, 58 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 180),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 23),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 9),
+  },
+  {
+    id: 'poll_ruby_moving_in',
+    creator: findUser('Ruby Edwards'),
+    question: "My significant other wants to move in together, but I love my personal space. Do I agree or hit the brakes?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="relationship move in"
+    options: [
+        { id: 'rmi_opt1', text: "Agree, it's the next step!", votes: generateRandomVotes() },
+        { id: 'rmi_opt2', text: "Hit the brakes, personal space is vital.", votes: generateRandomVotes() },
+        { id: 'rmi_opt3', text: "Suggest a trial period.", votes: generateRandomVotes() },
+        { id: 'rmi_opt4', text: "Find a bigger place with separate zones.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("8 days, 14 hours, 45 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 160),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 21),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 8),
+  },
+  {
+    id: 'poll_sophia_organic_food', // Third Sophia Poll
+    creator: findUser('Sophia Miller'),
+    question: "Is it worth buying organic food, or is it just a marketing gimmick?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="organic food"
+    options: [
+        { id: 'sof_opt1', text: "Definitely worth it for health and environment!", votes: generateRandomVotes() },
+        { id: 'sof_opt2', text: "Marketing gimmick, save your money.", votes: generateRandomVotes() },
+        { id: 'sof_opt3', text: "Some things yes, some things no (Dirty Dozen/Clean Fifteen).", votes: generateRandomVotes() },
+        { id: 'sof_opt4', text: "Grow your own!", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("23 days, 20 hours, 17 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 200),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 26),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 11),
+  },
+  {
+    id: 'poll_tina_pet_landlord',
+    creator: findUser('Tina Collins'),
+    question: "Should I get a pet without telling my landlord, and hope they don't find out?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="pet landlord"
+    options: [
+        { id: 'tpl_opt1', text: "No! Get permission first, avoid eviction.", votes: generateRandomVotes() },
+        { id: 'tpl_opt2', text: "Yes, easier to ask forgiveness than permission.", votes: generateRandomVotes() },
+        { id: 'tpl_opt3', text: "Find a pet-friendly place.", votes: generateRandomVotes() },
+        { id: 'tpl_opt4', text: "Get a very quiet pet.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("1 hour, 34 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 80),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 10),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 4),
+  },
+  {
+    id: 'poll_ursula_vows',
+    creator: findUser('Ursula Stewart'),
+    question: "My partner wants to renew our vows on our 10th anniversary, but I feel like we're just going through the motions. Do I go along with it or be honest?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="relationship vows"
+    options: [
+        { id: 'uv_opt1', text: "Go along, it might rekindle something.", votes: generateRandomVotes() },
+        { id: 'uv_opt2', text: "Be honest, address the underlying issues.", votes: generateRandomVotes() },
+        { id: 'uv_opt3', text: "Suggest a different way to celebrate.", votes: generateRandomVotes() },
+        { id: 'uv_opt4', text: "Surprise them with couples counseling instead.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("16 days, 22 hours, 5 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 190),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 24),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 10),
+  },
+  {
+    id: 'poll_violet_minimalism',
+    creator: findUser('Violet Morris'),
+    question: "Should I embrace minimalism and declutter my entire life, or cling to my beloved possessions?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="minimalism declutter"
+    options: [
+        { id: 'vm_opt1', text: "Declutter! Freedom through less stuff.", votes: generateRandomVotes() },
+        { id: 'vm_opt2', text: "Cling! Memories are priceless.", votes: generateRandomVotes() },
+        { id: 'vm_opt3', text: "Start small, declutter one room at a time.", votes: generateRandomVotes() },
+        { id: 'vm_opt4', text: "Only keep things that 'spark joy'.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("6 days, 13 hours, 41 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 150),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 20),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 7),
+  },
+  {
+    id: 'poll_wendy_texts',
+    creator: findUser('Wendy Rogers'),
+    question: "Is it okay to secretly read my partner's text messages if I suspect they're hiding something?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="privacy texts"
+    options: [
+        { id: 'wt_opt1', text: "No! Respect their privacy.", votes: generateRandomVotes() },
+        { id: 'wt_opt2', text: "Yes, if your suspicions are strong.", votes: generateRandomVotes() },
+        { id: 'wt_opt3', text: "Talk to them directly first.", votes: generateRandomVotes() },
+        { id: 'wt_opt4', text: "Hire a private investigator.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("2 days, 19 hours, 10 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 120),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 17),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 6),
+  },
+  {
+    id: 'poll_zara_tattoo',
+    creator: findUser('Zara Reed'),
+    question: "Should I get a tattoo of my current partner's name? Everyone says it's bad luck, but I feel it's true love.",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="tattoo partner"
+    options: [
+        { id: 'zt_opt1', text: "No! Bad luck and bad ideas.", votes: generateRandomVotes() },
+        { id: 'zt_opt2', text: "Yes! Declare your love boldly.", votes: generateRandomVotes() },
+        { id: 'zt_opt3', text: "Get something symbolic instead.", votes: generateRandomVotes() },
+        { id: 'zt_opt4', text: "Wait until after you're married.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("9 hours, 56 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 100),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 13),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 5),
+  },
+  {
+    id: 'poll_zoe_hair_dye',
+    creator: findUser('Zoe Cook'),
+    question: "I'm thinking about dying my hair a crazy, unnatural color. Bold fashion statement or future regret?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="hair dye color"
+    options: [
+        { id: 'zhd_opt1', text: "Bold statement! Express yourself.", votes: generateRandomVotes() },
+        { id: 'zhd_opt2', text: "Future regret, stick to natural.", votes: generateRandomVotes() },
+        { id: 'zhd_opt3', text: "Try a temporary color first.", votes: generateRandomVotes() },
+        { id: 'zhd_opt4', text: "Consult a colorist for best results.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("5 days, 4 hours, 23 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 140),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 19),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 7),
+  },
+  {
+    id: 'poll_ethan_career_switch', // Second Ethan poll
     creator: findUser('Ethan Morgan'),
     question: "Should I go back to school to switch careers in my 40s? It feels like now or never.",
-    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="career change education"
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="career switch"
     options: [
-        { id: 'eth_opt1', text: "Now or never! Invest in your future.", votes: generateRandomVotes() },
-        { id: 'eth_opt2', text: "Too late, focus on retirement.", votes: generateRandomVotes() },
-        { id: 'eth_opt3', text: "Part-time study, gradual transition.", votes: generateRandomVotes() },
-        { id: 'eth_opt4', text: "Explore certifications instead of a full degree.", votes: generateRandomVotes() },
+        { id: 'ecs_opt1', text: "Now or never! Invest in your future.", votes: generateRandomVotes() },
+        { id: 'ecs_opt2', text: "Too late, focus on retirement.", votes: generateRandomVotes() },
+        { id: 'ecs_opt3', text: "Part-time study, gradual transition.", votes: generateRandomVotes() },
+        { id: 'ecs_opt4', text: "Explore certifications instead of a full degree.", votes: generateRandomVotes() },
     ],
     deadline: new Date(Date.now() + parseTimeRemaining("20 days, 11 hours, 57 minutes")).toISOString(),
     createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
@@ -427,19 +1162,19 @@ const initialPolls: Poll[] = [
     totalVotes: 0,
     commentsCount: Math.floor(Math.random() * 24),
     isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
     tipCount: Math.floor(Math.random() * 9),
   },
-  // Frank laser pointer poll
   {
-    id: 'poll_frank_laser',
+    id: 'poll_frank_laser_pet', // Second Frank poll
     creator: findUser('Frank Bell'),
     question: "My pet is obsessed with chasing laser pointers. Is it fun for them, or secretly frustrating because they can never 'catch' it?",
-    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="pet cat dog laser"
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="pet laser"
     options: [
-        { id: 'fra_opt1', text: "Fun and good exercise!", votes: generateRandomVotes() },
-        { id: 'fra_opt2', text: "Frustrating, avoid them.", votes: generateRandomVotes() },
-        { id: 'fra_opt3', text: "Use it as a warm-up, then a real toy.", votes: generateRandomVotes() },
-        { id: 'fra_opt4', text: "Only if there's a tangible reward at the end.", votes: generateRandomVotes() },
+        { id: 'flp_opt1', text: "Fun and good exercise!", votes: generateRandomVotes() },
+        { id: 'flp_opt2', text: "Frustrating, avoid them.", votes: generateRandomVotes() },
+        { id: 'flp_opt3', text: "Use it as a warm-up, then a real toy.", votes: generateRandomVotes() },
+        { id: 'flp_opt4', text: "Only if there's a tangible reward at the end.", votes: generateRandomVotes() },
     ],
     deadline: new Date(Date.now() + parseTimeRemaining("3 days, 19 hours, 32 minutes")).toISOString(),
     createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
@@ -447,19 +1182,119 @@ const initialPolls: Poll[] = [
     totalVotes: 0,
     commentsCount: Math.floor(Math.random() * 17),
     isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
     tipCount: Math.floor(Math.random() * 6),
   },
-  // David boss credit poll
-   {
-    id: 'poll_david_boss',
+  {
+    id: 'poll_gary_resume',
+    creator: findUser('Gary Murphy'),
+    question: "Is it ever okay to lie on a resume to get a job, then learn the skills quickly?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="resume job lie"
+    options: [
+        { id: 'gr_opt1', text: "No, it's unethical and you'll get caught.", votes: generateRandomVotes() },
+        { id: 'gr_opt2', text: "Yes, if you're confident you can learn fast.", votes: generateRandomVotes() },
+        { id: 'gr_opt3', text: "Only if it's a minor exaggeration.", votes: generateRandomVotes() },
+        { id: 'gr_opt4', text: "Better to be honest and highlight transferable skills.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("25 days, 6 hours, 8 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 220),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 28),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 12),
+  },
+  {
+    id: 'poll_henry_polyamory',
+    creator: findUser('Henry Bailey'),
+    question: "Should I try polyamory with my long-term partner? It sounds exciting but also terrifying.",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="polyamory relationship"
+    options: [
+        { id: 'hp_opt1', text: "Explore it, but with clear boundaries and communication.", votes: generateRandomVotes() },
+        { id: 'hp_opt2', text: "No, stick to monogamy.", votes: generateRandomVotes() },
+        { id: 'hp_opt3', text: "Suggest an open relationship first.", votes: generateRandomVotes() },
+        { id: 'hp_opt4', text: "Seek couples therapy to discuss it.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("1 hour, 47 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 80),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 10),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 4),
+  },
+  {
+    id: 'poll_ian_fiance',
+    creator: findUser('Ian Cooper'),
+    question: "My best friend just got engaged, but I secretly hate their fiancé. Do I fake enthusiasm or express my concerns?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="friend engagement"
+    options: [
+        { id: 'if_opt1', text: "Fake enthusiasm, it's their happiness.", votes: generateRandomVotes() },
+        { id: 'if_opt2', text: "Express concerns gently and privately.", votes: generateRandomVotes() },
+        { id: 'if_opt3', text: "Distance yourself from the friendship.", votes: generateRandomVotes() },
+        { id: 'if_opt4', text: "Get to know the fiancé better.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("16 days, 23 hours, 12 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 190),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 25),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 10),
+  },
+  {
+    id: 'poll_jack_vcard', // Assuming this is the original 'Jack' and not the one renamed to Justin earlier
+    creator: findUser('Jack Howard'), // If 'Jack' was supposed to be unique and is now 'Justin', update this or add a new 'Jack'
+    question: "Finna lose my V-card, besties. To wrap it or not to wrap it? Low-key kinda nervous but also wanna YOLO. What's the tea?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="young adult decision"
+    options: [
+        { id: 'jv_opt1', text: "Always wrap it, no cap. Safety first!", votes: generateRandomVotes() },
+        { id: 'jv_opt2', text: "YOLO, but smart YOLO. Get tested, then maybe raw dog it.", votes: generateRandomVotes() },
+        { id: 'jv_opt3', text: "Nah, pull out game strong. Trust the vibes.", votes: generateRandomVotes() },
+        { id: 'jv_opt4', text: "Do both! Wrap it then pull out. Double protection.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("6 hours, 38 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 200) + 50,
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 20) + 5,
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 16),
+  },
+  {
+    id: 'poll_justin_beer',
+    creator: findUser('Justin Kelly'),
+    question: "Wife just gave me the side-eye for another beer during the game. My team's down, and I need this. Do I risk the wrath or just hydrate?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="beer game wife"
+    options: [
+        { id: 'jb_opt1', text: "Go for it! It's game day, you earned it.", votes: generateRandomVotes() },
+        { id: 'jb_opt2', text: "Nah, happy wife, happy life. Stick to water.", votes: generateRandomVotes() },
+        { id: 'jb_opt3', text: "Sneak one. She'll never know.", votes: generateRandomVotes() },
+        { id: 'jb_opt4', text: "Compromise: One more, then you owe her a back rub.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("11 days, 15 hours, 3 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 170),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 22),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 8),
+  },
+  {
+    id: 'poll_david_boss_credit', // Second David poll
     creator: findUser('David Kelly'),
     question: "My boss is taking credit for my ideas. Do I speak up and risk my job, or let them shine and fume in silence?",
-    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="work conflict boss"
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="work boss"
     options: [
-        { id: 'db_opt1', text: "Speak up! Your work deserves recognition.", votes: generateRandomVotes() },
-        { id: 'db_opt2', text: "Suck it up, play the long game.", votes: generateRandomVotes() },
-        { id: 'db_opt3', text: "Document everything and build a case.", votes: generateRandomVotes() },
-        { id: 'db_opt4', text: "Start looking for a new job.", votes: generateRandomVotes() },
+        { id: 'dbc_opt1', text: "Speak up! Your work deserves recognition.", votes: generateRandomVotes() },
+        { id: 'dbc_opt2', text: "Suck it up, play the long game.", votes: generateRandomVotes() },
+        { id: 'dbc_opt3', text: "Document everything and build a case.", votes: generateRandomVotes() },
+        { id: 'dbc_opt4', text: "Start looking for a new job.", votes: generateRandomVotes() },
     ],
     deadline: new Date(Date.now() + parseTimeRemaining("5 days, 1 hour, 27 minutes")).toISOString(),
     createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
@@ -467,19 +1302,59 @@ const initialPolls: Poll[] = [
     totalVotes: 0,
     commentsCount: Math.floor(Math.random() * 29),
     isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
     tipCount: Math.floor(Math.random() * 14),
   },
-  // John dream vacation poll
   {
-    id: 'poll_john_vacation',
+    id: 'poll_michael_marriage',
+    creator: findUser('Michael Sanders'),
+    question: "After 25 years, my marriage feels like a forgotten Netflix subscription. Do I finally cancel it or try to find a new series to binge together?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="marriage netflix"
+    options: [
+        { id: 'mm_opt1', text: "It's time to explore new horizons. You deserve happiness.", votes: generateRandomVotes() },
+        { id: 'mm_opt2', text: "Try couples counseling. You've invested too much to give up easily.", votes: generateRandomVotes() },
+        { id: 'mm_opt3', text: "Take a break, assess, then decide. No rushed decisions.", votes: generateRandomVotes() },
+        { id: 'mm_opt4', text: "Rekindle the spark with a grand gesture.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("22 days, 18 hours, 40 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 240),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 31),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 13),
+  },
+  {
+    id: 'poll_james_snacks',
+    creator: findUser('James Price'),
+    question: "My doctor said I should cut down on late-night snacks. But how am I supposed to watch my shows without my chips and salsa? Give me the hard truth.",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="snacks doctor"
+    options: [
+        { id: 'js_opt1', text: "Swap snacks for fruit/veggies. Healthy crunch!", votes: generateRandomVotes() },
+        { id: 'js_opt2', text: "Limit it to once a week. Treat yourself responsibly.", votes: generateRandomVotes() },
+        { id: 'js_opt3', text: "Eat dinner later. No need for snacks if you're full.", votes: generateRandomVotes() },
+        { id: 'js_opt4', text: "Ignore the doctor, live a little!", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("13 hours, 2 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 110),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 15),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 5),
+  },
+  {
+    id: 'poll_john_vacation_budget', // Second John poll
     creator: findUser('John Bennett'),
     question: "Dream vacation: Backpacking through Europe on a shoestring budget, or luxury resort in the Maldives? My wallet says one, my soul says the other.",
-    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="travel vacation budget"
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="vacation budget"
     options: [
-        { id: 'jv_opt1', text: "Embrace the adventure, Europe!", votes: generateRandomVotes() },
-        { id: 'jv_opt2', text: "Maldives, treat yourself!", votes: generateRandomVotes() },
-        { id: 'jv_opt3', text: "Save up and do both later.", votes: generateRandomVotes() },
-        { id: 'jv_opt4', text: "Compromise: A fancy staycation.", votes: generateRandomVotes() },
+        { id: 'jvb_opt1', text: "Embrace the adventure, Europe!", votes: generateRandomVotes() },
+        { id: 'jvb_opt2', text: "Maldives, treat yourself!", votes: generateRandomVotes() },
+        { id: 'jvb_opt3', text: "Save up and do both later.", votes: generateRandomVotes() },
+        { id: 'jvb_opt4', text: "Compromise: A fancy staycation.", votes: generateRandomVotes() },
     ],
     deadline: new Date(Date.now() + parseTimeRemaining("18 days, 9 hours, 59 minutes")).toISOString(),
     createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
@@ -487,47 +1362,1227 @@ const initialPolls: Poll[] = [
     totalVotes: 0,
     commentsCount: Math.floor(Math.random() * 38),
     isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
     tipCount: Math.floor(Math.random() * 16),
   },
-  // Olivia roommate poll (duplicate from above, using different ID)
   {
-    id: 'poll_olivia_roommate_2',
-    creator: findUser('Olivia Rodriguez'), // Same Olivia
-    question: 'My roommate never cleans. Do I create a chore chart, or passive-aggressively clean only my side?',
-    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="roommate chores conflict"
+    id: 'poll_robert_llama',
+    creator: findUser('Robert Wood'),
+    question: "Should I quit my stable but soul-crushing job to pursue my passion for llama grooming? My parents think I'm nuts.",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="job passion llama"
     options: [
-      { id: 'or2_opt1', text: 'Chore chart! Clear expectations.', votes: generateRandomVotes() },
-      { id: 'or2_opt2', text: 'Passive aggression wins every time.', votes: generateRandomVotes() },
-      { id: 'or2_opt3', text: 'Move out.', votes: generateRandomVotes() },
-      { id: 'or2_opt4', text: 'Hire a cleaner for common areas.', votes: generateRandomVotes() },
+        { id: 'rl_opt1', text: "Follow your dreams, llamas await!", votes: generateRandomVotes() },
+        { id: 'rl_opt2', text: "Stay put, security is key.", votes: generateRandomVotes() },
+        { id: 'rl_opt3', text: "Part-time llama grooming first, then decide.", votes: generateRandomVotes() },
+        { id: 'rl_opt4', text: "Find a new stable job that doesn't crush your soul.", votes: generateRandomVotes() },
     ],
-    deadline: new Date(Date.now() + parseTimeRemaining("2 days, 14 hours, 55 minutes")).toISOString(),
+    deadline: new Date(Date.now() + parseTimeRemaining("6 days, 20 hours, 15 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 150),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 20),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 7),
+  },
+  {
+    id: 'poll_ava_ex_wedding', // Second Ava poll
+    creator: findUser('Ava Williams'),
+    question: "My ex just invited me to their wedding. Do I go and be the bigger person, or politely decline and avoid the drama?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="ex wedding"
+    options: [
+        { id: 'aew_opt1', text: "Go, show them you're thriving!", votes: generateRandomVotes() },
+        { id: 'aew_opt2', text: "Decline, spare yourself the awkwardness.", votes: generateRandomVotes() },
+        { id: 'aew_opt3', text: "Send a nice gift, but don't attend.", votes: generateRandomVotes() },
+        { id: 'aew_opt4', text: "Bring a hotter date.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("2 days, 5 hours, 42 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 120),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 16),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 6),
+  },
+  {
+    id: 'poll_lily_white_labor_day', // Second Lily poll
+    creator: findUser('Lily Roberts'),
+    question: "Is it okay to wear white after Labor Day? My grandma would have a fit, but it's such a cute outfit!",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="fashion rules"
+    options: [
+        { id: 'lwld_opt1', text: "Fashion rules are meant to be broken!", votes: generateRandomVotes() },
+        { id: 'lwld_opt2', text: "Stick to tradition, respect your elders.", votes: generateRandomVotes() },
+        { id: 'lwld_opt3', text: "Who cares? Wear what makes you happy!", votes: generateRandomVotes() },
+        { id: 'lwld_opt4', text: "Only if it's a winter white.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("21 days, 14 hours, 36 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 200),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 27),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 11),
+  },
+  {
+    id: 'poll_emily_cat_counter', // Second Emily poll
+    creator: findUser('Emily Green'),
+    question: "My cat keeps knocking things off the counter just to get attention. Do I ignore her, or teach her a lesson (humanely, of course)?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="cat behavior"
+    options: [
+        { id: 'ecc_opt1', text: "Ignore the behavior, she's craving attention.", votes: generateRandomVotes() },
+        { id: 'ecc_opt2', text: "Use positive reinforcement for good behavior.", votes: generateRandomVotes() },
+        { id: 'ecc_opt3', text: "A gentle squirt bottle works wonders.", votes: generateRandomVotes() },
+        { id: 'ecc_opt4', text: "Accept your fate; you live with a cat.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("1 day, 9 hours, 5 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 16 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 110),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 15),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 6),
+  },
+  {
+    id: 'poll_charlotte_wallet', // Second Charlotte poll
+    creator: findUser('Charlotte Wilson'),
+    question: "I found a wallet with a huge wad of cash. Do I return it to the address inside, or 'find' a way to make it disappear?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="found wallet cash"
+    options: [
+        { id: 'cw_opt1', text: "Return it immediately, it's the right thing to do.", votes: generateRandomVotes() },
+        { id: 'cw_opt2', text: "Keep it, finders keepers!", votes: generateRandomVotes() },
+        { id: 'cw_opt3', text: "Turn it into the police station.", votes: generateRandomVotes() },
+        { id: 'cw_opt4', text: "Donate it to a charity in their name.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("15 days, 17 hours, 29 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 190),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 25),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 10),
+  },
+  {
+    id: 'poll_hannah_diy_bathroom', // Second Hannah poll
+    creator: findUser('Hannah Baker'),
+    question: "Should I DIY my bathroom renovation and save a ton, or hire a pro and avoid a potential disaster?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="diy renovation"
+    options: [
+        { id: 'hdb_opt1', text: "DIY! You'll learn so much.", votes: generateRandomVotes() },
+        { id: 'hdb_opt2', text: "Hire a pro, peace of mind is priceless.", votes: generateRandomVotes() },
+        { id: 'hdb_opt3', text: "Start DIY, call a pro when it gets tough.", votes: generateRandomVotes() },
+        { id: 'hdb_opt4', text: "Watch YouTube tutorials and then decide.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("3 days, 16 hours, 50 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 130),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 18),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 7),
+  },
+  {
+    id: 'poll_sophia_superhero_cape', // Fourth Sophia Poll
+    creator: findUser('Sophia Miller'),
+    question: "My toddler insists on wearing their superhero cape to daycare every day. Do I let them, or make them wear 'normal' clothes?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="toddler superhero"
+    options: [
+        { id: 'ssc_opt1', text: "Let them shine! Embrace the cape.", votes: generateRandomVotes() },
+        { id: 'ssc_opt2', text: "Daycare has a dress code for a reason.", votes: generateRandomVotes() },
+        { id: 'ssc_opt3', text: "Compromise: Cape for playtime only.", votes: generateRandomVotes() },
+        { id: 'ssc_opt4', text: "Use it as a bargaining chip for good behavior.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("26 days, 22 hours, 1 minute")).toISOString(),
+    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 220),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 29),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 12),
+  },
+  {
+    id: 'poll_ava_matching_tattoo', // Third Ava poll
+    creator: findUser('Ava Williams'),
+    question: "My partner wants to get a matching tattoo. I love them, but... forever? Should I say yes or suggest something less permanent?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="matching tattoo"
+    options: [
+        { id: 'amt_opt1', text: "Go for it! True love ink.", votes: generateRandomVotes() },
+        { id: 'amt_opt2', text: "Suggest temporary tattoos first.", votes: generateRandomVotes() },
+        { id: 'amt_opt3', text: "Decline gracefully, it's a big commitment.", votes: generateRandomVotes() },
+        { id: 'amt_opt4', text: "Get it somewhere easily hidden.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("10 hours, 11 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 100),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 13),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 5),
+  },
+  {
+    id: 'poll_olivia_shave_head', // Third Olivia poll
+    creator: findUser('Olivia Rodriguez'),
+    question: "Should I shave my head for charity, even though I've had long hair my whole life? It's for a great cause but also... my hair!",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="shave head charity"
+    options: [
+        { id: 'osh_opt1', text: "Do it! A bold move for a good cause.", votes: generateRandomVotes() },
+        { id: 'osh_opt2', text: "Donate money instead, keep the hair.", votes: generateRandomVotes() },
+        { id: 'osh_opt3', text: "Cut it short, but not all the way.", votes: generateRandomVotes() },
+        { id: 'osh_opt4', text: "Wig it out afterward!", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("4 days, 18 hours, 33 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 140),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 19),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 7),
+  },
+  {
+    id: 'poll_sarah_dog_barking', // Second Sarah poll
+    creator: findUser('Sarah Young'),
+    question: "My neighbor's dog barks constantly. Do I confront them directly, leave a polite note, or suffer in silence?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="dog barking neighbor"
+    options: [
+        { id: 'sdb_opt1', text: "Direct confrontation, but be polite.", votes: generateRandomVotes() },
+        { id: 'sdb_opt2', text: "Leave an anonymous, polite note.", votes: generateRandomVotes() },
+        { id: 'sdb_opt3', text: "Suffer, it's not worth the drama.", votes: generateRandomVotes() },
+        { id: 'sdb_opt4', text: "Offer to walk their dog.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("19 days, 1 hour, 46 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 200),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 26),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 10),
+  },
+  {
+    id: 'poll_emma_pineapple_pizza', // Second Emma poll
+    creator: findUser('Emma Davis'),
+    question: "Is pineapple on pizza an abomination or a stroke of genius? The debate rages on.",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="pineapple pizza"
+    options: [
+        { id: 'epp_opt1', text: "Genius! Sweet and savory perfection.", votes: generateRandomVotes() },
+        { id: 'epp_opt2', text: "Abomination! Keep fruit off my pizza.", votes: generateRandomVotes() },
+        { id: 'epp_opt3', text: "Only if it's accompanied by ham.", votes: generateRandomVotes() },
+        { id: 'epp_opt4', text: "I'm neutral, but I respect the passion.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("7 days, 17 hours, 25 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 160),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 21),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 8),
+  },
+  {
+    id: 'poll_amelia_senior_dog', // Second Amelia poll
+    creator: findUser('Amelia Taylor'),
+    question: "I'm thinking of adopting a senior dog. Is it a noble act of kindness or setting myself up for heartbreak too soon?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="adopt senior dog"
+    options: [
+        { id: 'asd_opt1', text: "Noble and rewarding! Give them a good home.", votes: generateRandomVotes() },
+        { id: 'asd_opt2', text: "Heartbreak is inevitable, consider a younger dog.", votes: generateRandomVotes() },
+        { id: 'asd_opt3', text: "Focus on the present joy, not future sorrow.", votes: generateRandomVotes() },
+        { id: 'asd_opt4', text: "Fosters first to see if it's a fit.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("2 days, 21 hours, 54 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 120),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 17),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 6),
+  },
+  {
+    id: 'poll_grace_bridesmaid_dress', // Third Grace poll
+    creator: findUser('Grace Hall'),
+    question: "My friend wants me to be a bridesmaid, but the dress is hideous and expensive. Do I suck it up or decline?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="bridesmaid dress"
+    options: [
+        { id: 'gbd_opt1', text: "Suck it up, it's their big day!", votes: generateRandomVotes() },
+        { id: 'gbd_opt2', text: "Decline politely, explain your reasons.", votes: generateRandomVotes() },
+        { id: 'gbd_opt3', text: "Offer to pay for part of the dress.", votes: generateRandomVotes() },
+        { id: 'gbd_opt4', text: "Suggest a different dress style.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("23 days, 15 hours, 3 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 210),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 28),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 11),
+  },
+  {
+    id: 'poll_elizabeth_regift', // Second Elizabeth poll
+    creator: findUser('Elizabeth Martin'),
+    question: "Is it okay to re-gift a present if I know the person will actually use it?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="regift present"
+    options: [
+        { id: 'er_opt1', text: "Yes, practical and resourceful!", votes: generateRandomVotes() },
+        { id: 'er_opt2', text: "No, it's tacky and disrespectful.", votes: generateRandomVotes() },
+        { id: 'er_opt3', text: "Only if the original giver will never know.", votes: generateRandomVotes() },
+        { id: 'er_opt4', text: "Only if it's truly something they'll love.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("14 hours, 51 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 90),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 12),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 5),
+  },
+  {
+    id: 'poll_victoria_solo_trip', // Second Victoria poll
+    creator: findUser('Victoria Lee'),
+    question: "I'm considering a spontaneous solo trip across the country. Brave and empowering, or reckless and lonely?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="solo trip"
+    options: [
+        { id: 'vst_opt1', text: "Brave! Embrace the adventure.", votes: generateRandomVotes() },
+        { id: 'vst_opt2', text: "Reckless, plan it out first.", votes: generateRandomVotes() },
+        { id: 'vst_opt3', text: "Empowering, but bring a friend.", votes: generateRandomVotes() },
+        { id: 'vst_opt4', text: "Visit first, then decide.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("2 days, 6 hours, 28 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 120),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 16),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 6),
+  },
+  {
+    id: 'poll_madison_plants_dying', // Second Madison poll
+    creator: findUser('Madison Perez'),
+    question: "My plants are dying despite my best efforts. Do I give up on being a plant parent or buy more and try again?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="plants dying"
+    options: [
+        { id: 'mpd_opt1', text: "Try again! Green thumb in the making.", votes: generateRandomVotes() },
+        { id: 'mpd_opt2', text: "Give up, plants aren't for everyone.", votes: generateRandomVotes() },
+        { id: 'mpd_opt3', text: "Get a low-maintenance plant.", votes: generateRandomVotes() },
+        { id: 'mpd_opt4', text: "Hire a plant sitter.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("28 days, 16 hours, 43 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 230),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 30),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 12),
+  },
+  {
+    id: 'poll_liam_crypto', // Second Liam poll
+    creator: findUser('Liam Garcia'),
+    question: "Should I invest my small savings in crypto and potentially get rich quick, or put it in a boring old savings account?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="crypto savings"
+    options: [
+        { id: 'lc_opt1', text: "To the moon! Crypto all the way.", votes: generateRandomVotes() },
+        { id: 'lc_opt2', text: "Play it safe, savings account.", votes: generateRandomVotes() },
+        { id: 'lc_opt3', text: "Diversify! A little bit of both.", votes: generateRandomVotes() },
+        { id: 'lc_opt4', text: "Consult a financial advisor first.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("9 days, 23 hours, 56 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 170),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 22),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 9),
+  },
+  {
+    id: 'poll_ben_clothes',
+    creator: findUser('Ben Ross'),
+    question: "My partner keeps 'borrowing' my clothes without asking. Do I hide them, or just accept it's a shared wardrobe now?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="partner clothes"
+    options: [
+        { id: 'bc_opt1', text: "Hide them! These are MY clothes.", votes: generateRandomVotes() },
+        { id: 'bc_opt2', text: "Accept it, sharing is caring (sometimes).", votes: generateRandomVotes() },
+        { id: 'bc_opt3', text: "Buy them their own similar clothes.", votes: generateRandomVotes() },
+        { id: 'bc_opt4', text: "Have a designated 'borrowing' drawer.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("15 days, 1 hour, 19 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 190),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 25),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 10),
+  },
+  {
+    id: 'poll_chris_minimalism',
+    creator: findUser('Chris Henderson'),
+    question: "Should I embrace minimalism and declutter my entire life, or cling to my beloved possessions?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="minimalism declutter possessions"
+    options: [
+        { id: 'cm_opt1', text: "Declutter! Freedom through less stuff.", votes: generateRandomVotes() },
+        { id: 'cm_opt2', text: "Cling! Memories are priceless.", votes: generateRandomVotes() },
+        { id: 'cm_opt3', text: "Start small, declutter one room at a time.", votes: generateRandomVotes() },
+        { id: 'cm_opt4', text: "Only keep things that 'spark joy'.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("30 days, 10 hours, 2 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 11 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 250),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 32),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 14),
+  },
+  {
+    id: 'poll_daniel_moving_in',
+    creator: findUser('Daniel Coleman'),
+    question: "My significant other wants to move in together, but I love my personal space. Do I agree or hit the brakes?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="relationship move personal space"
+    options: [
+        { id: 'dmi_opt1', text: "Agree, it's the next step!", votes: generateRandomVotes() },
+        { id: 'dmi_opt2', text: "Hit the brakes, personal space is vital.", votes: generateRandomVotes() },
+        { id: 'dmi_opt3', text: "Suggest a trial period.", votes: generateRandomVotes() },
+        { id: 'dmi_opt4', text: "Find a bigger place with separate zones.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("7 days, 18 hours, 39 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 160),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 21),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 8),
+  },
+  {
+    id: 'poll_olivia_organic_food', // Fourth Olivia poll
+    creator: findUser('Olivia Rodriguez'),
+    question: "Is it worth buying organic food, or is it just a marketing gimmick?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="organic food shopping"
+    options: [
+        { id: 'oof_opt1', text: "Definitely worth it for health and environment!", votes: generateRandomVotes() },
+        { id: 'oof_opt2', text: "Marketing gimmick, save your money.", votes: generateRandomVotes() },
+        { id: 'oof_opt3', text: "Some things yes, some things no (Dirty Dozen/Clean Fifteen).", votes: generateRandomVotes() },
+        { id: 'oof_opt4', text: "Grow your own!", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("2 days, 14 hours, 55 minutes")).toISOString(), // Similar to another Olivia, maybe a recurring thought
     createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
     likes: Math.floor(Math.random() * 130),
     totalVotes: 0,
     commentsCount: Math.floor(Math.random() * 19),
     isVoted: Math.random() > 0.5,
-    tipCount: Math.floor(Math.random() * 7),
     pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 7),
   },
-  // Leo new language poll
   {
-    id: 'poll_leo_language',
-    creator: findUser('Leo Jenkins'),
-    question: "Should I learn a new language, or focus on becoming an expert in a skill I already have?",
-    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="language learning skill"
+    id: 'poll_emma_vows_renewal', // Third Emma poll
+    creator: findUser('Emma Davis'),
+    question: "My partner wants to renew our vows on our 10th anniversary, but I feel like we're just going through the motions. Do I go along with it or be honest?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="vows renewal relationship"
     options: [
-        { id: 'll_opt1', text: "New language! Expand your horizons.", votes: generateRandomVotes() },
-        { id: 'll_opt2', text: "Master current skills, depth over breadth.", votes: generateRandomVotes() },
-        { id: 'll_opt3', text: "Do both, slowly but surely.", votes: generateRandomVotes() },
-        { id: 'll_opt4', text: "Learn a language relevant to your existing skill.", votes: generateRandomVotes() },
+        { id: 'evr_opt1', text: "Go along, it might rekindle something.", votes: generateRandomVotes() },
+        { id: 'evr_opt2', text: "Be honest, address the underlying issues.", votes: generateRandomVotes() },
+        { id: 'evr_opt3', text: "Suggest a different way to celebrate.", votes: generateRandomVotes() },
+        { id: 'evr_opt4', text: "Surprise them with couples counseling instead.", votes: generateRandomVotes() },
     ],
-    deadline: new Date(Date.now() + parseTimeRemaining("24 days, 18 hours, 3 minutes")).toISOString(),
-    createdAt: new Date(Date.now() - 12 * 24 * 60 * 60 * 1000).toISOString(),
+    deadline: new Date(Date.now() + parseTimeRemaining("24 days, 6 hours, 29 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 210),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 28),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 11),
+  },
+  {
+    id: 'poll_chloe_pet_landlord', // Second Chloe poll
+    creator: findUser('Chloe Wright'),
+    question: "Should I get a pet without telling my landlord, and hope they don't find out?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="pet landlord secret"
+    options: [
+        { id: 'cpl_opt1', text: "No! Get permission first, avoid eviction.", votes: generateRandomVotes() },
+        { id: 'cpl_opt2', text: "Yes, easier to ask forgiveness than permission.", votes: generateRandomVotes() },
+        { id: 'cpl_opt3', text: "Find a pet-friendly place.", votes: generateRandomVotes() },
+        { id: 'cpl_opt4', text: "Get a very quiet pet.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("19 hours, 4 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 100),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 13),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 5),
+  },
+  {
+    id: 'poll_lily_reading_texts', // Third Lily poll
+    creator: findUser('Lily Roberts'),
+    question: "Is it okay to secretly read my partner's text messages if I suspect they're hiding something?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="privacy relationship texts"
+    options: [
+        { id: 'lrt_opt1', text: "No! Respect their privacy.", votes: generateRandomVotes() },
+        { id: 'lrt_opt2', text: "Yes, if your suspicions are strong.", votes: generateRandomVotes() },
+        { id: 'lrt_opt3', text: "Talk to them directly first.", votes: generateRandomVotes() },
+        { id: 'lrt_opt4', text: "Hire a private investigator.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("11 days, 19 hours, 58 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
     likes: Math.floor(Math.random() * 170),
     totalVotes: 0,
-    commentsCount: Math.floor(Math.random() * 23),
+    commentsCount: Math.floor(Math.random() * 22),
     isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 9),
+  },
+  {
+    id: 'poll_ava_partner_tattoo', // Fourth Ava poll
+    creator: findUser('Ava Williams'),
+    question: "Should I get a tattoo of my current partner's name? Everyone says it's bad luck, but I feel it's true love.",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="tattoo partner love"
+    options: [
+        { id: 'apt_opt1', text: "No! Bad luck and bad ideas.", votes: generateRandomVotes() },
+        { id: 'apt_opt2', text: "Yes! Declare your love boldly.", votes: generateRandomVotes() },
+        { id: 'apt_opt3', text: "Get something symbolic instead.", votes: generateRandomVotes() },
+        { id: 'apt_opt4', text: "Wait until after you're married.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("5 days, 8 hours, 35 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 140),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 19),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 7),
+  },
+  {
+    id: 'poll_sophia_crazy_hair', // Fifth Sophia poll
+    creator: findUser('Sophia Miller'),
+    question: "I'm thinking about dying my hair a crazy, unnatural color. Bold fashion statement or future regret?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="hair dye fashion"
+    options: [
+        { id: 'sch_opt1', text: "Bold statement! Express yourself.", votes: generateRandomVotes() },
+        { id: 'sch_opt2', text: "Future regret, stick to natural.", votes: generateRandomVotes() },
+        { id: 'sch_opt3', text: "Try a temporary color first.", votes: generateRandomVotes() },
+        { id: 'sch_opt4', text: "Consult a colorist for best results.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("20 days, 14 hours, 21 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 200),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 26),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 11),
+  },
+  {
+    id: 'poll_harper_career_school', // Second Harper poll
+    creator: findUser('Harper Anderson'),
+    question: "Should I go back to school to switch careers in my 40s? It feels like now or never.",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="career school 40s"
+    options: [
+        { id: 'hcs_opt1', text: "Now or never! Invest in your future.", votes: generateRandomVotes() },
+        { id: 'hcs_opt2', text: "Too late, focus on retirement.", votes: generateRandomVotes() },
+        { id: 'hcs_opt3', text: "Part-time study, gradual transition.", votes: generateRandomVotes() },
+        { id: 'hcs_opt4', text: "Explore certifications instead of a full degree.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("3 days, 22 hours, 44 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 130),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 18),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 7),
+  },
+  {
+    id: 'poll_evelyn_laser_pet', // Second Evelyn poll
+    creator: findUser('Evelyn Thomas'),
+    question: "My pet is obsessed with chasing laser pointers. Is it fun for them, or secretly frustrating because they can never 'catch' it?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="pet laser play"
+    options: [
+        { id: 'elp_opt1', text: "Fun and good exercise!", votes: generateRandomVotes() },
+        { id: 'elp_opt2', text: "Frustrating, avoid them.", votes: generateRandomVotes() },
+        { id: 'elp_opt3', text: "Use it as a warm-up, then a real toy.", votes: generateRandomVotes() },
+        { id: 'elp_opt4', text: "Only if there's a tangible reward at the end.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("25 days, 9 hours, 17 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 220),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 29),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 12),
+  },
+  {
+    id: 'poll_abigail_resume_lie', // Second Abigail poll
+    creator: findUser('Abigail Jackson'),
+    question: "Is it ever okay to lie on a resume to get a job, then learn the skills quickly?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="resume lie job"
+    options: [
+        { id: 'arl_opt1', text: "No, it's unethical and you'll get caught.", votes: generateRandomVotes() },
+        { id: 'arl_opt2', text: "Yes, if you're confident you can learn fast.", votes: generateRandomVotes() },
+        { id: 'arl_opt3', text: "Only if it's a minor exaggeration.", votes: generateRandomVotes() },
+        { id: 'arl_opt4', text: "Better to be honest and highlight transferable skills.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("1 hour, 5 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 70),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 9),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 3),
+  },
+  {
+    id: 'poll_ella_polyamory', // Second Ella poll
+    creator: findUser('Ella White'),
+    question: "Should I try polyamory with my long-term partner? It sounds exciting but also terrifying.",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="polyamory relationship advice"
+    options: [
+        { id: 'ep_opt1', text: "Explore it, but with clear boundaries and communication.", votes: generateRandomVotes() },
+        { id: 'ep_opt2', text: "No, stick to monogamy.", votes: generateRandomVotes() },
+        { id: 'ep_opt3', text: "Suggest an open relationship first.", votes: generateRandomVotes() },
+        { id: 'ep_opt4', text: "Seek couples therapy to discuss it.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("17 days, 12 hours, 30 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 190),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 25),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 10),
+  },
+  {
+    id: 'poll_scarlett_fiance_hate', // Second Scarlett poll
+    creator: findUser('Scarlett Harris'),
+    question: "My best friend just got engaged, but I secretly hate their fiancé. Do I fake enthusiasm or express my concerns?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="friend engagement conflict"
+    options: [
+        { id: 'sfh_opt1', text: "Fake enthusiasm, it's their happiness.", votes: generateRandomVotes() },
+        { id: 'sfh_opt2', text: "Express concerns gently and privately.", votes: generateRandomVotes() },
+        { id: 'sfh_opt3', text: "Distance yourself from the friendship.", votes: generateRandomVotes() },
+        { id: 'sfh_opt4', text: "Get to know the fiancé better.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("6 days, 21 hours, 49 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 150),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 20),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 8),
+  },
+  {
+    id: 'poll_elizabeth_cooking_meals', // Third Elizabeth poll
+    creator: findUser('Elizabeth Martin'),
+    question: "Should I learn to cook elaborate meals, or stick to my trusty microwave dinners?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="cooking microwave meals"
+    options: [
+        { id: 'ecm_opt1', text: "Learn to cook! It's a life skill.", votes: generateRandomVotes() },
+        { id: 'ecm_opt2', text: "Microwave all the way, efficiency!", votes: generateRandomVotes() },
+        { id: 'ecm_opt3', text: "Start with simple recipes, then level up.", votes: generateRandomVotes() },
+        { id: 'ecm_opt4', text: "Order takeout!", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("2 days, 10 hours, 6 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 120),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 16),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 6),
+  },
+  {
+    id: 'poll_sofia_roommate_cleaning', // Second 'Sofia' (using Sophia Miller) poll
+    creator: findUser('Sophia Miller'), // Assuming this 'Sofia' is 'Sophia Miller'
+    question: 'My roommate never cleans. Do I create a chore chart, or passive-aggressively clean only my side?',
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="roommate cleaning conflict"
+    options: [
+      { id: 'src_opt1', text: 'Chore chart! Clear expectations.', votes: generateRandomVotes() },
+      { id: 'src_opt2', text: 'Passive aggression wins every time.', votes: generateRandomVotes() },
+      { id: 'src_opt3', text: 'Move out.', votes: generateRandomVotes() },
+      { id: 'src_opt4', text: 'Hire a cleaner for common areas.', votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("23 days, 14 hours, 43 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 210),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 28),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 11),
+  },
+  {
+    id: 'poll_camila_career_family_balance', // Second Camila poll
+    creator: findUser('Camila Thompson'),
+    question: "Is it truly possible to balance a demanding career and a fulfilling family life, or is one always sacrificed for the other?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="career family balance"
+    options: [
+        { id: 'ccfb_opt1', text: "Yes, with careful planning and boundaries.", votes: generateRandomVotes() },
+        { id: 'ccfb_opt2', text: "No, it's an impossible dream for most.", votes: generateRandomVotes() },
+        { id: 'ccfb_opt3', text: "It depends on your definition of 'balance'.", votes: generateRandomVotes() },
+        { id: 'ccfb_opt4', text: "Outsource everything!", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("15 hours, 31 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 90),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 12),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 5),
+  },
+  {
+    id: 'poll_aria_dirty_socks', // Second Aria poll
+    creator: findUser('Aria Moore'),
+    question: "My partner keeps leaving their dirty socks everywhere. Do I passive-aggressively put them on their pillow, or actually talk about it?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="dirty socks partner"
+    options: [
+        { id: 'ads_opt1', text: "Pillow revenge! It's a classic.", votes: generateRandomVotes() },
+        { id: 'ads_opt2', text: "Communicate, it's the adult thing to do.", votes: generateRandomVotes() },
+        { id: 'ads_opt3', text: "Hire a maid.", votes: generateRandomVotes() },
+        { id: 'ads_opt4', text: "Collect them and present them as a 'gift'.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("10 days, 2 hours, 59 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 170),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 22),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 9),
+  },
+  {
+    id: 'poll_victoria_third_date', // Third Victoria poll
+    creator: findUser('Victoria Lee'),
+    question: "Should I go on a third date with someone who's super hot but has absolutely no ambition, or cut my losses?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="third date ambition"
+    options: [
+        { id: 'vtd_opt1', text: "Hotness fades, ambition lasts. Cut losses.", votes: generateRandomVotes() },
+        { id: 'vtd_opt2', text: "Enjoy the hotness while it lasts!", votes: generateRandomVotes() },
+        { id: 'vtd_opt3', text: "Give them another chance, maybe they'll grow.", votes: generateRandomVotes() },
+        { id: 'vtd_opt4', text: "Friend-zone them and find someone with ambition.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("4 days, 13 hours, 24 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 140),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 19),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 7),
+  },
+  {
+    id: 'poll_madison_masters_degree', // Third Madison poll
+    creator: findUser('Madison Perez'),
+    question: "Should I pursue a master's degree to advance my career, even if it means taking on significant student debt?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="masters degree debt"
+    options: [
+        { id: 'mmd_opt1', text: "Invest in yourself, it will pay off.", votes: generateRandomVotes() },
+        { id: 'mmd_opt2', text: "Debt is a trap, explore other options.", votes: generateRandomVotes() },
+        { id: 'mmd_opt3', text: "Only if you're passionate about the subject.", votes: generateRandomVotes() },
+        { id: 'mmd_opt4', text: "Crunch the numbers, is the ROI worth it?", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("19 days, 19 hours, 18 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 200),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 26),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 10),
+  },
+  {
+    id: 'poll_luna_new_city', // Second Luna poll
+    creator: findUser('Luna Walker'),
+    question: "I'm thinking of moving to a completely new city where I know no one. Exciting fresh start, or terrifying leap into the unknown?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="new city move"
+    options: [
+        { id: 'lnc_opt1', text: "Exciting! Embrace the new adventure.", votes: generateRandomVotes() },
+        { id: 'lnc_opt2', text: "Terrifying, build a network first.", votes: generateRandomVotes() },
+        { id: 'lnc_opt3', text: "Do it, you'll grow immensely.", votes: generateRandomVotes() },
+        { id: 'lnc_opt4', text: "Visit first, then decide.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("7 days, 4 hours, 51 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 160),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 21),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 8),
+  },
+  {
+    id: 'poll_grace_confess_feelings', // Fourth Grace poll
+    creator: findUser('Grace Hall'),
+    question: "Should I confess my feelings to my long-time friend, even if it risks ruining our friendship?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="confess feelings friend"
+    options: [
+        { id: 'gcf_opt1', text: "Take the leap! You'll regret not knowing.", votes: generateRandomVotes() },
+        { id: 'gcf_opt2', text: "Keep it platonic, friendship is too valuable.", votes: generateRandomVotes() },
+        { id: 'gcf_opt3', text: "Test the waters subtly first.", votes: generateRandomVotes() },
+        { id: 'gcf_opt4', text: "Wait for them to make a move.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("2 days, 20 hours, 10 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 120),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 17),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 6),
+  },
+  {
+    id: 'poll_natalie_car_repair', // Second Natalie poll
+    creator: findUser('Natalie Allen'),
+    question: "My car is on its last legs. Do I repair it one last time, or finally buy a new (or used) one?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="car repair buy"
+    options: [
+        { id: 'ncr_opt1', text: "Repair it, squeeze out every last mile.", votes: generateRandomVotes() },
+        { id: 'ncr_opt2', text: "New car time! Enjoy the reliability.", votes: generateRandomVotes() },
+        { id: 'ncr_opt3', text: "Used car, better value.", votes: generateRandomVotes() },
+        { id: 'ncr_opt4', text: "Public transport is the way!", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("24 days, 11 hours, 37 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 210),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 28),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 11),
+  },
+  {
+    id: 'poll_sarah_honesty_feelings', // Third Sarah poll
+    creator: findUser('Sarah Young'),
+    question: "Is it okay to lie to spare someone's feelings, or is brutal honesty always the best policy?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="honesty feelings lie"
+    options: [
+        { id: 'shf_opt1', text: "Lie gently, kindness first.", votes: generateRandomVotes() },
+        { id: 'shf_opt2', text: "Honesty, even if it hurts short-term.", votes: generateRandomVotes() },
+        { id: 'shf_opt3', text: "It depends on the severity of the lie/truth.", votes: generateRandomVotes() },
+        { id: 'shf_opt4', text: "Use white lies sparingly.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("16 hours, 23 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 90),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 12),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 5),
+  },
+  {
+    id: 'poll_alice_extreme_sport', // Second Alice poll
+    creator: findUser('Alice Wonderland'),
+    question: "Should I try a new, extreme sport like skydiving or rock climbing, or stick to my cozy hobbies?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="extreme sport hobbies"
+    options: [
+        { id: 'aes_opt1', text: "Go for it! Adrenaline rush!", votes: generateRandomVotes() },
+        { id: 'aes_opt2', text: "Stay cozy, safety first.", votes: generateRandomVotes() },
+        { id: 'aes_opt3', text: "Start small, try bouldering first.", votes: generateRandomVotes() },
+        { id: 'aes_opt4', text: "Live vicariously through YouTube.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("11 days, 8 hours, 4 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 170),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 22),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 9),
+  },
+  {
+    id: 'poll_bella_pet_surgery', // Second Bella poll
+    creator: findUser('Bella King'),
+    question: "My pet needs an expensive surgery. Do I drain my savings for it, or consider other options?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="pet surgery money"
+    options: [
+        { id: 'bps_opt1', text: "Save your pet, cost is secondary!", votes: generateRandomVotes() },
+        { id: 'bps_opt2', text: "Consider quality of life, explore alternatives.", votes: generateRandomVotes() },
+        { id: 'bps_opt3', text: "Look for financial aid/pet charities.", votes: generateRandomVotes() },
+        { id: 'bps_opt4', text: "It's just a pet, be practical.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("5 days, 2 hours, 16 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 140),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 19),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 7),
+  },
+  {
+    id: 'poll_lily_apology_timing', // Fourth Lily poll
+    creator: findUser('Lily Roberts'),
+    question: "Is it better to apologize immediately when you're wrong, or wait until emotions cool down?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="apology timing"
+    options: [
+        { id: 'lat_opt1', text: "Immediately, clear the air.", votes: generateRandomVotes() },
+        { id: 'lat_opt2', text: "Wait, a calm apology is more effective.", votes: generateRandomVotes() },
+        { id: 'lat_opt3', text: "It depends on the situation.", votes: generateRandomVotes() },
+        { id: 'lat_opt4', text: "Never apologize, assert dominance!", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("20 days, 16 hours, 32 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 200),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 26),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 10),
+  },
+  {
+    id: 'poll_emma_social_media_confront', // Fourth Emma poll
+    creator: findUser('Emma Davis'),
+    question: "Should I confront my friend about their problematic social media posts, or is it not my place?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="social media confront"
+    options: [
+        { id: 'esmc_opt1', text: "Confront them privately, from a place of care.", votes: generateRandomVotes() },
+        { id: 'esmc_opt2', text: "It's not your place, let them be.", votes: generateRandomVotes() },
+        { id: 'esmc_opt3', text: "Unfollow/mute them.", votes: generateRandomVotes() },
+        { id: 'esmc_opt4', text: "Publicly call them out.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("3 days, 15 hours, 48 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 130),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 18),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 7),
+  },
+  {
+    id: 'poll_olivia_freelance_client', // Fifth Olivia poll
+    creator: findUser('Olivia Rodriguez'),
+    question: "I'm a freelancer and a potential client is offering a huge project but has a terrible reputation. Do I take the money or protect my peace?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="freelance client reputation"
+    options: [
+        { id: 'ofc_opt1', text: "Take the money, deal with the headache later.", votes: generateRandomVotes() },
+        { id: 'ofc_opt2', text: "Protect your peace, it's not worth it.", votes: generateRandomVotes() },
+        { id: 'ofc_opt3', text: "Negotiate stricter terms and upfront payment.", votes: generateRandomVotes() },
+        { id: 'ofc_opt4', text: "Get a lawyer to review the contract.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("25 days, 12 hours, 5 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 220),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 29),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 12),
+  },
+  {
+    id: 'poll_charlotte_kids_pressure', // Third Charlotte poll
+    creator: findUser('Charlotte Wilson'),
+    question: "My parents are pressuring me to have kids. Do I give in or stand my ground on my childfree choice?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="kids pressure childfree"
+    options: [
+        { id: 'ckp_opt1', text: "It's your life, stand your ground!", votes: generateRandomVotes() },
+        { id: 'ckp_opt2', text: "Consider it, maybe you'll change your mind.", votes: generateRandomVotes() },
+        { id: 'ckp_opt3', text: "Compromise: get a pet instead.", votes: generateRandomVotes() },
+        { id: 'ckp_opt4', text: "Tell them you're infertile (jk... mostly).", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("2 hours, 10 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 80),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 10),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 4),
+  },
+  {
+    id: 'poll_amelia_designer_splurge', // Third Amelia poll
+    creator: findUser('Amelia Taylor'),
+    question: "Should I splurge on this designer item I've been eyeing, or save that money for something more practical?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="designer splurge money"
+    options: [
+        { id: 'ads_opt1', text: "Treat yourself! You deserve it.", votes: generateRandomVotes() },
+        { id: 'ads_opt2', text: "Save it, practicality wins.", votes: generateRandomVotes() },
+        { id: 'ads_opt3', text: "Set a budget and stick to it.", votes: generateRandomVotes() },
+        { id: 'ads_opt4', text: "Buy a high-quality dupe.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("17 days, 1 hour, 39 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 190),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 25),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 10),
+  },
+  {
+    id: 'poll_harper_job_offer', // Third Harper poll
+    creator: findUser('Harper Anderson'),
+    question: "I received a job offer but I'm also waiting to hear back from my dream company. Do I accept or hold out?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="job offer dream company"
+    options: [
+        { id: 'hjo_opt1', text: "Accept the offer, a bird in hand...", votes: generateRandomVotes() },
+        { id: 'hjo_opt2', text: "Hold out for the dream job, it's worth the risk.", votes: generateRandomVotes() },
+        { id: 'hjo_opt3', text: "Ask for an extension on the offer.", votes: generateRandomVotes() },
+        { id: 'hjo_opt4', text: "Negotiate for a later start date.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("6 days, 17 hours, 28 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 150),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 20),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 8),
+  },
+  {
+    id: 'poll_evelyn_natural_hair', // Third Evelyn poll
+    creator: findUser('Evelyn Thomas'),
+    question: "Should I embrace my natural hair texture, or continue with my elaborate styling routine?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="natural hair routine"
+    options: [
+        { id: 'enh_opt1', text: "Embrace the natural! Freedom awaits.", votes: generateRandomVotes() },
+        { id: 'enh_opt2', text: "Stick to the routine, it's your signature.", votes: generateRandomVotes() },
+        { id: 'enh_opt3', text: "Mix it up: natural some days, styled others.", votes: generateRandomVotes() },
+        { id: 'enh_opt4', text: "Consult a stylist for low-maintenance options.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("2 days, 15 hours, 45 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 120),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 17),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 6),
+  },
+  {
+    id: 'poll_abigail_honesty_lie', // Third Abigail poll
+    creator: findUser('Abigail Jackson'),
+    question: "Is it okay to lie to spare someone's feelings, or is brutal honesty always the best policy?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="honesty lie feelings"
+    options: [
+        { id: 'ahl_opt1', text: "Lie gently, kindness first.", votes: generateRandomVotes() },
+        { id: 'ahl_opt2', text: "Honesty, even if it hurts short-term.", votes: generateRandomVotes() },
+        { id: 'ahl_opt3', text: "It depends on the severity of the lie/truth.", votes: generateRandomVotes() },
+        { id: 'ahl_opt4', text: "Use white lies sparingly.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("23 days, 10 hours, 19 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 210),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 28),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 11),
+  },
+  {
+    id: 'poll_ella_creative_block', // Third Ella poll
+    creator: findUser('Ella White'),
+    question: "My creative project is stalled. Do I push through the block, or take a break and come back later?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="creative block project"
+    options: [
+        { id: 'ecb_opt1', text: "Push through! Discipline is key.", votes: generateRandomVotes() },
+        { id: 'ecb_opt2', text: "Take a break, recharge your creativity.", votes: generateRandomVotes() },
+        { id: 'ecb_opt3', text: "Seek inspiration from others.", votes: generateRandomVotes() },
+        { id: 'ecb_opt4', text: "Collaborate with someone new.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("15 hours, 7 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 7 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 90),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 12),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 5),
+  },
+  {
+    id: 'poll_scarlett_bangs_face_shape', // Third Scarlett poll
+    creator: findUser('Scarlett Harris'),
+    question: 'Should I get bangs? It feels like a big commitment for my face shape.',
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="haircut bangs face shape"
+    options: [
+      { id: 'sbf_opt1', text: 'Go for it! Hair grows back.', votes: generateRandomVotes() },
+      { id: 'sbf_opt2', text: 'No bangs, too much maintenance.', votes: generateRandomVotes() },
+      { id: 'sbf_opt3', text: 'Try clip-in bangs first.', votes: generateRandomVotes() },
+      { id: 'sbf_opt4', text: 'Ask your stylist for their professional opinion.', votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("10 days, 21 hours, 53 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 170),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 22),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 9),
+  },
+  {
+    id: 'poll_elizabeth_coffee_spill', // Fourth Elizabeth poll
+    creator: findUser('Elizabeth Martin'),
+    question: "I accidentally spilled coffee on my friend's expensive rug. Do I confess immediately and offer to clean/pay, or try to clean it secretly?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="coffee spill rug"
+    options: [
+        { id: 'ecs_opt1', text: "Confess immediately, honesty is best.", votes: generateRandomVotes() },
+        { id: 'ecs_opt2', text: "Clean it secretly, hope they don't notice.", votes: generateRandomVotes() },
+        { id: 'ecs_opt3', text: "Blame the dog.", votes: generateRandomVotes() },
+        { id: 'ecs_opt4', text: "Offer to buy them a new rug.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("4 days, 6 hours, 26 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 140),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 19),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 7),
+  },
+  {
+    id: 'poll_sofia_party_late', // Third 'Sofia' (using Sophia Miller) poll
+    creator: findUser('Sophia Miller'),
+    question: "Is it ever okay to show up late to a party, or is punctuality always king?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="party late punctuality"
+    options: [
+        { id: 'spl_opt1', text: "Fashionably late is a vibe.", votes: generateRandomVotes() },
+        { id: 'spl_opt2', text: "Always be on time, it's respectful.", votes: generateRandomVotes() },
+        { id: 'spl_opt3', text: "Only if you have a good excuse.", votes: generateRandomVotes() },
+        { id: 'spl_opt4', text: "Show up early to help set up!", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("19 days, 2 hours, 40 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 200),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 26),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 10),
+  },
+  {
+    id: 'poll_camila_dating_secret', // Third Camila poll
+    creator: findUser('Camila Thompson'),
+    question: "Should I tell my parents I'm dating someone they won't approve of, or keep it a secret?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="dating secret parents"
+    options: [
+        { id: 'cds_opt1', text: "Tell them, honesty is the best policy.", votes: generateRandomVotes() },
+        { id: 'cds_opt2', text: "Keep it secret to avoid conflict.", votes: generateRandomVotes() },
+        { id: 'cds_opt3', text: "Introduce them gradually.", votes: generateRandomVotes() },
+        { id: 'cds_opt4', text: "Wait until it's serious.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("7 days, 15 hours, 5 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 160),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 21),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 8),
+  },
+  {
+    id: 'poll_aria_coffee_shop_closing', // Third Aria poll
+    creator: findUser('Aria Moore'),
+    question: "My favorite local coffee shop is closing. Do I try to rally the community to save it, or mourn its loss quietly?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="coffee shop closing"
+    options: [
+        { id: 'acsc_opt1', text: "Rally the troops! Fight for your coffee!", votes: generateRandomVotes() },
+        { id: 'acsc_opt2', text: "Mourn quietly, some things aren't meant to last.", votes: generateRandomVotes() },
+        { id: 'acsc_opt3', text: "Support other local businesses.", votes: generateRandomVotes() },
+        { id: 'acsc_opt4', text: "Start your own coffee shop.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("2 days, 11 hours, 28 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 120),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 16),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 6),
+  },
+  {
+    id: 'poll_leo_new_language_skill', // Second Leo poll
+    creator: findUser('Leo Jenkins'),
+    question: "Should I learn a new language, or focus on becoming an expert in a skill I already have?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="language skill learning"
+    options: [
+        { id: 'lnls_opt1', text: "New language! Expand your horizons.", votes: generateRandomVotes() },
+        { id: 'lnls_opt2', text: "Master current skills, depth over breadth.", votes: generateRandomVotes() },
+        { id: 'lnls_opt3', text: "Do both, slowly but surely.", votes: generateRandomVotes() },
+        { id: 'lnls_opt4', text: "Learn a language relevant to your existing skill.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("24 days, 18 hours, 3 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 210),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 28),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 11),
+  },
+  {
+    id: 'poll_mark_unfollow_friend',
+    creator: findUser('Mark Perry'),
+    question: "Is it okay to unfollow a friend on social media if their content is consistently annoying/negative?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="unfollow friend social media"
+    options: [
+        { id: 'muf_opt1', text: "Yes, protect your peace.", votes: generateRandomVotes() },
+        { id: 'muf_opt2', text: "No, it's rude and childish.", votes: generateRandomVotes() },
+        { id: 'muf_opt3', text: "Mute them instead of unfollowing.", votes: generateRandomVotes() },
+        { id: 'muf_opt4', text: "Talk to them about it first.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("17 hours, 49 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 90),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 12),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 5),
+  },
+  {
+    id: 'poll_nate_dog_cat',
+    creator: findUser('Nate Powell'),
+    question: "I'm torn between getting a dog or a cat. Help me decide, fur parents!",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="dog cat decision"
+    options: [
+        { id: 'ndc_opt1', text: "Team Dog! Loyalty and adventure.", votes: generateRandomVotes() },
+        { id: 'ndc_opt2', text: "Team Cat! Independent and cuddly.", votes: generateRandomVotes() },
+        { id: 'ndc_opt3', text: "Get both if you can handle it!", votes: generateRandomVotes() },
+        { id: 'ndc_opt4', text: "Neither, get a fish.", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("12 days, 10 hours, 14 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 170),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 22),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
+    tipCount: Math.floor(Math.random() * 9),
+  },
+  {
+    id: 'poll_oscar_volunteer_self',
+    creator: findUser('Oscar Long'),
+    question: "Should I volunteer my time to a cause I believe in, or focus solely on my own self-improvement right now?",
+    imageUrls: ['https://placehold.co/600x400.png'], // data-ai-hint="volunteer self improvement balance"
+    options: [
+        { id: 'ovs_opt1', text: "Volunteer! Give back to the community.", votes: generateRandomVotes() },
+        { id: 'ovs_opt2', text: "Focus on self-improvement first, then volunteer.", votes: generateRandomVotes() },
+        { id: 'ovs_opt3', text: "Do a little of both.", votes: generateRandomVotes() },
+        { id: 'ovs_opt4', text: "Join a group that combines both!", votes: generateRandomVotes() },
+    ],
+    deadline: new Date(Date.now() + parseTimeRemaining("6 days, 2 hours, 36 minutes")).toISOString(),
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    likes: Math.floor(Math.random() * 150),
+    totalVotes: 0,
+    commentsCount: Math.floor(Math.random() * 20),
+    isVoted: Math.random() > 0.5,
+    pledgeAmount: (Math.random() > 0.85) ? (Math.floor(Math.random() * 20) + 5) : undefined,
     tipCount: Math.floor(Math.random() * 8),
   },
 ];
@@ -547,9 +2602,20 @@ export const mockPolls: Poll[] = processedPolls;
 // Function to get more polls, simulating API call for infinite scroll
 export const fetchMorePolls = async (offset: number, limit: number): Promise<Poll[]> => {
   console.log(`Fetching more polls: offset ${offset}, limit ${limit}`);
-  // For this demo, if we've shown all initial detailed polls, return empty or generate very generic ones.
-  // This ensures the "You've reached the end!" message eventually appears.
-  if (offset >= mockPolls.length && mockPolls.length > 20) { // only stop if initial list is large
+  
+  const remainingInitialPolls = mockPolls.slice(offset, offset + limit);
+
+  if (remainingInitialPolls.length > 0) {
+     return new Promise(resolve => {
+        setTimeout(() => {
+            resolve(remainingInitialPolls);
+        }, 300);
+     });
+  }
+  
+  // If no more initial polls, then generate generic ones or return empty
+  // For this demo, if we've shown all initial detailed polls, return empty.
+  if (offset >= mockPolls.length) { 
      return new Promise(resolve => {
         setTimeout(() => {
             resolve([]);
@@ -570,7 +2636,7 @@ export const fetchMorePolls = async (offset: number, limit: number): Promise<Pol
         }));
         const totalGeneratedVotes = options.reduce((sum, opt) => sum + opt.votes, 0);
         return {
-          id: `gen_poll_${offset + i + 1000}`, // Ensure unique IDs
+          id: `gen_poll_${offset + i + 10000}`, // Ensure unique IDs
           creator,
           question: `Generic generated poll question #${offset + i + 1}? What do you think?`,
           options,
@@ -590,3 +2656,4 @@ export const fetchMorePolls = async (offset: number, limit: number): Promise<Pol
     }, 500); // Simulate network delay
   });
 };
+
