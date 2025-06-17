@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -23,17 +24,17 @@ export default function BottomNavigationBar() {
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           return (
-            <Link href={item.href} key={item.label} legacyBehavior>
-              <a
-                className={cn(
-                  'flex flex-col items-center justify-center text-xs p-2 rounded-md transition-colors',
-                  isActive ? 'text-nav-active' : 'text-nav-foreground hover:text-nav-active/80'
-                )}
-                aria-current={isActive ? 'page' : undefined}
-              >
-                <item.icon className={cn('w-6 h-6 mb-0.5', isActive ? 'fill-nav-active/20' : '')} strokeWidth={isActive ? 2.5 : 2} />
-                {item.label}
-              </a>
+            <Link
+              href={item.href}
+              key={item.label}
+              className={cn(
+                'flex flex-col items-center justify-center text-xs p-2 rounded-md transition-colors',
+                isActive ? 'text-nav-active' : 'text-nav-foreground hover:text-nav-active/80'
+              )}
+              aria-current={isActive ? 'page' : undefined}
+            >
+              <item.icon className={cn('w-6 h-6 mb-0.5', isActive ? 'fill-nav-active/20' : '')} strokeWidth={isActive ? 2.5 : 2} />
+              {item.label}
             </Link>
           );
         })}
