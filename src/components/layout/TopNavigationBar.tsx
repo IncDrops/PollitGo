@@ -6,23 +6,21 @@ import { Settings2, UserCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const GreenCheckDot = () => (
-  <svg 
-    width="1em" 
-    height="1em" 
+  <svg
     viewBox="0 0 28 28"
-    fill="none" 
-    xmlns="http://www.w3.org/2000/svg" 
-    style={{ 
-      display: 'inline-block', 
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    style={{
+      display: 'inline-block',
       verticalAlign: 'middle',
-      transform: 'translateY(-0.15em)', 
-      marginLeft: '-0.1em', 
-      marginRight: '0.05em' 
+      transform: 'translateY(-0.15em)', // Lifts the dot
+      marginLeft: '-0.1em',      // Pulls dot left to sit over 'i'
+      marginRight: '0.05em',     // Pushes next char ('t') slightly right
     }}
-    className="h-[0.6em] w-[0.6em]"
+    className="h-[0.6em] w-[0.6em]" // Size of the dot
   >
-    <circle cx="14" cy="14" r="12" fill="#00bf63"/>
-    <path d="M9 14.5L12.5 18L19 11" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+    <circle cx="14" cy="14" r="12" fill="#00bf63"/> {/* Green circle */}
+    <path d="M9 14.5L12.5 18L19 11" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/> {/* White checkmark */}
   </svg>
 );
 
@@ -36,14 +34,14 @@ export default function TopNavigationBar() {
           <div className="flex flex-col items-start cursor-pointer">
             <h1 className="text-3xl font-headline font-bold leading-none">
               <span style={{ color: '#0629be' }}>Poll</span>
-              <span style={{ color: '#f6bc18' }}>
-                i<GreenCheckDot />t
-              </span>
+              <span style={{ color: '#f6bc18' }}>i</span>
+              <GreenCheckDot />
+              <span style={{ color: '#f6bc18' }}>t</span>
               <span style={{ color: '#0629be' }}>A</span>
               <span style={{ color: '#00bf63' }}>Go</span>
             </h1>
-            <p className="text-xs font-alice -mt-0.5" style={{color: '#f6bc18', letterSpacing: '0.05em'}}>
-              THE OFFICIAL 2nd OPINION APP
+            <p className="text-xs font-alice -mt-0.5 text-foreground" style={{ letterSpacing: '0.05em' }}>
+              THE 2nd OPINION APP
             </p>
           </div>
         </Link>
