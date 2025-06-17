@@ -5,18 +5,38 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { Poll } from '@/types';
 import PollCard from './PollCard';
 import { mockPolls, fetchMorePolls } from '@/lib/mockData';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Zap } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const pollCardVariants = {
+  initial: { opacity: 0, y: 50, scale: 0.95 },
+  animate: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 400, damping: 30 } },
+  exit: (custom: 'left' | 'right' | 'default') => {
+    if (custom === 'left') {
+      return { x: -300, opacity: 0, rotate: -10, transition: { duration: 0.3 } };
+    }
+    if (custom === 'right') {
+      return { x: 300, opacity: 0, rotate: 10, transition: { duration: 0.3 } };
+    }
+    return { opacity: 0, scale: 0.8, transition: { duration: 0.3 } }; // Default exit for non-swipe removals if any
+  }
+};
+
 
 export default function PollFeed() {
-  const [polls, setPolls] = useState<Poll[]>([]); // Start with empty and load initial
+  const [polls, setPolls] = useState<Poll[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
   const observer = useRef<IntersectionObserver | null>(null);
+  
+  // To store the exit direction for AnimatePresence
+  const [exitDirectionMap, setExitDirectionMap] = useState<Record<string, 'left' | 'right' | 'default'>>({});
+
 
   const loadInitialPolls = useCallback(async () => {
     setLoading(true);
-    const initialPollsData = await fetchMorePolls(0, 5); // Load initial 5 polls
+    const initialPollsData = await fetchMorePolls(0, 5);
     setPolls(initialPollsData);
     setHasMore(initialPollsData.length > 0);
     setLoading(false);
@@ -54,7 +74,7 @@ export default function PollFeed() {
   );
 
   const handleVote = (pollId: string, optionId: string) => {
-    setPolls(prevPolls => 
+    setPolls(prevPolls =>
       prevPolls.map(p => {
         if (p.id === pollId && !p.isVoted) {
           const newTotalVotes = p.totalVotes + 1;
@@ -63,7 +83,7 @@ export default function PollFeed() {
             isVoted: true,
             votedOptionId: optionId,
             totalVotes: newTotalVotes,
-            options: p.options.map(opt => 
+            options: p.options.map(opt =>
               opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
             )
           };
@@ -74,10 +94,10 @@ export default function PollFeed() {
     console.log(`Voted for option ${optionId} in poll ${pollId}`);
   };
 
-  const handlePollActionComplete = (pollIdToRemove: string) => {
+  const handlePollActionComplete = (pollIdToRemove: string, swipeDirection?: 'left' | 'right') => {
+    setExitDirectionMap(prev => ({ ...prev, [pollIdToRemove]: swipeDirection || 'default' }));
     setPolls(prevPolls => prevPolls.filter(p => p.id !== pollIdToRemove));
-     // If we're running out of polls, try to load more
-    if (polls.length <= 5 && hasMore) { // Threshold to trigger early load
+    if (polls.length <= 5 && hasMore) {
         loadMorePolls();
     }
   };
@@ -90,7 +110,7 @@ export default function PollFeed() {
       </div>
     );
   }
-  
+
   if (!initialLoad && polls.length === 0 && !hasMore) {
      return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
@@ -101,17 +121,32 @@ export default function PollFeed() {
       );
   }
 
-
   return (
-    <div className="w-full space-y-0">
-      {polls.map((poll, index) => {
-        const isLastElement = polls.length === index + 1;
-        return (
-          <div ref={isLastElement ? lastPollElementRef : null} key={poll.id} className="min-h-[1px]">
-            <PollCard poll={poll} onVote={handleVote} onPollActionComplete={handlePollActionComplete} />
-          </div>
-        );
-      })}
+    <div className="w-full space-y-0 relative"> {/* Added relative for stacking context if needed */}
+      <AnimatePresence initial={false} custom={exitDirectionMap}>
+        {polls.map((poll, index) => {
+          const isLastElement = polls.length === index + 1;
+          return (
+            <motion.div
+              key={poll.id}
+              layout // Enables smooth re-ordering
+              custom={exitDirectionMap[poll.id] || 'default'}
+              variants={pollCardVariants}
+              initial="initial"
+              animate="animate"
+              exit="exit"
+              className="min-h-[1px]" // Ensures div takes up space for layout animation
+              ref={isLastElement ? lastPollElementRef : null}
+            >
+              <PollCard
+                poll={poll}
+                onVote={handleVote}
+                onPollActionComplete={handlePollActionComplete}
+              />
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
       {loading && !initialLoad && (
         <div className="flex justify-center items-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
