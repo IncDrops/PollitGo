@@ -25,7 +25,7 @@ const pollCardVariants = {
 
 const MIN_PAYOUT_PER_VOTER = 0.10;
 const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50;
-const BATCH_SIZE = 7; // Number of polls to fetch each time
+const BATCH_SIZE = 7; 
 
 export default function PollFeed() {
   const [polls, setPolls] = useState<Poll[]>([]);
@@ -33,6 +33,7 @@ export default function PollFeed() {
   const [hasMore, setHasMore] = useState(true);
   const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const observer = useRef<IntersectionObserver | null>(null);
+  const loaderTriggerRef = useRef<HTMLDivElement | null>(null); // Ref for the loader trigger element
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const { toast } = useToast();
   const [exitDirectionMap, setExitDirectionMap] = useState<Record<string, 'left' | 'right' | 'default'>>({});
@@ -61,7 +62,6 @@ export default function PollFeed() {
 
 
   useEffect(() => {
-    // Perform initial load
     if (!initialLoadComplete && polls.length === 0 && !loading) {
       loadMorePolls(true);
     }
@@ -69,30 +69,40 @@ export default function PollFeed() {
 
 
   useEffect(() => {
-    // This effect reacts to changes in polls.length, typically after a poll is removed.
-    if (initialLoadComplete && !loading && hasMore) {
-      if (polls.length < BATCH_SIZE && polls.length > 0) { 
-        loadMorePolls();
-      }
+    // This effect reacts to changes in polls.length, to load more if list becomes too short after removals.
+    if (initialLoadComplete && !loading && hasMore && polls.length > 0 && polls.length < BATCH_SIZE ) { 
+      loadMorePolls();
     }
   }, [polls.length, initialLoadComplete, loading, hasMore, loadMorePolls]);
 
 
-  const lastPollElementRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      if (loading) return;
-      if (observer.current) observer.current.disconnect();
+  useEffect(() => {
+    // This effect sets up the IntersectionObserver for infinite scrolling.
+    if (loading || !initialLoadComplete || !hasMore) return;
 
-      observer.current = new IntersectionObserver((entries) => {
-        if (initialLoadComplete && entries[0]?.isIntersecting && hasMore && !loading) {
+    const currentLoaderTrigger = loaderTriggerRef.current;
+    if (currentLoaderTrigger) {
+      const obs = new IntersectionObserver((entries) => {
+        if (entries[0]?.isIntersecting && hasMore && !loading) {
           loadMorePolls();
         }
-      }, { rootMargin: "200px" }); // Added rootMargin here
+      }, { rootMargin: "200px" }); // rootMargin helps trigger loading a bit before exact end
+      
+      obs.observe(currentLoaderTrigger);
+      observer.current = obs; // Store the observer instance
+    }
 
-      if (node) observer.current.observe(node);
-    },
-    [loading, hasMore, initialLoadComplete, loadMorePolls]
-  );
+    return () => {
+      if (observer.current && currentLoaderTrigger) {
+        observer.current.unobserve(currentLoaderTrigger);
+      }
+      if (observer.current) {
+        observer.current.disconnect(); // Disconnect observer on cleanup
+        observer.current = null;
+      }
+    };
+  }, [loading, hasMore, initialLoadComplete, loadMorePolls]); // Rerun when these deps change
+
 
   const handleVote = (pollId: string, optionId: string) => {
     const pollIndex = polls.findIndex(p => p.id === pollId);
@@ -172,31 +182,33 @@ export default function PollFeed() {
   return (
     <div className="w-full space-y-0 relative">
       <AnimatePresence initial={false} custom={exitDirectionMap}>
-        {polls.map((poll, index) => {
-          const isLastElement = polls.length === index + 1;
-          return (
-            <motion.div
-              key={poll.id}
-              layout
-              custom={exitDirectionMap[poll.id] || 'default'}
-              variants={pollCardVariants}
-              initial="initial"
-              animate="animate"
-              exit="exit"
-              className="min-h-[1px]" 
-              ref={isLastElement ? lastPollElementRef : null}
-            >
-              <PollCard
-                poll={poll}
-                onVote={handleVote}
-                onPollActionComplete={handlePollActionComplete}
-                currentUser={currentUser}
-                onPledgeOutcome={handlePledgeOutcome}
-              />
-            </motion.div>
-          );
-        })}
+        {polls.map((poll) => (
+          <motion.div
+            key={poll.id}
+            layout
+            custom={exitDirectionMap[poll.id] || 'default'}
+            variants={pollCardVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="min-h-[1px]" 
+          >
+            <PollCard
+              poll={poll}
+              onVote={handleVote}
+              onPollActionComplete={handlePollActionComplete}
+              currentUser={currentUser}
+              onPledgeOutcome={handlePledgeOutcome}
+            />
+          </motion.div>
+        ))}
       </AnimatePresence>
+      
+      {/* Loader Trigger Element */}
+      {initialLoadComplete && hasMore && !loading && (
+        <div ref={loaderTriggerRef} style={{ height: '1px', marginTop: '-1px' }} aria-hidden="true"></div>
+      )}
+
       {loading && initialLoadComplete && ( 
         <div className="flex justify-center items-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -211,4 +223,3 @@ export default function PollFeed() {
     </div>
   );
 }
-
