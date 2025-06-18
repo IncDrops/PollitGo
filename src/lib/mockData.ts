@@ -87,8 +87,10 @@ const generateCreatedAt = (deadlineString: string): string => {
   return new Date(Date.now() - createdAgoMs).toISOString();
 };
 
+type PollSkeleton = Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'commentsCount' | 'likes' | 'tipCount' | 'pledgeAmount' | 'pledgeOutcome'>;
 
-const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'commentsCount' | 'likes' | 'tipCount' | 'pledgeAmount' | 'pledgeOutcome'>[]  = [
+
+const basePolls: PollSkeleton[]  = [
   {
     id: 'poll_original_seasons_s1',
     creator: findUser('Alice Wonderland'),
@@ -104,7 +106,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("7 days"),
   },
   {
-    id: 'poll_ul1_cereal_box_art_cba1',
+    id: 'poll_userlist1_cereal_box_art_cba1',
     creator: findUser('Cereal Consumer'),
     question: "Should I stop eating this brand of cereal now that they changed the box art and it feels weird?",
     imageUrls: ['https://placehold.co/600x400.png?text=CerealArtPoll'],
@@ -130,7 +132,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("3 days"),
   },
   {
-    id: 'poll_ul1_sneaky_link_bestie_slb1',
+    id: 'poll_userlist1_sneaky_link_bestie_slb1',
     creator: findUser('Drama Llama'),
     question: "Should I make my bestie's man my sneaky link if he already DMed me twice?",
     imageUrls: ['https://placehold.co/600x400.png?text=SneakyLinkPoll'],
@@ -146,7 +148,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     creator: findUser('Charlie Chaplin'),
     question: 'Which travel destination for next summer?',
     imageUrls: ['https://placehold.co/600x400.png?text=TravelPoll'],
-    videoUrl: 'placeholder-video-url', // This would be a real URL to a video file
+    videoUrl: 'placeholder-video-url',
     options: [
       { id: 'opt_t1_a', text: 'Paris, France', votes: 180, videoUrl: 'placeholder-option-video-url', affiliateLink: 'https://example.com/paris-tours' },
       { id: 'opt_t1_b', text: 'Tokyo, Japan', votes: 220, videoUrl: 'placeholder-option-video-url', affiliateLink: 'https://example.com/tokyo-hotels' },
@@ -156,7 +158,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("30 days"),
   },
   {
-    id: 'poll_ul1_rapper_battle_rb1',
+    id: 'poll_userlist1_rapper_battle_rb1',
     creator: findUser('Rap Analyst'),
     question: "Trippie Redd vs Hurricane Wisdom — who’s the better rapper, PERIOD?",
     imageUrls: ['https://placehold.co/600x400.png?text=RapBattlePoll'],
@@ -182,7 +184,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("6 hours, 38 minutes"),
   },
   {
-    id: 'poll_ul1_wife_beer_permission_wbp1',
+    id: 'poll_userlist1_wife_beer_permission_wbp1',
     creator: findUser('Thirsty Hubby'),
     question: "My wife said no to another beer. Should I crack it anyway?",
     imageUrls: ['https://placehold.co/600x400.png?text=BeerQuestPoll'],
@@ -208,7 +210,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("2 hours"),
   },
   {
-    id: 'poll_ul2_toxic_trait_closure_ghosted_ttcg1',
+    id: 'poll_userlist2_toxic_trait_closure_ghosted_ttcg1',
     creator: findUser('Toxic Trait Tom'),
     question: "My toxic trait is thinking I need closure from someone I ghosted. Should I message them?",
     imageUrls: ['https://placehold.co/600x400.png?text=ToxicClosurePoll'],
@@ -233,7 +235,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("5 days"),
   },
   {
-    id: 'poll_ul1_ghost_closure_text_gct1',
+    id: 'poll_userlist1_ghost_closure_text_gct1',
     creator: findUser('Ghost Ponderer'),
     question: "Should I text the person I ghosted for closure (for me, not them)?",
     options: [
@@ -256,7 +258,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("1 day"),
   },
   {
-    id: 'poll_ul1_hoodie_retirement_hr1',
+    id: 'poll_userlist1_hoodie_retirement_hr1',
     creator: findUser('Hoodie Champion'),
     question: "My favorite hoodie is falling apart. Should I retire it or wear it till it's literal threads?",
     options: [
@@ -267,7 +269,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("2 days"),
   },
    {
-    id: 'poll_ul2_forgave_drunk_reminder_fdr1',
+    id: 'poll_userlist2_forgave_drunk_reminder_fdr1',
     creator: findUser('Delulu Deb'),
     question: "I forgave my ex when I was drunk. Does it count? Should I remind them I was drunk?",
     imageUrls: ['https://placehold.co/600x400.png?text=DrunkForgivenessPoll'],
@@ -279,7 +281,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("24 hours"),
   },
   {
-    id: 'poll_ul2_charger_9_months_c9m1',
+    id: 'poll_userlist2_charger_9_months_c9m1',
     creator: findUser('Charger Hoarder'),
     question: "My friend 'borrowed' my charger 9 months ago. Is it mine or theirs now?",
     options: [
@@ -290,7 +292,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("6 hours"),
   },
   {
-    id: 'poll_ul2_cold_spaghetti_standards_css1',
+    id: 'poll_userlist2_cold_spaghetti_standards_css1',
     creator: findUser('Fridge Raider'),
     question: "Eating cold spaghetti from the fridge at 3 AM. Have I hit rock bottom or peak living?",
     imageUrls: ['https://placehold.co/600x400.png?text=ColdSpaghettiPoll'],
@@ -302,7 +304,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("15 minutes"),
   },
   {
-    id: 'poll_ul2_rewatch_texts_wounds_rtw1',
+    id: 'poll_userlist2_rewatch_texts_wounds_rtw1',
     creator: findUser('Archive Diver'),
     question: "Re-reading old texts from my ex and crying. Should I delete the archive or keep picking the scab?",
     options: [
@@ -313,7 +315,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("1 day"),
   },
   {
-    id: 'poll_ul1_chicken_tenders_date_ctd1',
+    id: 'poll_userlist1_chicken_tenders_date_ctd1',
     creator: findUser('Tender Lover'),
     question: "Is it acceptable to order chicken tenders on a first date at a fancy restaurant?",
     imageUrls: ['https://placehold.co/600x400.png?text=TenderDatePoll'],
@@ -325,7 +327,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("8 hours"),
   },
   {
-    id: 'poll_ul2_you_up_reply_yur1',
+    id: 'poll_userlist2_you_up_reply_yur1',
     creator: findUser('Late Night Texter'),
     question: "Got a 'you up?' text at 2 AM. How should I reply for maximum chaos/comedy?",
     imageUrls: ['https://placehold.co/600x400.png?text=LateNightReplyPoll'],
@@ -339,7 +341,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("5 minutes"),
   },
   {
-    id: 'poll_ul2_situationship_risk_sr1',
+    id: 'poll_userlist2_situationship_risk_sr1',
     creator: findUser('Chaos Agent'),
     question: "My situationship is getting too comfy. Should I risk it all by asking 'What are we?'",
     imageUrls: ['https://placehold.co/600x400.png?text=SituationshipPoll'],
@@ -351,7 +353,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("12 hours"),
   },
    {
-    id: 'poll_ul1_thirst_trap_respect_ttr1',
+    id: 'poll_userlist1_thirst_trap_respect_ttr1',
     creator: findUser('Insta Model'),
     question: "If I post a thirst trap, can I still demand respect?",
     options: [
@@ -362,7 +364,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("4 hours"),
   },
   {
-    id: 'poll_ul2_toothbrush_confront_tc1',
+    id: 'poll_userlist2_toothbrush_confront_tc1',
     creator: findUser('Toothbrush Sharer'),
     question: "I think my roommate is using my toothbrush. How do I confront them without making it weird?",
     options: [
@@ -375,7 +377,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("2 days"),
   },
   {
-    id: 'poll_ul1_ignore_message_normal_imn1',
+    id: 'poll_userlist1_ignore_message_normal_imn1',
     creator: findUser('Message Ignorer'),
     question: "Is it normal to ignore someone's message for 3 days then reply like nothing happened?",
     options: [
@@ -386,7 +388,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("5 hours"),
   },
   {
-    id: 'poll_ul2_bestie_ex_stories_bes1',
+    id: 'poll_userlist2_bestie_ex_stories_bes1',
     creator: findUser('Story Blocker'),
     question: "My bestie keeps posting stories with their new partner (my ex's ex). Mute or unfriend?",
     options: [
@@ -397,7 +399,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("30 minutes"),
   },
   {
-    id: 'poll_ul1_charger_return_keep_crk1',
+    id: 'poll_userlist1_charger_return_keep_crk1',
     creator: findUser('Charger Keeper'),
     question: "My friend left their charger at my place. Should I return it or is it fair game now?",
     imageUrls: ['https://placehold.co/600x400.png?text=ChargerDilemmaPoll'],
@@ -409,7 +411,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("1 day"),
   },
   {
-    id: 'poll_ul2_venmo_fries_request_vfr1',
+    id: 'poll_userlist2_venmo_fries_request_vfr1',
     creator: findUser('Fries Fighter'),
     question: "My friend ate 3 of my fries. Can I Venmo request them $0.75?",
     options: [
@@ -420,7 +422,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("1 hour"),
   },
   {
-    id: 'poll_ul1_party_snacks_selfies_pss1',
+    id: 'poll_userlist1_party_snacks_selfies_pss1',
     creator: findUser('Party Planner'),
     question: "Hosting a party. Focus on good snacks or good selfie lighting?",
     options: [
@@ -431,7 +433,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("4 days"),
   },
   {
-    id: 'poll_ul2_text_ex_mom_tem1',
+    id: 'poll_userlist2_text_ex_mom_tem1',
     creator: findUser('Ex Mom Texter'),
     question: "Is it weird to still text my ex's mom happy birthday?",
     imageUrls: ['https://placehold.co/600x400.png?text=ExMomTextPoll'],
@@ -443,7 +445,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("6 days"),
   },
   {
-    id: 'poll_ul1_podcast_trauma_dump_ptd1',
+    id: 'poll_userlist1_podcast_trauma_dump_ptd1',
     creator: findUser('Podcast Dreamer'),
     question: "Should I start a podcast to trauma dump or get a therapist?",
     imageUrls: ['https://placehold.co/600x400.png?text=PodcastTherapyPoll'],
@@ -455,7 +457,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("9 hours"),
   },
   {
-    id: 'poll_ul2_not_like_other_people_nlp1',
+    id: 'poll_userlist2_not_like_other_people_nlp1',
     creator: findUser('Red Flag Racer'),
     question: "My date said 'I'm not like other people.' Red flag or intriguing?",
     options: [
@@ -466,7 +468,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("2 hours"),
   },
   {
-    id: 'poll_ul1_spotify_stalk_confess_ssc1',
+    id: 'poll_userlist1_spotify_stalk_confess_ssc1',
     creator: findUser('Spotify Stalker'),
     question: "I stalk my crush's Spotify. Should I confess or keep my intel secret?",
     options: [
@@ -477,7 +479,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("12 hours"),
   },
   {
-    id: 'poll_ul2_podcast_group_chat_dump_pgcd1',
+    id: 'poll_userlist2_podcast_group_chat_dump_pgcd1',
     creator: findUser('Group Chat Guru'),
     question: "Turning our unhinged group chat into a podcast. Good idea or recipe for disaster?",
     imageUrls: ['https://placehold.co/600x400.png?text=GroupChatPodcastPoll'],
@@ -489,7 +491,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("3 days"),
   },
   {
-    id: 'poll_ul1_lol_ok_meaning_lom1',
+    id: 'poll_userlist1_lol_ok_meaning_lom1',
     creator: findUser('Text Detective'),
     question: "What does 'lol ok' REALLY mean in a text?",
     imageUrls: ['https://placehold.co/600x400.png?text=TextMeaningPoll'],
@@ -503,7 +505,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("25 minutes"),
   },
   {
-    id: 'poll_ul2_kitkat_eating_method_kem1',
+    id: 'poll_userlist2_kitkat_eating_method_kem1',
     creator: findUser('KitKat Connoisseur'),
     question: "How do you eat a KitKat? Break off fingers or bite into the whole thing like a psycho?",
     imageUrls: ['https://placehold.co/600x400.png?text=KitKatPoll'],
@@ -515,7 +517,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("10 minutes"),
   },
   {
-    id: 'poll_ul1_hiking_touch_grass_htg1',
+    id: 'poll_userlist1_hiking_touch_grass_htg1',
     creator: findUser('Grass Avoider'),
     question: "My friends want to go hiking. Is 'touching grass' overrated?",
     options: [
@@ -526,7 +528,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("7 days"),
   },
   {
-    id: 'poll_ul2_hoodie_hostage_return_hhr1',
+    id: 'poll_userlist2_hoodie_hostage_return_hhr1',
     creator: findUser('Hoodie Hostage Holder'),
     question: "I have 3 of my ex's hoodies. Do I return them or are they mine now by emotional distress compensation?",
     options: [
@@ -537,7 +539,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("4 days"),
   },
   {
-    id: 'poll_ul1_tattoo_idea_list_new_person_tilnp1',
+    id: 'poll_userlist1_tattoo_idea_list_new_person_tilnp1',
     creator: findUser('Tattoo Thinker'),
     question: "I have a list of tattoo ideas I made with my ex. Can I still get them or is that weird with a new person?",
     options: [
@@ -548,7 +550,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("10 days"),
   },
   {
-    id: 'poll_ul2_dm_after_likes_dal1',
+    id: 'poll_userlist2_dm_after_likes_dal1',
     creator: findUser('DM Slider'),
     question: "How many of my posts should someone like before I can slide into their DMs?",
     options: [
@@ -561,7 +563,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("2 days"),
   },
   {
-    id: 'poll_ul1_ex_dog_pic_like_edpl1',
+    id: 'poll_userlist1_ex_dog_pic_like_edpl1',
     creator: findUser('Dog Pic Defender'),
     question: "My ex liked a picture of my dog. Are they trying to get back with me or just like dogs?",
     imageUrls: ['https://placehold.co/600x400.png?text=DogPicLikePoll'],
@@ -573,7 +575,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("20 hours"),
   },
   {
-    id: 'poll_ul2_wyd_mid_crisis_reply_wmcr1',
+    id: 'poll_userlist2_wyd_mid_crisis_reply_wmcr1',
     creator: findUser('Crisis Responder'),
     question: "Someone texted 'wyd' while I'm having an existential crisis. Best reply?",
     options: [
@@ -586,7 +588,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("50 minutes"),
   },
   {
-    id: 'poll_ul1_quit_job_spiritually_dead_qjsd1',
+    id: 'poll_userlist1_quit_job_spiritually_dead_qjsd1',
     creator: findUser('Job Quitter Pro'),
     question: "My job makes me spiritually dead. Should I quit with no backup plan?",
     imageUrls: ['https://placehold.co/600x400.png?text=QuitJobPoll'],
@@ -598,7 +600,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("14 days"),
   },
   {
-    id: 'poll_ul2_friend_bad_breath_fbb1',
+    id: 'poll_userlist2_friend_bad_breath_fbb1',
     creator: findUser('Breath Buddy'),
     question: "My friend has bad breath. How do I tell them without ruining the friendship?",
     options: [
@@ -611,7 +613,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("18 hours"),
   },
   {
-    id: 'poll_ul1_playlist_string_cheese_psc1',
+    id: 'poll_userlist1_playlist_string_cheese_psc1',
     creator: findUser('Cheese Critic'),
     question: "Is it weirder to make a playlist for your cat or to eat string cheese by biting into it?",
     options: [
@@ -622,7 +624,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("3 hours"),
   },
   {
-    id: 'poll_ul2_cancel_plans_ugly_day_cpud1',
+    id: 'poll_userlist2_cancel_plans_ugly_day_cpud1',
     creator: findUser('Ugly Day Canceller'),
     question: "Woke up feeling ugly. Is that a valid reason to cancel plans?",
     options: [
@@ -633,7 +635,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("45 minutes"),
   },
   {
-    id: 'poll_ul1_feet_pics_gas_money_fpgm1',
+    id: 'poll_userlist1_feet_pics_gas_money_fpgm1',
     creator: findUser('Feet Pic Financier'),
     question: "My friend suggested selling feet pics for gas money. Good idea or nah?",
     options: [
@@ -644,7 +646,7 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
     createdAt: generateCreatedAt("6 hours"),
   },
   {
-    id: 'poll_ul2_create_own_poll_unhinged_copu1',
+    id: 'poll_userlist2_create_own_poll_unhinged_copu1',
     creator: findUser('Poll Progenitor'),
     question: "Should I create my own poll because I’m tired of pretending I don’t have unhinged opinions too?",
     imageUrls: ['https://placehold.co/600x400.png?text=MyUnhingedPoll'],
@@ -657,78 +659,99 @@ const initialPolls: Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'com
   },
 ];
 
+// Duplicate the basePolls to make the feed longer
+const duplicatedPolls1: PollSkeleton[] = basePolls.map(poll => ({
+  ...poll,
+  id: `${poll.id}_dup1`,
+  question: `${poll.question} (Copy 1)`,
+  options: poll.options.map(opt => ({ ...opt, id: `${opt.id}_dup1` })),
+  creator: getRandomUser(), // Assign a random creator to make it look different
+  deadline: new Date(Date.now() + parseTimeRemaining("1 day") + Math.random() * parseTimeRemaining("10 days")).toISOString(), // Vary deadlines
+  createdAt: generateCreatedAt("5 days")
+}));
+
+const duplicatedPolls2: PollSkeleton[] = basePolls.map(poll => ({
+  ...poll,
+  id: `${poll.id}_dup2`,
+  question: `${poll.question} (Copy 2)`,
+  options: poll.options.map(opt => ({ ...opt, id: `${opt.id}_dup2` })),
+  creator: getRandomUser(),
+  deadline: new Date(Date.now() + parseTimeRemaining("2 hours") + Math.random() * parseTimeRemaining("3 days")).toISOString(),
+  createdAt: generateCreatedAt("2 days")
+}));
+
+const initialPolls: PollSkeleton[] = [...basePolls, ...duplicatedPolls1, ...duplicatedPolls2];
+
 
 const allPollsFull: Poll[] = initialPolls.map((pollSkeleton, index) => {
   const totalVotes = pollSkeleton.options.reduce((sum, option) => sum + option.votes, 0);
-  // Make roughly 1/3 of polls already voted by the mock current user for variety
-  const shouldBeVoted = (index % 3 === 0);
+  const shouldBeVoted = (index % 4 === 0); // Vote on every 4th poll for variety
   let determinedVotedOptionId: string | undefined = undefined;
   if (shouldBeVoted && pollSkeleton.options.length > 0) {
-    // Vote for the first option for simplicity in mock data
-    determinedVotedOptionId = pollSkeleton.options[0].id;
+    determinedVotedOptionId = pollSkeleton.options[Math.floor(Math.random() * pollSkeleton.options.length)].id;
   }
 
-  // Add pledge to roughly every 4th poll, and ensure specific listed polls get their pledges
-  let pledgeAmount = generateRandomPledge(index % 4 === 0);
+  let pledgeAmount = generateRandomPledge(index % 5 === 0); // Pledge on every 5th poll
   let pledgeOutcome: 'accepted' | 'tipped_crowd' | 'pending' | undefined = undefined;
 
   let tipCountGenerated = generateRandomTips();
-  const likes = (index * 17 % 250) + 10; // Dynamic likes
-  const commentsCount = (index * 7 % 35) + 2; // Dynamic comments
+  const likes = (index * 17 % 250) + 10;
+  const commentsCount = (index * 7 % 35) + 2;
 
-  // Specific pledges and tip counts from user's list
   const specificPledges: Record<string, {pledge: number, tips: number}> = {
-    'poll_ul1_cereal_box_art_cba1': { pledge: 7, tips: 2 },
-    'poll_ul1_sneaky_link_bestie_slb1': { pledge: 50, tips: 8 },
-    'poll_ul1_rapper_battle_rb1': { pledge: 3, tips: 1 },
-    'poll_ul1_wife_beer_permission_wbp1': { pledge: 100, tips: 12 },
-    'poll_ul1_ghost_closure_text_gct1': { pledge: 15, tips: 5 },
-    'poll_ul1_hoodie_retirement_hr1': { pledge: 4, tips: 0 },
-    'poll_ul1_chicken_tenders_date_ctd1': { pledge: 22, tips: 3 },
-    'poll_ul1_thirst_trap_respect_ttr1': { pledge: 13, tips: 1 },
-    'poll_ul1_ignore_message_normal_imn1': { pledge: 6, tips: 0 },
-    'poll_ul1_charger_return_keep_crk1': { pledge: 5, tips: 6 },
-    'poll_ul1_party_snacks_selfies_pss1': { pledge: 20, tips: 3 },
-    'poll_ul1_podcast_trauma_dump_ptd1': { pledge: 27, tips: 2 },
-    'poll_ul1_spotify_stalk_confess_ssc1': { pledge: 2, tips: 1 },
-    'poll_ul1_lol_ok_meaning_lom1': { pledge: 8, tips: 9 },
-    'poll_ul1_hiking_touch_grass_htg1': { pledge: 11, tips: 4 },
-    'poll_ul1_tattoo_idea_list_new_person_tilnp1': { pledge: 30, tips: 7 },
-    'poll_ul1_ex_dog_pic_like_edpl1': { pledge: 9, tips: 0 },
-    'poll_ul1_quit_job_spiritually_dead_qjsd1': { pledge: 75, tips: 15 },
-    'poll_ul1_playlist_string_cheese_psc1': { pledge: 10, tips: 2 },
-    'poll_ul1_feet_pics_gas_money_fpgm1': { pledge: 40, tips: 6 },
-    'poll_ul2_toxic_trait_closure_ghosted_ttcg1': { pledge: 15, tips: 4 },
-    'poll_ul2_forgave_drunk_reminder_fdr1': { pledge: 22, tips: 6 },
-    'poll_ul2_charger_9_months_c9m1': { pledge: 8, tips: 1 },
-    'poll_ul2_cold_spaghetti_standards_css1': { pledge: 5, tips: 0 },
-    'poll_ul2_rewatch_texts_wounds_rtw1': { pledge: 13, tips: 2 },
-    'poll_ul2_you_up_reply_yur1': { pledge: 40, tips: 3 },
-    'poll_ul2_situationship_risk_sr1': { pledge: 50, tips: 7 },
-    'poll_ul2_toothbrush_confront_tc1': { pledge: 100, tips: 12 },
-    'poll_ul2_bestie_ex_stories_bes1': { pledge: 33, tips: 9 },
-    'poll_ul2_venmo_fries_request_vfr1': { pledge: 4.37, tips: 0 },
-    'poll_ul2_text_ex_mom_tem1': { pledge: 18, tips: 5 },
-    'poll_ul2_not_like_other_people_nlp1': { pledge: 11, tips: 1 },
-    'poll_ul2_podcast_group_chat_dump_pgcd1': { pledge: 27, tips: 4 },
-    'poll_ul2_kitkat_eating_method_kem1': { pledge: 6, tips: 2 },
-    'poll_ul2_hoodie_hostage_return_hhr1': { pledge: 15, tips: 3 },
-    'poll_ul2_dm_after_likes_dal1': { pledge: 10, tips: 1 },
-    'poll_ul2_wyd_mid_crisis_reply_wmcr1': { pledge: 20, tips: 2 },
-    'poll_ul2_friend_bad_breath_fbb1': { pledge: 8, tips: 6 },
-    'poll_ul2_cancel_plans_ugly_day_cpud1': { pledge: 14, tips: 3 },
-    'poll_ul2_create_own_poll_unhinged_copu1': { pledge: 0, tips: 0 }, // User specified no pledge for this one
+    'poll_userlist1_cereal_box_art_cba1': { pledge: 7, tips: 2 },
+    'poll_userlist1_sneaky_link_bestie_slb1': { pledge: 50, tips: 8 },
+    'poll_userlist1_rapper_battle_rb1': { pledge: 3, tips: 1 },
+    'poll_userlist1_wife_beer_permission_wbp1': { pledge: 100, tips: 12 },
+    'poll_userlist1_ghost_closure_text_gct1': { pledge: 15, tips: 5 },
+    'poll_userlist1_hoodie_retirement_hr1': { pledge: 4, tips: 0 },
+    'poll_userlist1_chicken_tenders_date_ctd1': { pledge: 22, tips: 3 },
+    'poll_userlist1_thirst_trap_respect_ttr1': { pledge: 13, tips: 1 },
+    'poll_userlist1_ignore_message_normal_imn1': { pledge: 6, tips: 0 },
+    'poll_userlist1_charger_return_keep_crk1': { pledge: 5, tips: 6 },
+    'poll_userlist1_party_snacks_selfies_pss1': { pledge: 20, tips: 3 },
+    'poll_userlist1_podcast_trauma_dump_ptd1': { pledge: 27, tips: 2 },
+    'poll_userlist1_spotify_stalk_confess_ssc1': { pledge: 2, tips: 1 },
+    'poll_userlist1_lol_ok_meaning_lom1': { pledge: 8, tips: 9 },
+    'poll_userlist1_hiking_touch_grass_htg1': { pledge: 11, tips: 4 },
+    'poll_userlist1_tattoo_idea_list_new_person_tilnp1': { pledge: 30, tips: 7 },
+    'poll_userlist1_ex_dog_pic_like_edpl1': { pledge: 9, tips: 0 },
+    'poll_userlist1_quit_job_spiritually_dead_qjsd1': { pledge: 75, tips: 15 },
+    'poll_userlist1_playlist_string_cheese_psc1': { pledge: 10, tips: 2 },
+    'poll_userlist1_feet_pics_gas_money_fpgm1': { pledge: 40, tips: 6 },
+    'poll_userlist2_toxic_trait_closure_ghosted_ttcg1': { pledge: 15, tips: 4 },
+    'poll_userlist2_forgave_drunk_reminder_fdr1': { pledge: 22, tips: 6 },
+    'poll_userlist2_charger_9_months_c9m1': { pledge: 8, tips: 1 },
+    'poll_userlist2_cold_spaghetti_standards_css1': { pledge: 5, tips: 0 },
+    'poll_userlist2_rewatch_texts_wounds_rtw1': { pledge: 13, tips: 2 },
+    'poll_userlist2_you_up_reply_yur1': { pledge: 40, tips: 3 },
+    'poll_userlist2_situationship_risk_sr1': { pledge: 50, tips: 7 },
+    'poll_userlist2_toothbrush_confront_tc1': { pledge: 100, tips: 12 },
+    'poll_userlist2_bestie_ex_stories_bes1': { pledge: 33, tips: 9 },
+    'poll_userlist2_venmo_fries_request_vfr1': { pledge: 4.37, tips: 0 },
+    'poll_userlist2_text_ex_mom_tem1': { pledge: 18, tips: 5 },
+    'poll_userlist2_not_like_other_people_nlp1': { pledge: 11, tips: 1 },
+    'poll_userlist2_podcast_group_chat_dump_pgcd1': { pledge: 27, tips: 4 },
+    'poll_userlist2_kitkat_eating_method_kem1': { pledge: 6, tips: 2 },
+    'poll_userlist2_hoodie_hostage_return_hhr1': { pledge: 15, tips: 3 },
+    'poll_userlist2_dm_after_likes_dal1': { pledge: 10, tips: 1 },
+    'poll_userlist2_wyd_mid_crisis_reply_wmcr1': { pledge: 20, tips: 2 },
+    'poll_userlist2_friend_bad_breath_fbb1': { pledge: 8, tips: 6 },
+    'poll_userlist2_cancel_plans_ugly_day_cpud1': { pledge: 14, tips: 3 },
+    'poll_userlist2_create_own_poll_unhinged_copu1': { pledge: 0, tips: 0 },
   };
 
+  // Apply specific pledges to base polls (non-duplicated versions)
   if (specificPledges[pollSkeleton.id]) {
     pledgeAmount = specificPledges[pollSkeleton.id].pledge;
     tipCountGenerated = specificPledges[pollSkeleton.id].tips;
   }
 
+
   if (pledgeAmount && pledgeAmount > 0) {
       pledgeOutcome = 'pending';
   } else {
-    pledgeAmount = undefined; // Ensure it's undefined if 0 or not set
+    pledgeAmount = undefined;
     pledgeOutcome = undefined;
   }
 
@@ -753,9 +776,11 @@ export const mockPolls: Poll[] = allPollsFull;
 export const fetchMorePolls = async (offset: number, limit: number): Promise<Poll[]> => {
   console.log(`Fetching more polls: offset ${offset}, limit ${limit}`);
   // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 300));
+  await new Promise(resolve => setTimeout(resolve, 600)); // Increased delay for more noticeable loading
 
   const newPollsToServe = mockPolls.slice(offset, offset + limit);
   return newPollsToServe;
 };
 
+
+    
