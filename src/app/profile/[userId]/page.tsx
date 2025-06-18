@@ -1,5 +1,5 @@
 
-'use client'; // Keep this if client-side hooks or event handlers are used in restored parts
+'use client';
 
 import type { User, Poll } from "@/types";
 import { mockUsers, mockPolls } from "@/lib/mockData";
@@ -10,37 +10,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserPlus, Settings, MessageSquare, Edit3, ChevronLeft, Share2, Search, CalendarDays, MapPin, Link as LinkIcon } from "lucide-react";
 import Image from "next/image";
 import NextLink from "next/link";
-// import PollCardFeed from "@/components/polls/PollCardFeed"; // Keep commented
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
-
 // Simulate fetching user and their polls.
-// In a real app, this would involve API calls or direct database queries.
 async function getUserData(userId: string): Promise<{ user: User | null; polls: Poll[] }> {
   console.log(`[UserProfilePage] getUserData called for userId: ${userId}`);
   const user = mockUsers.find(u => u.id === userId) || null;
   
-  // For now, return an empty polls array to isolate the issue.
-  // We'll reintroduce poll fetching/filtering later.
-  const polls: Poll[] = []; 
-  // const rawPolls = user ? mockPolls.filter(p => p.creator.id === userId) : [];
-  // let polls: Poll[] = [];
-  // if (rawPolls.length > 0) {
-  //   try {
-  //     // Attempt to "sanitize" the polls data.
-  //     // If this stringify fails, it will be caught and logged on the server.
-  //     polls = JSON.parse(JSON.stringify(rawPolls));
-  //     console.log(`[UserProfilePage] Successfully sanitized ${polls.length} polls for user ${userId}`);
-  //   } catch (e: any) {
-  //     console.error(`[UserProfilePage] !!! Error stringifying/parsing polls for user ${userId}:`, e.message, e.stack);
-  //     // Return empty or handle as an error state, but don't let it break the page.
-  //     polls = []; // or throw an error if that's preferred for critical failures
-  //   }
-  // } else {
-  //   console.log(`[UserProfilePage] No raw polls found for user ${userId}`);
-  // }
+  let polls: Poll[] = [];
+  if (user) {
+    // Directly filter and assign polls, assuming mockPolls contains serializable data
+    polls = mockPolls.filter(p => p.creator.id === userId);
+    console.log(`[UserProfilePage] Found ${polls.length} polls for user ${userId}`);
+  } else {
+    console.log(`[UserProfilePage] User not found for ID: ${userId}`);
+  }
 
   return { user, polls };
 }
@@ -52,12 +38,13 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   const [userData, setUserData] = useState<{ user: User | null; polls: Poll[] }>({ user: null, polls: [] });
   const [isLoading, setIsLoading] = useState(true);
   
-  // This assumes you might have a concept of a "current logged-in user"
-  // For now, let's mock it or assume it's not directly needed for viewing a profile
-  const [currentUser, setCurrentUser] = useState<User | null>(mockUsers.find(u => u.id === 'user1') || null); 
-
+  const [currentUser, setCurrentUser] = useState<User | null>(null); 
 
   useEffect(() => {
+    // Set currentUser on client mount to avoid hydration issues if it were derived from something non-static
+    const loggedInUser = mockUsers.find(u => u.id === 'user1') || null; // Example: fetching logged-in user
+    setCurrentUser(loggedInUser);
+
     if (params.userId) {
       setIsLoading(true);
       getUserData(params.userId)
@@ -65,8 +52,6 @@ export default function UserProfilePage({ params }: { params: { userId: string }
           setUserData(data);
           if (!data.user) {
             console.warn(`[UserProfilePage] User not found for ID ${params.userId} after fetch.`);
-            // Optionally redirect or show a more prominent "not found" message
-            // router.push('/404'); // Example redirect
           }
         })
         .catch(error => {
@@ -77,7 +62,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
           setIsLoading(false);
         });
     }
-  }, [params.userId, router, toast]);
+  }, [params.userId, toast]);
 
   const user = userData.user;
   const userPolls = userData.polls;
@@ -91,7 +76,6 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   }
 
   if (!user) {
-    console.log(`[UserProfilePage] Rendering 'User not found' for ID ${params.userId}.`);
     return (
       <div className="container mx-auto px-4 py-8 text-center text-destructive">
         User not found.
@@ -102,29 +86,36 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   const isOwnProfile = currentUser?.id === user.id;
 
   const handleShareProfile = async () => {
-    const profileUrl = window.location.href;
+    if (typeof window === 'undefined' || !navigator.share) {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast({ title: "Link Copied", description: "Profile link copied to clipboard."});
+      } catch (copyError) {
+        toast({ title: "Error", description: "Could not copy profile link.", variant: "destructive"});
+        console.error("Error copying profile link:", copyError);
+      }
+      return;
+    }
+
     try {
       await navigator.share({
         title: `${user.name}'s Profile on PollitAGo`,
         text: `Check out ${user.name}'s profile and polls!`,
-        url: profileUrl,
+        url: window.location.href,
       });
       toast({ title: "Profile Shared", description: "Link to profile shared successfully."});
     } catch (error) {
-      // Fallback to copying to clipboard if native share fails or is cancelled
-      try {
-        await navigator.clipboard.writeText(profileUrl);
-        toast({ title: "Link Copied", description: "Profile link copied to clipboard."});
-      } catch (copyError) {
-        toast({ title: "Error", description: "Could not share or copy profile link.", variant: "destructive"});
-        console.error("Error sharing/copying profile link:", error, copyError);
-      }
+        // If native share fails (e.g., user cancels, or it's not supported in this context like some desktop browsers)
+        // Fallback to copying to clipboard
+        try {
+            await navigator.clipboard.writeText(window.location.href);
+            toast({ title: "Link Copied", description: "Profile link copied to clipboard."});
+        } catch (copyError) {
+            toast({ title: "Error", description: "Could not share or copy profile link.", variant: "destructive"});
+            console.error("Error sharing/copying profile link:", error, copyError);
+        }
     }
   };
-
-
-  console.log(`[UserProfilePage] Rendering profile for user: ${user.name} (ID: ${user.id})`);
-  console.log(`[UserProfilePage] Polls count for ${user.name}: ${userPolls.length}`);
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -143,11 +134,11 @@ export default function UserProfilePage({ params }: { params: { userId: string }
       <main className="flex-grow">
         <div className="relative h-48 w-full bg-muted">
           <Image
-            src={`https://placehold.co/1200x400.png?text=${user.name}+Cover`}
+            src={`https://placehold.co/1200x400.png?text=${encodeURIComponent(user.name)}+Cover`}
             alt={`${user.name}'s cover photo`}
             layout="fill"
             objectFit="cover"
-            priority // Prioritize loading cover photo
+            priority 
             data-ai-hint="profile cover"
           />
           <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 transform">
@@ -162,7 +153,6 @@ export default function UserProfilePage({ params }: { params: { userId: string }
           <h2 className="text-2xl font-bold text-foreground">{user.name}</h2>
           <p className="text-sm text-muted-foreground">@{user.username}</p>
           
-          {/* Mocked bio and stats - replace with actual data later */}
           <p className="mt-2 text-sm text-foreground max-w-md mx-auto px-4">
             Lover of polls, opinions, and good conversations. Helping the world make up its mind, one poll at a time! 🚀 #PollMaster
           </p>
@@ -199,7 +189,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
         
         <div className="mt-4 flex justify-around border-b pb-3">
             <div className="text-center">
-                <p className="font-semibold text-lg text-foreground">{(Math.floor(Math.random() * 200) + 10).toLocaleString()}</p>
+                <p className="font-semibold text-lg text-foreground">{userPolls.length.toLocaleString()}</p>
                 <p className="text-xs text-muted-foreground">Polls</p>
             </div>
             <div className="text-center">
@@ -216,9 +206,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
             </div>
         </div>
 
-
-        {/* Polls Section - Temporarily Commented Out for Debugging */}
-        {/* <Tabs defaultValue="created" className="w-full mt-0">
+        <Tabs defaultValue="created" className="w-full mt-0">
           <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 rounded-none border-b">
             <TabsTrigger value="created">Created</TabsTrigger>
             <TabsTrigger value="voted">Voted</TabsTrigger>
@@ -229,8 +217,8 @@ export default function UserProfilePage({ params }: { params: { userId: string }
             {userPolls.length > 0 ? (
               <PollCardFeed 
                 initialPolls={userPolls} 
-                userIdForFeed={user.id} // Pass the profile user's ID
-                feedType="userCreated" // Specify feed type
+                userIdForFeed={user.id}
+                feedType="userCreated"
               />
             ) : (
               <Card className="shadow-none rounded-none border-0">
@@ -269,29 +257,45 @@ export default function UserProfilePage({ params }: { params: { userId: string }
                 </CardHeader>
             </Card>
           </TabsContent>
-        </Tabs> */}
+        </Tabs>
       </main>
     </div>
   );
 }
 
-// Basic PollCardFeed component placeholder - to be expanded
-// const PollCardFeed: React.FC<{ initialPolls: Poll[], userIdForFeed?: string, feedType?: string }> = ({ initialPolls }) => {
-//   if (!initialPolls || initialPolls.length === 0) {
-//     return <p className="text-center py-8 text-muted-foreground">No polls to display.</p>;
-//   }
-//   return (
-//     <div className="space-y-0">
-//       {initialPolls.map(poll => (
-//         <div key={poll.id} className="p-4 border-b">
-//           <h3 className="font-semibold">{poll.question}</h3>
-//           <p className="text-xs text-muted-foreground">
-//             {poll.options.length} options &middot; {poll.totalVotes} votes
-//           </p>
-//         </div>
-//       ))}
-//     </div>
-//   );
-// };
-
-    
+// Basic PollCardFeed component placeholder
+const PollCardFeed: React.FC<{ initialPolls: Poll[], userIdForFeed?: string, feedType?: string }> = ({ initialPolls }) => {
+  if (!initialPolls || initialPolls.length === 0) {
+    // This case is handled by the "No Polls Created Yet" card above if feedType is "userCreated"
+    // For other feed types, or if this component were more generic, this might be shown.
+    return <p className="text-center py-8 text-muted-foreground">No polls to display for this feed.</p>;
+  }
+  return (
+    <div className="space-y-0 divide-y divide-border">
+      {initialPolls.map(poll => (
+        <div key={poll.id} className="p-4 bg-card hover:bg-accent/20 transition-colors">
+          <NextLink href={`/polls/${poll.id}`}>
+            <div className="block cursor-pointer">
+              <div className="flex items-center space-x-2 mb-1">
+                <Avatar className="h-6 w-6">
+                    <AvatarImage src={poll.creator.avatarUrl} alt={poll.creator.name} data-ai-hint="profile avatar" />
+                    <AvatarFallback>{poll.creator.name.substring(0,1)}</AvatarFallback>
+                </Avatar>
+                <span className="text-xs font-medium text-muted-foreground">{poll.creator.name}</span>
+              </div>
+              <h3 className="font-semibold text-foreground mb-1">{poll.question}</h3>
+              <p className="text-xs text-muted-foreground">
+                {poll.options.length} options &middot; {poll.totalVotes.toLocaleString()} votes
+              </p>
+              {poll.imageUrls && poll.imageUrls.length > 0 && (
+                <div className="mt-2 w-24 h-16 rounded-md overflow-hidden bg-muted">
+                    <Image src={poll.imageUrls[0]} alt="Poll image preview" width={96} height={64} className="object-cover w-full h-full" data-ai-hint="poll preview" />
+                </div>
+              )}
+            </div>
+          </NextLink>
+        </div>
+      ))}
+    </div>
+  );
+};
