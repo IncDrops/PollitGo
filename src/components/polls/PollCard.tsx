@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Poll, PollOption as PollOptionType, User } from '@/types';
@@ -128,7 +127,6 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
   const [createdAtFormatted, setCreatedAtFormatted] = useState<string | null>(null);
   const [currentPoll, setCurrentPoll] = useState<Poll>(poll);
 
-
   useEffect(() => {
     setCurrentPoll(poll);
   }, [poll]);
@@ -138,7 +136,8 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
 
   const controls = useAnimationControls();
 
-  const canSwipe = currentPoll.options.length === 2 && !currentPoll.isVoted && !deadlinePassed && !!onPollActionComplete && !!onVote;
+  // Removed onPollActionComplete from canSwipe as we are handling animation internally
+  const canSwipe = currentPoll.options.length === 2 && !currentPoll.isVoted && !deadlinePassed && !!onVote;
 
   const handleInternalVote = (optionId: string) => {
     if (!onVote) return;
@@ -148,16 +147,17 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
 
     if (currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0) {
       const amountToDistributeToVoters = currentPoll.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
-      const potentialVotesForThisOption = targetOption.votes + 1; 
+      const potentialVotesForThisOption = targetOption.votes + 1;
       if ((amountToDistributeToVoters / potentialVotesForThisOption) < MIN_PAYOUT_PER_VOTER && potentialVotesForThisOption > 0) {
         toast({
           title: "Low Payout Warning",
           description: `Your vote is counted! However, due to the current pledge and number of voters for this option, your potential PollitPoint payout might be below $${MIN_PAYOUT_PER_VOTER.toFixed(2)}.`,
-          variant: "default", 
+          variant: "default",
           duration: 7000,
         });
       }
     }
+    // Still call onVote to inform parent, but local state updates control visual feedback
     onVote(currentPoll.id, optionId);
   };
 
@@ -166,21 +166,62 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
       if (!canSwipe || !onVote) return;
 
       const threshold = 80;
+      let swipedOptionId: string | undefined = undefined;
       let swipeDirection: 'left' | 'right' | undefined = undefined;
 
       if (Math.abs(eventData.deltaX) > threshold) {
         if (eventData.dir === 'Right') {
+          swipedOptionId = currentPoll.options[0].id;
           swipeDirection = 'right';
-          handleInternalVote(currentPoll.options[0].id);
         } else if (eventData.dir === 'Left') {
+          swipedOptionId = currentPoll.options[1].id;
           swipeDirection = 'left';
-          handleInternalVote(currentPoll.options[1].id);
         }
-        onPollActionComplete?.(currentPoll.id, swipeDirection);
+
+        if (swipedOptionId) {
+           // 1. Trigger animation out
+          await controls.start({
+            x: swipeDirection === 'right' ? 300 : -300, // Animate out based on swipe direction
+            rotate: swipeDirection === 'right' ? 5 : -5, // Add slight rotation
+            opacity: 0,
+            transition: { duration: 0.4, ease: "easeOut" } // Faster ease-out
+          });
+
+          // 2. Update local state (immediately after animation starts/completes out)
+          // This happens while the card is off-screen
+          handleInternalVote(swipedOptionId); // Call internal vote handler which also calls parent onVote
+
+          // Find the target option to get updated votes
+          const targetOption = currentPoll.options.find(opt => opt.id === swipedOptionId);
+          if (targetOption) {
+              setCurrentPoll(prevPoll => {
+                  const updatedOptions = prevPoll.options.map(opt =>
+                      opt.id === swipedOptionId ? { ...opt, votes: opt.votes + 1 } : opt
+                  );
+                  return {
+                      ...prevPoll,
+                      isVoted: true,
+                      votedOptionId: swipedOptionId,
+                      totalVotes: prevPoll.totalVotes + 1,
+                      options: updatedOptions,
+                  };
+              });
+          }
+
+          // 3. Animate back in
+          await controls.start({
+            x: 0, // Animate back to original position
+            rotate: 0, // Reset rotation
+            opacity: 1,
+            transition: { duration: 0.4, ease: "easeOut" } // Match ease-out
+          });
+        }
+         // Removed onPollActionComplete call
       }
     },
     preventScrollOnSwipe: true,
     trackMouse: true,
+    delta: 20 // Lower delta threshold for easier swiping
   });
 
   const formatTimeDifference = useCallback((targetDate: Date): string => {
@@ -225,7 +266,6 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
     return () => clearInterval(intervalId);
   }, [currentPoll.deadline, formatTimeDifference]);
 
-
   useEffect(() => {
     try {
       const createdDate = parseISO(currentPoll.createdAt);
@@ -235,7 +275,6 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
       setCreatedAtFormatted("Date unavailable");
     }
   }, [currentPoll.createdAt]);
-
 
   const handleShowOptionDetails = (option: PollOptionType) => {
     setSelectedOptionForModal(option);
@@ -272,7 +311,7 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
         await navigator.share(shareData);
         console.log('Poll shared successfully via native share.');
         sharedNatively = true;
-      } catch (error) {
+      } catch (error: any) {
         // Don't log permission denied or cancellation as errors to the user.
         if (error.name !== 'AbortError' && error.name !== 'NotAllowedError') {
             console.error('Error sharing poll via native share:', error);
@@ -322,12 +361,10 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
     }
   };
 
-
   const pollHasTwoOptions = currentPoll.options.length === 2;
   const canVoteOnPoll = !!onVote && !currentPoll.isVoted && !deadlinePassed;
-  const isCreator = currentUser?.id === currentPoll.creator.id;
+  const isCreator = currentUser?.id === currentPoll.creator.id; // Fixed this line
   const showPledgeOutcomeButtons = isCreator && deadlinePassed && currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0 && (currentPoll.pledgeOutcome === 'pending' || currentPoll.pledgeOutcome === undefined);
-
 
   return (
     <>
@@ -339,7 +376,7 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
       >
         <Card className="w-full max-w-md mx-auto shadow-lg rounded-xl overflow-hidden mb-4 bg-card active:shadow-2xl active:scale-[1.01] transition-transform duration-100 ease-out">
           <CardHeader className="p-4 cursor-pointer" onClick={onCardClick}>
-            <div onClick={onCreatorClick} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && onCreatorClick(e)} className="flex items-center space-x-3">
+            <div onClick={onCreatorClick} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && onCreatorClick({} as any)} className="flex items-center space-x-3">
               <Avatar className="h-10 w-10 border">
                 <AvatarImage src={currentPoll.creator.avatarUrl} alt={currentPoll.creator.name} data-ai-hint={generateHintFromText(currentPoll.creator.name) || "profile avatar"} />
                 <AvatarFallback>{currentPoll.creator.name.substring(0, 1)}</AvatarFallback>
@@ -361,9 +398,10 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
             <div className="w-full h-64 relative cursor-pointer bg-muted/30" onClick={onCardClick}>
               <Image
                 src={currentPoll.imageUrls[0]}
-                alt={currentPoll.question.substring(0,80)} 
-                layout="fill"
-                objectFit="cover"
+                alt={currentPoll.question.substring(0,80)}
+                width={600}
+                height={400}
+                style={{ objectFit: 'cover' }}
                 data-ai-hint={(currentPoll.imageKeywords && currentPoll.imageKeywords.join(" ")) || generateHintFromText(currentPoll.question) || "poll image"}
                 onError={(e) => console.error('Error loading poll image:', currentPoll.imageUrls?.[0], e)}
               />
@@ -393,8 +431,9 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
                   key={option.id}
                   option={option}
                   totalVotes={currentPoll.totalVotes}
-                  onVoteOptionClick={() => {
-                     if (canVoteOnPoll && !pollHasTwoOptions && onVote) handleInternalVote(option.id);
+ onVoteOptionClick={() => {
+                    if (!canSwipe || typeof onVote === 'undefined') return;
+
                      else handleShowOptionDetails(option);
                   }}
                   isVoted={!!currentPoll.isVoted}
@@ -426,12 +465,11 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
               </div>
             )}
              {currentPoll.pledgeOutcome === 'accepted' && isCreator && deadlinePassed && (
-                <p className="mt-2 text-xs text-green-600">You accepted the crowd's vote for this pledge.</p>
+                <p className="mt-2 text-xs text-green-600">You accepted the crowd&apos;s vote for this pledge.</p>
             )}
             {currentPoll.pledgeOutcome === 'tipped_crowd' && isCreator && deadlinePassed && (
                 <p className="mt-2 text-xs text-orange-600">You tipped the crowd for this pledge.</p>
             )}
-
 
           </CardContent>
 
