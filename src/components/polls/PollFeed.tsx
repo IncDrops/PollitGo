@@ -7,7 +7,7 @@ import PollCard from './PollCard';
 import { mockPolls, fetchMorePolls, mockUsers } from '@/lib/mockData';
 import { Loader2, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useToast } from '@/hooks/use-toast'; // Ensure useToast is imported
+import { useToast } from '@/hooks/use-toast';
 
 const pollCardVariants = {
   initial: { opacity: 0, y: 50, scale: 0.95 },
@@ -23,18 +23,18 @@ const pollCardVariants = {
   }
 };
 
-const MIN_PAYOUT_PER_VOTER = 0.10; // $0.10
-const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50; // 50%
+const MIN_PAYOUT_PER_VOTER = 0.10;
+const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50;
+const BATCH_SIZE = 5; // Number of polls to fetch each time
 
 export default function PollFeed() {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [initialLoad, setInitialLoad] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true); // To track if initial set of polls has been loaded
   const observer = useRef<IntersectionObserver | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const { toast } = useToast();
-
   const [exitDirectionMap, setExitDirectionMap] = useState<Record<string, 'left' | 'right' | 'default'>>({});
 
   useEffect(() => {
@@ -42,44 +42,48 @@ export default function PollFeed() {
     setCurrentUser(user1);
   }, []);
 
-
-  const loadInitialPolls = useCallback(async () => {
-    setLoading(true);
-    const initialPollsData = await fetchMorePolls(0, 5);
-    setPolls(initialPollsData.map(p => ({...p})));
-    setHasMore(initialPollsData.length > 0);
-    setLoading(false);
-    setInitialLoad(false);
-  }, []);
-
   useEffect(() => {
-    loadInitialPolls();
-  }, [loadInitialPolls]);
+    // Initial load of polls
+    const performInitialLoad = async () => {
+      setLoading(true);
+      const initialPollsData = await fetchMorePolls(0, BATCH_SIZE);
+      setPolls(initialPollsData.map(p => ({...p})));
+      setHasMore(initialPollsData.length === BATCH_SIZE); // True if a full batch was fetched
+      setLoading(false);
+      setInitialLoad(false); // Mark initial load as complete
+    };
+    performInitialLoad();
+  }, []); // Empty dependency array ensures this runs only once on mount
 
   const loadMorePolls = useCallback(async () => {
-    if (loading || !hasMore || initialLoad) return;
+    if (loading || !hasMore) return; // Guard against multiple calls or calling when no more data
+
     setLoading(true);
-    const newPolls = await fetchMorePolls(polls.length, 5);
+    const offset = polls.length;
+    const newPolls = await fetchMorePolls(offset, BATCH_SIZE);
+
     if (newPolls.length > 0) {
       setPolls((prevPolls) => [...prevPolls, ...newPolls.map(p => ({...p}))]);
-    } else {
-      setHasMore(false);
     }
+    setHasMore(newPolls.length === BATCH_SIZE); // Update hasMore based on if a full batch was fetched
     setLoading(false);
-  }, [loading, hasMore, polls.length, initialLoad]);
+  }, [loading, hasMore, polls.length]); // polls.length is a key dependency here
 
   const lastPollElementRef = useCallback(
     (node: HTMLDivElement | null) => {
-      if (loading) return;
-      if (observer.current) observer.current.disconnect();
+      if (loading) return; // If already loading, don't modify observer
+      if (observer.current) observer.current.disconnect(); // Disconnect previous observer
+
       observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && hasMore && !initialLoad) {
+        // Only trigger if intersecting, more polls are available, and initial load is done
+        if (entries[0]?.isIntersecting && hasMore && !initialLoad) {
           loadMorePolls();
         }
       });
-      if (node) observer.current.observe(node);
+
+      if (node) observer.current.observe(node); // Observe the new last element
     },
-    [loading, hasMore, loadMorePolls, initialLoad]
+    [loading, hasMore, initialLoad, loadMorePolls] // Recreate observer if these change
   );
 
   const handleVote = (pollId: string, optionId: string) => {
@@ -87,12 +91,11 @@ export default function PollFeed() {
     if (pollIndex === -1) return;
 
     const pollToUpdate = polls[pollIndex];
-    if (pollToUpdate.isVoted) return; // Already voted
+    if (pollToUpdate.isVoted) return;
 
     const targetOption = pollToUpdate.options.find(opt => opt.id === optionId);
     if (!targetOption) return;
 
-    // Check pledge payout condition
     if (pollToUpdate.pledgeAmount && pollToUpdate.pledgeAmount > 0) {
       const amountToDistributeToVoters = pollToUpdate.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
       const potentialVotesForThisOption = targetOption.votes + 1;
@@ -124,13 +127,12 @@ export default function PollFeed() {
         return p;
       })
     );
-    console.log(`Voted for option ${optionId} in poll ${pollId}`);
   };
 
   const handlePollActionComplete = (pollIdToRemove: string, swipeDirection?: 'left' | 'right') => {
     setExitDirectionMap(prev => ({ ...prev, [pollIdToRemove]: swipeDirection || 'default' }));
     setPolls(prevPolls => prevPolls.filter(p => p.id !== pollIdToRemove));
-    if (polls.length <= 5 && hasMore) {
+    if (polls.length <= BATCH_SIZE + 2 && hasMore && !loading) { // +2 buffer to fetch a bit earlier
         loadMorePolls();
     }
   };
@@ -141,11 +143,9 @@ export default function PollFeed() {
         p.id === pollId ? { ...p, pledgeOutcome: outcome } : p
       )
     );
-    console.log(`Pledge outcome for poll ${pollId} set to ${outcome} in feed.`);
   };
 
-
-  if (initialLoad && loading) {
+  if (initialLoad && loading && polls.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -206,5 +206,3 @@ export default function PollFeed() {
     </div>
   );
 }
-
-    
