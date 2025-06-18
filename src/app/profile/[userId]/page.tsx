@@ -1,17 +1,17 @@
 
 'use client';
 
+import React, { useState, useEffect, use } from 'react'; // Added use
 import type { User, Poll } from "@/types";
 import { mockUsers, mockPolls } from "@/lib/mockData";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserPlus, Settings, MessageSquare, Edit3, ChevronLeft, Share2, Search, CalendarDays, MapPin, Link as LinkIcon } from "lucide-react";
+import { UserPlus, Settings, MessageSquare, Edit3, ChevronLeft, Share2, Search, CalendarDays, MapPin, Link as LinkIconLucide } from "lucide-react";
 import Image from "next/image";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 // Simulate fetching user and their polls.
@@ -35,23 +35,29 @@ async function getUserData(userId: string): Promise<{ user: User | null; polls: 
 export default function UserProfilePage({ params }: { params: { userId: string } }) {
   const router = useRouter();
   const { toast } = useToast();
+  
+  // As per Next.js, 'params' prop can be a Promise here. Unwrap it with React.use().
+  const resolvedPageParams = use(params); 
+  // Now, resolvedPageParams is the actual object: { userId: string }
+
   const [userData, setUserData] = useState<{ user: User | null; polls: Poll[] }>({ user: null, polls: [] });
   const [isLoading, setIsLoading] = useState(true);
   
   const [currentUser, setCurrentUser] = useState<User | null>(null); 
 
   useEffect(() => {
-    // Set currentUser on client mount to avoid hydration issues if it were derived from something non-static
-    const loggedInUser = mockUsers.find(u => u.id === 'user1') || null; // Example: fetching logged-in user
+    // Set currentUser on client mount
+    const loggedInUser = mockUsers.find(u => u.id === 'user1') || null; 
     setCurrentUser(loggedInUser);
 
-    if (params.userId) {
+    // Use resolvedPageParams.userId
+    if (resolvedPageParams && resolvedPageParams.userId) { 
       setIsLoading(true);
-      getUserData(params.userId)
+      getUserData(resolvedPageParams.userId)
         .then(data => {
           setUserData(data);
           if (!data.user) {
-            console.warn(`[UserProfilePage] User not found for ID ${params.userId} after fetch.`);
+            console.warn(`[UserProfilePage] User not found for ID ${resolvedPageParams.userId} after fetch.`);
           }
         })
         .catch(error => {
@@ -61,8 +67,15 @@ export default function UserProfilePage({ params }: { params: { userId: string }
         .finally(() => {
           setIsLoading(false);
         });
+    } else {
+      // Handle the case where userId might not be available after resolution
+      setIsLoading(false); 
+      console.warn("[UserProfilePage] resolvedPageParams.userId is not available.");
     }
-  }, [params.userId, toast]);
+  }, [resolvedPageParams, toast]); // Updated dependency: use resolvedPageParams directly if userId is the only part used.
+                                   // Or more specifically, resolvedPageParams.userId if it can change independently.
+                                   // Given 'params' is the top-level prop, resolvedPageParams is derived once.
+                                   // So, depending on resolvedPageParams should be fine.
 
   const user = userData.user;
   const userPolls = userData.polls;
@@ -105,8 +118,6 @@ export default function UserProfilePage({ params }: { params: { userId: string }
       });
       toast({ title: "Profile Shared", description: "Link to profile shared successfully."});
     } catch (error) {
-        // If native share fails (e.g., user cancels, or it's not supported in this context like some desktop browsers)
-        // Fallback to copying to clipboard
         try {
             await navigator.clipboard.writeText(window.location.href);
             toast({ title: "Link Copied", description: "Profile link copied to clipboard."});
@@ -134,7 +145,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
       <main className="flex-grow">
         <div className="relative h-48 w-full bg-muted">
           <Image
-            src="https://placehold.co/1200x400.png" // Simplified URL
+            src="https://placehold.co/1200x400.png" 
             alt={`${user.name}'s cover photo`}
             layout="fill"
             objectFit="cover"
@@ -161,7 +172,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
             <span className="flex items-center"><CalendarDays className="h-4 w-4 mr-1" />Joined {new Date(2023, Math.floor(Math.random()*12), Math.floor(Math.random()*28)+1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
           </div>
           <a href="https://example.com" target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center text-xs text-primary hover:underline">
-            <LinkIcon className="h-3 w-3 mr-1" /> example.com
+            <LinkIconLucide className="h-3 w-3 mr-1" /> example.com
           </a>
 
           <div className="mt-4 flex justify-center space-x-2 sm:space-x-4">
@@ -299,5 +310,3 @@ const PollCardFeed: React.FC<{ initialPolls: Poll[], userIdForFeed?: string, fee
     </div>
   );
 };
-
-    
