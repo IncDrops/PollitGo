@@ -24,14 +24,13 @@ export default async function UserProfilePage({ params }: { params: { userId: st
   }
 
   // Dummy handler for voting, as PollCard requires it
+  // This needs to be a Server Action or handled differently if real interaction is needed from a Server Component.
+  // For display purposes in PollCard (which is a client component), this onVote prop will be handled by PollCard's internal logic or needs re-evaluation if actual voting from profile page is a feature.
   const handleVote = async (pollId: string, optionId: string) => {
-    "use server"; // This would be a server action
-    console.log(`Vote action: poll ${pollId}, option ${optionId}`);
-  };
-
-  const handlePledgeOutcomeSimulated = (pollId: string, outcome: 'accepted' | 'tipped_crowd') => {
-    console.log(`Simulated pledge outcome for poll ${pollId} on profile: ${outcome}`);
-    // In a real app, you might re-fetch or update state here
+    "use server"; 
+    console.log(`Vote action from profile page (server): poll ${pollId}, option ${optionId}`);
+    // This is a placeholder. Real voting logic would involve database updates.
+    // Revalidating paths or updating cache might be needed if data changes.
   };
 
 
@@ -96,14 +95,14 @@ export default async function UserProfilePage({ params }: { params: { userId: st
           </TabsList>
           <TabsContent value="polls" className="mt-6">
             {polls.length > 0 ? (
-              <div className="space-y-0">
+              <div className="space-y-0"> {/* Adjusted from space-y-6 to space-y-0 for tighter card layout if desired */}
                 {polls.map(poll => (
                   <PollCard
                     key={poll.id}
                     poll={poll}
-                    onVote={handleVote}
+                    onVote={handleVote} // This handleVote is a server action stub. PollCard's own client-side vote logic will handle UI updates.
                     currentUser={user} 
-                    onPledgeOutcome={handlePledgeOutcomeSimulated}
+                    // onPledgeOutcome prop removed as it's a non-serializable function from a Server Component
                   />
                 ))}
               </div>
