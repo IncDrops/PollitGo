@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { Poll, User } from '@/types';
 import PollCard from './PollCard';
-import { mockPolls, fetchMorePolls, mockUsers } from '@/lib/mockData';
+import { fetchMorePolls, mockUsers } from '@/lib/mockData';
 import { Loader2, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
@@ -31,63 +31,54 @@ export default function PollFeed() {
   const [polls, setPolls] = useState<Poll[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const [initialLoad, setInitialLoad] = useState(true);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const observer = useRef<IntersectionObserver | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const { toast } = useToast();
   const [exitDirectionMap, setExitDirectionMap] = useState<Record<string, 'left' | 'right' | 'default'>>({});
-  const [prevPollsLength, setPrevPollsLength] = useState(0);
 
   useEffect(() => {
     const user1 = mockUsers.find(u => u.id === 'user1') || mockUsers[0];
     setCurrentUser(user1);
   }, []);
 
-  const loadMorePolls = useCallback(async () => {
-    if (loading || !hasMore) return;
+  const loadMorePolls = useCallback(async (isInitial = false) => {
+    if (loading || (!isInitial && !hasMore)) return;
 
     setLoading(true);
-    const offset = polls.length;
+    const offset = isInitial ? 0 : polls.length;
     const newPolls = await fetchMorePolls(offset, BATCH_SIZE);
 
     if (newPolls.length > 0) {
-      setPolls((prevPolls) => [...prevPolls, ...newPolls.map(p => ({...p}))]);
+      setPolls((prevPolls) => isInitial ? newPolls.map(p => ({...p})) : [...prevPolls, ...newPolls.map(p => ({...p}))]);
     }
     setHasMore(newPolls.length === BATCH_SIZE);
     setLoading(false);
+    if (isInitial) {
+      setInitialLoadComplete(true);
+    }
   }, [loading, hasMore, polls.length]);
 
 
   useEffect(() => {
-    const performInitialLoad = async () => {
-      setLoading(true);
-      const initialPollsData = await fetchMorePolls(0, BATCH_SIZE);
-      setPolls(initialPollsData.map(p => ({...p})));
-      setHasMore(initialPollsData.length === BATCH_SIZE);
-      setPrevPollsLength(initialPollsData.length); // Initialize prevPollsLength
-      setLoading(false);
-      setInitialLoad(false);
-    };
-    // Only perform initial load if polls array is empty to prevent re-loading on HMR or other effects
-    if (polls.length === 0 && initialLoad) {
-      performInitialLoad();
+    // Perform initial load
+    if (!initialLoadComplete && polls.length === 0 && !loading) {
+      loadMorePolls(true);
     }
-  }, [initialLoad, polls.length]); // Effect for initial load
+  }, [initialLoadComplete, polls.length, loading, loadMorePolls]);
 
 
   useEffect(() => {
     // This effect reacts to changes in polls.length, typically after a poll is removed.
-    if (!initialLoad && !loading && hasMore) {
-      // Check if polls length decreased and if we're near the "end" threshold
-      if (polls.length < prevPollsLength && polls.length < BATCH_SIZE * 2 && polls.length > 0) {
+    // Only run if initial load is complete and not currently loading.
+    if (initialLoadComplete && !loading && hasMore) {
+      // If the number of polls drops below a threshold (e.g., less than BATCH_SIZE), try to load more.
+      // This helps refill the feed after items are removed.
+      if (polls.length < BATCH_SIZE && polls.length > 0) { // Check polls.length > 0 to avoid loop on empty
         loadMorePolls();
       }
     }
-    // Always update prevPollsLength to the current length after checks
-    if (polls.length !== prevPollsLength) {
-        setPrevPollsLength(polls.length);
-    }
-  }, [polls.length, prevPollsLength, initialLoad, loading, hasMore, loadMorePolls]);
+  }, [polls.length, initialLoadComplete, loading, hasMore, loadMorePolls]);
 
 
   const lastPollElementRef = useCallback(
@@ -96,14 +87,15 @@ export default function PollFeed() {
       if (observer.current) observer.current.disconnect();
 
       observer.current = new IntersectionObserver((entries) => {
-        if (entries[0]?.isIntersecting && hasMore && !initialLoad) {
+        // Only trigger if initial load is complete, entry is intersecting, and there's more data
+        if (initialLoadComplete && entries[0]?.isIntersecting && hasMore && !loading) {
           loadMorePolls();
         }
       });
 
       if (node) observer.current.observe(node);
     },
-    [loading, hasMore, initialLoad, loadMorePolls]
+    [loading, hasMore, initialLoadComplete, loadMorePolls]
   );
 
   const handleVote = (pollId: string, optionId: string) => {
@@ -163,7 +155,7 @@ export default function PollFeed() {
     );
   };
 
-  if (initialLoad && loading && polls.length === 0) {
+  if (!initialLoadComplete && loading && polls.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -172,7 +164,7 @@ export default function PollFeed() {
     );
   }
 
-  if (!initialLoad && polls.length === 0 && !hasMore) {
+  if (initialLoadComplete && polls.length === 0 && !hasMore) {
      return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
           <Zap className="h-16 w-16 text-primary mb-4 opacity-70" />
@@ -196,7 +188,7 @@ export default function PollFeed() {
               initial="initial"
               animate="animate"
               exit="exit"
-              className="min-h-[1px]"
+              className="min-h-[1px]" // Prevents layout shift issues with Framer Motion
               ref={isLastElement ? lastPollElementRef : null}
             >
               <PollCard
@@ -210,13 +202,13 @@ export default function PollFeed() {
           );
         })}
       </AnimatePresence>
-      {loading && !initialLoad && (
+      {loading && initialLoadComplete && ( // Only show loading indicator if initial load is done
         <div className="flex justify-center items-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="ml-2 text-muted-foreground">Loading more polls...</p>
         </div>
       )}
-      {!loading && !hasMore && polls.length > 0 && (
+      {!loading && !hasMore && polls.length > 0 && initialLoadComplete && (
         <div className="text-center py-8 text-muted-foreground">
           <p>✨ You've reached the end! ✨</p>
         </div>
