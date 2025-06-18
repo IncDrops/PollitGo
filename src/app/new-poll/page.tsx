@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, type FormEvent, useCallback, useRef } from 'react';
+import React, { useState, type FormEvent, useCallback, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,7 +39,7 @@ export default function NewPollPage() {
     { id: `option-${Date.now()}`, text: '' },
     { id: `option-${Date.now() + 1}`, text: '' },
   ]);
-  const [deadline, setDeadline] = useState<Date | undefined>(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)); // Default 7 days
+  const [deadline, setDeadline] = useState<Date | undefined>(undefined);
   const [pledgeAmount, setPledgeAmount] = useState<number | undefined>(undefined);
 
   const [pollImageUrls, setPollImageUrls] = useState<string[]>([]);
@@ -49,6 +49,14 @@ export default function NewPollPage() {
   const [pollVideoUrl, setPollVideoUrl] = useState<string | undefined>();
   const [pollVideoFile, setPollVideoFile] = useState<File | undefined>();
   const pollVideoInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    // Set the default deadline only on the client-side after hydration
+    // to avoid server-client mismatch from new Date()
+    const defaultDeadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    defaultDeadline.setSeconds(0); // Consistent with quick select logic
+    setDeadline(defaultDeadline);
+  }, []);
 
 
   const handleAddOption = () => {
@@ -207,7 +215,9 @@ export default function NewPollPage() {
 
     setQuestion('');
     setOptions([{ id: `option-${Date.now()}`, text: '' }, { id: `option-${Date.now() + 1}`, text: '' }]);
-    setDeadline(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
+    const newDefaultDeadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    newDefaultDeadline.setSeconds(0);
+    setDeadline(newDefaultDeadline);
     setPollImageUrls([]);
     setPollImageFiles([]);
     setPollVideoUrl(undefined);
@@ -482,5 +492,3 @@ export default function NewPollPage() {
     </div>
   );
 }
-
-    
