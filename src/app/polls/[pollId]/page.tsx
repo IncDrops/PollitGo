@@ -329,7 +329,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
                 <div className={cn("grid gap-2", poll.imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
                   {poll.imageUrls.map((url, index) => (
                     <div key={index} className="w-full aspect-video relative rounded-lg overflow-hidden shadow-md bg-muted/30">
-                      <Image src={url} alt={`${poll.question} - image ${index + 1}`} layout="fill" objectFit="cover" data-ai-hint="poll image content" />
+                      <Image src={url} alt={`${poll.question} - image ${index + 1}`} layout="fill" objectFit="cover" data-ai-hint="poll image" />
                     </div>
                   ))}
                 </div>
@@ -460,5 +460,3 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
     </>
   );
 }
-
-    

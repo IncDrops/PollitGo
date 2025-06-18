@@ -134,7 +134,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
       <main className="flex-grow">
         <div className="relative h-48 w-full bg-muted">
           <Image
-            src={`https://placehold.co/1200x400.png?text=${encodeURIComponent(user.name)}+Cover`}
+            src="https://placehold.co/1200x400.png" // Simplified URL
             alt={`${user.name}'s cover photo`}
             layout="fill"
             objectFit="cover"
@@ -299,3 +299,5 @@ const PollCardFeed: React.FC<{ initialPolls: Poll[], userIdForFeed?: string, fee
     </div>
   );
 };
+
+    

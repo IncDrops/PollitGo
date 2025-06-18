@@ -29,6 +29,7 @@ export interface Poll {
   question: string;
   options: PollOption[];
   imageUrls?: string[]; // Images for the poll itself (up to 4)
+  imageKeywords?: string[]; // Keywords for the main poll images
   videoUrl?: string; // Video for the poll itself (e.g. context video, up to 60s)
   deadline: string; // ISO string
   createdAt: string; // ISO string

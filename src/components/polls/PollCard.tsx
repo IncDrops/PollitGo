@@ -28,10 +28,15 @@ interface PollCardProps {
 
 const OPTION_TEXT_TRUNCATE_LENGTH = 100;
 
+// Helper function to generate a data-ai-hint from text (first two words)
+const generateHintFromText = (text: string = ""): string => {
+  return text.split(' ').slice(0, 2).join(' ').toLowerCase();
+};
+
 const PollOption: React.FC<{
   option: PollOptionType;
   totalVotes: number;
-  onVoteOptionClick: () => void; // Changed prop name to avoid confusion
+  onVoteOptionClick: () => void; 
   isVoted: boolean;
   isSelectedOption: boolean;
   deadlinePassed: boolean;
@@ -47,7 +52,6 @@ const PollOption: React.FC<{
     : option.text;
 
   const handleOptionClick = () => {
-    // This click now primarily calls the passed handler, which might be onVote or onShowDetails
     onVoteOptionClick();
   };
 
@@ -79,11 +83,11 @@ const PollOption: React.FC<{
           {option.imageUrl && (
             <Image
               src={option.imageUrl}
-              alt={option.text}
+              alt={option.text.substring(0, 50)} // Shorter alt text
               width={pollHasTwoOptions ? 60 : 40}
               height={pollHasTwoOptions ? 60 : 40}
               className={cn("rounded-md object-cover shadow-sm", pollHasTwoOptions ? "mb-2" : "mr-2")}
-              data-ai-hint="poll option"
+              data-ai-hint={generateHintFromText(option.text)}
             />
           )}
           {option.videoUrl && !option.imageUrl && <VideoIconLucide className={cn("text-muted-foreground", pollHasTwoOptions ? "mb-2 h-10 w-10" : "w-5 h-5 mr-2")} />}
@@ -281,7 +285,7 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
 
 
   const pollHasTwoOptions = currentPoll.options.length === 2;
-  const canVoteOnPoll = !!onVote && !currentPoll.isVoted && !deadlinePassed; // onVote must exist to be able to vote
+  const canVoteOnPoll = !!onVote && !currentPoll.isVoted && !deadlinePassed; 
   const isCreator = currentUser?.id === currentPoll.creator.id;
   const showPledgeOutcomeButtons = isCreator && deadlinePassed && currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0 && (currentPoll.pledgeOutcome === 'pending' || currentPoll.pledgeOutcome === undefined);
 
@@ -298,7 +302,7 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
           <CardHeader className="p-4 cursor-pointer" onClick={onCardClick}>
             <div onClick={onCreatorClick} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && onCreatorClick(e)} className="flex items-center space-x-3">
               <Avatar className="h-10 w-10 border">
-                <AvatarImage src={currentPoll.creator.avatarUrl} alt={currentPoll.creator.name} data-ai-hint="profile avatar" />
+                <AvatarImage src={currentPoll.creator.avatarUrl} alt={currentPoll.creator.name} data-ai-hint={generateHintFromText(currentPoll.creator.name)} />
                 <AvatarFallback>{currentPoll.creator.name.substring(0, 1)}</AvatarFallback>
               </Avatar>
               <div>
@@ -313,7 +317,13 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
 
           {(currentPoll.imageUrls && currentPoll.imageUrls.length > 0) && (
             <div className="w-full h-64 relative cursor-pointer bg-muted/30" onClick={onCardClick}>
-              <Image src={currentPoll.imageUrls[0]} alt={currentPoll.question} layout="fill" objectFit="cover" data-ai-hint="poll image content" />
+              <Image 
+                src={currentPoll.imageUrls[0]} 
+                alt={currentPoll.question.substring(0,80)} // Truncate alt text
+                layout="fill" 
+                objectFit="cover" 
+                data-ai-hint={generateHintFromText(currentPoll.question)} 
+              />
               {currentPoll.videoUrl && (
                 <div className="absolute bottom-2 right-2 bg-black/70 p-1.5 rounded-md backdrop-blur-sm shadow-md" title="Video available">
                   <Film className="w-5 h-5 text-white" />
@@ -340,7 +350,7 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
                   key={option.id}
                   option={option}
                   totalVotes={currentPoll.totalVotes}
-                  onVoteOptionClick={() => { // Changed prop name here
+                  onVoteOptionClick={() => { 
                      if (canVoteOnPoll && !pollHasTwoOptions && onVote) onVote(currentPoll.id, option.id);
                      else handleShowOptionDetails(option);
                   }}
@@ -408,3 +418,4 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
     </>
   );
 }
+

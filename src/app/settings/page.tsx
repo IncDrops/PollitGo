@@ -72,7 +72,7 @@ export default function SettingsPage() {
             <div className="flex flex-col items-center space-y-4 sm:flex-row sm:space-y-0 sm:space-x-6">
               <div className="relative group">
                 <Avatar className="h-24 w-24 ring-2 ring-primary ring-offset-2 ring-offset-background">
-                  <AvatarImage src={avatarPreview || 'https://placehold.co/100x100.png?text=User'} alt="User avatar" data-ai-hint="profile avatar" />
+                  <AvatarImage src={avatarPreview || 'https://placehold.co/100x100.png'} alt="User avatar" data-ai-hint="profile avatar" />
                   <AvatarFallback>U</AvatarFallback>
                 </Avatar>
                 <Button
