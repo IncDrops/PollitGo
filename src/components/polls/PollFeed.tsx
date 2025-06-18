@@ -27,24 +27,42 @@ const MIN_PAYOUT_PER_VOTER = 0.10;
 const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50;
 const BATCH_SIZE = 7; 
 
-export default function PollFeed() {
-  const [polls, setPolls] = useState<Poll[]>([]);
+interface PollFeedProps {
+  staticPolls?: Poll[]; // For displaying a fixed list, e.g., on profile page
+  onVoteCallback?: (pollId: string, optionId: string) => void;
+  onPollActionCompleteCallback?: (pollId: string, swipeDirection?: 'left' | 'right') => void;
+  onPledgeOutcomeCallback?: (pollId: string, outcome: 'accepted' | 'tipped_crowd') => void;
+  currentUser?: User | null; // Propagate currentUser if PollFeed is used elsewhere
+}
+
+export default function PollFeed({ 
+  staticPolls, 
+  onVoteCallback, 
+  onPollActionCompleteCallback,
+  onPledgeOutcomeCallback,
+  currentUser: propCurrentUser 
+}: PollFeedProps) {
+  const [polls, setPolls] = useState<Poll[]>(staticPolls || []);
   const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
+  const [hasMore, setHasMore] = useState(!staticPolls); // No more if static list
+  const [initialLoadComplete, setInitialLoadComplete] = useState(!!staticPolls); // Already loaded if static
   const observer = useRef<IntersectionObserver | null>(null);
-  const loaderTriggerRef = useRef<HTMLDivElement | null>(null); // Ref for the loader trigger element
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const loaderTriggerRef = useRef<HTMLDivElement | null>(null);
+  
+  // Use propCurrentUser if provided, otherwise try to get from mockUsers (for standalone feed)
+  const [currentUser, setCurrentUser] = useState<User | null>(propCurrentUser || null);
   const { toast } = useToast();
   const [exitDirectionMap, setExitDirectionMap] = useState<Record<string, 'left' | 'right' | 'default'>>({});
 
   useEffect(() => {
-    const user1 = mockUsers.find(u => u.id === 'user1') || mockUsers[0];
-    setCurrentUser(user1);
-  }, []);
+    if (!propCurrentUser) { // Only fetch if not passed as prop
+      const user1 = mockUsers.find(u => u.id === 'user1') || mockUsers[0];
+      setCurrentUser(user1);
+    }
+  }, [propCurrentUser]);
 
   const loadMorePolls = useCallback(async (isInitial = false) => {
-    if (loading || (!isInitial && !hasMore)) return;
+    if (staticPolls || loading || (!isInitial && !hasMore)) return;
 
     setLoading(true);
     const offset = isInitial ? 0 : polls.length;
@@ -58,27 +76,26 @@ export default function PollFeed() {
     if (isInitial) {
       setInitialLoadComplete(true);
     }
-  }, [loading, hasMore, polls.length]);
+  }, [staticPolls, loading, hasMore, polls.length]);
 
 
   useEffect(() => {
-    if (!initialLoadComplete && polls.length === 0 && !loading) {
+    if (!staticPolls && !initialLoadComplete && polls.length === 0 && !loading) {
       loadMorePolls(true);
     }
-  }, [initialLoadComplete, polls.length, loading, loadMorePolls]);
+  }, [staticPolls, initialLoadComplete, polls.length, loading, loadMorePolls]);
 
 
   useEffect(() => {
-    // This effect reacts to changes in polls.length, to load more if list becomes too short after removals.
+    if (staticPolls) return; // Don't run this effect for static lists
     if (initialLoadComplete && !loading && hasMore && polls.length > 0 && polls.length < BATCH_SIZE ) { 
       loadMorePolls();
     }
-  }, [polls.length, initialLoadComplete, loading, hasMore, loadMorePolls]);
+  }, [staticPolls, polls.length, initialLoadComplete, loading, hasMore, loadMorePolls]);
 
 
   useEffect(() => {
-    // This effect sets up the IntersectionObserver for infinite scrolling.
-    if (loading || !initialLoadComplete || !hasMore) return;
+    if (staticPolls || loading || !initialLoadComplete || !hasMore) return; // Don't run for static lists
 
     const currentLoaderTrigger = loaderTriggerRef.current;
     if (currentLoaderTrigger) {
@@ -86,10 +103,10 @@ export default function PollFeed() {
         if (entries[0]?.isIntersecting && hasMore && !loading) {
           loadMorePolls();
         }
-      }, { rootMargin: "200px" }); // rootMargin helps trigger loading a bit before exact end
+      }, { rootMargin: "200px" }); 
       
       obs.observe(currentLoaderTrigger);
-      observer.current = obs; // Store the observer instance
+      observer.current = obs;
     }
 
     return () => {
@@ -97,14 +114,19 @@ export default function PollFeed() {
         observer.current.unobserve(currentLoaderTrigger);
       }
       if (observer.current) {
-        observer.current.disconnect(); // Disconnect observer on cleanup
+        observer.current.disconnect(); 
         observer.current = null;
       }
     };
-  }, [loading, hasMore, initialLoadComplete, loadMorePolls]); // Rerun when these deps change
+  }, [staticPolls, loading, hasMore, initialLoadComplete, loadMorePolls]); 
 
 
   const handleVote = (pollId: string, optionId: string) => {
+    if (onVoteCallback) { // If used in Profile page, delegate to its handler
+      onVoteCallback(pollId, optionId);
+      return;
+    }
+
     const pollIndex = polls.findIndex(p => p.id === pollId);
     if (pollIndex === -1) return;
 
@@ -148,11 +170,19 @@ export default function PollFeed() {
   };
 
   const handlePollActionComplete = (pollIdToRemove: string, swipeDirection?: 'left' | 'right') => {
+     if (onPollActionCompleteCallback) {
+      onPollActionCompleteCallback(pollIdToRemove, swipeDirection);
+      return;
+    }
     setExitDirectionMap(prev => ({ ...prev, [pollIdToRemove]: swipeDirection || 'default' }));
     setPolls(prevPolls => prevPolls.filter(p => p.id !== pollIdToRemove));
   };
 
   const handlePledgeOutcome = (pollId: string, outcome: 'accepted' | 'tipped_crowd') => {
+    if (onPledgeOutcomeCallback) {
+      onPledgeOutcomeCallback(pollId, outcome);
+      return;
+    }
     setPolls(prevPolls =>
       prevPolls.map(p =>
         p.id === pollId ? { ...p, pledgeOutcome: outcome } : p
@@ -160,7 +190,7 @@ export default function PollFeed() {
     );
   };
 
-  if (!initialLoadComplete && loading && polls.length === 0) {
+  if (!staticPolls && !initialLoadComplete && loading && polls.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -169,7 +199,7 @@ export default function PollFeed() {
     );
   }
 
-  if (initialLoadComplete && polls.length === 0 && !hasMore) {
+  if (!staticPolls && initialLoadComplete && polls.length === 0 && !hasMore) {
      return (
         <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
           <Zap className="h-16 w-16 text-primary mb-4 opacity-70" />
@@ -178,6 +208,16 @@ export default function PollFeed() {
         </div>
       );
   }
+  
+  // If it's a static list and it's empty (this case should be handled by parent for profile page context)
+  if (staticPolls && polls.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        No polls to display.
+      </div>
+    );
+  }
+
 
   return (
     <div className="w-full space-y-0 relative">
@@ -204,18 +244,17 @@ export default function PollFeed() {
         ))}
       </AnimatePresence>
       
-      {/* Loader Trigger Element */}
-      {initialLoadComplete && hasMore && !loading && (
+      {!staticPolls && initialLoadComplete && hasMore && !loading && (
         <div ref={loaderTriggerRef} style={{ height: '1px', marginTop: '-1px' }} aria-hidden="true"></div>
       )}
 
-      {loading && initialLoadComplete && ( 
+      {!staticPolls && loading && initialLoadComplete && ( 
         <div className="flex justify-center items-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="ml-2 text-muted-foreground">Loading more polls...</p>
         </div>
       )}
-      {!loading && !hasMore && polls.length > 0 && initialLoadComplete && (
+      {!staticPolls && !loading && !hasMore && polls.length > 0 && initialLoadComplete && (
         <div className="text-center py-8 text-muted-foreground">
           <p>✨ You've reached the end! ✨</p>
         </div>
@@ -223,3 +262,5 @@ export default function PollFeed() {
     </div>
   );
 }
+
+    

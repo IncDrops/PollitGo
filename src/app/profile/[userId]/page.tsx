@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, use } from 'react'; // Added use
+import React, { useState, useEffect, use } from 'react';
 import type { User, Poll } from "@/types";
 import { mockUsers, mockPolls } from "@/lib/mockData";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -13,15 +13,14 @@ import Image from "next/image";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
+import PollCardFeed from '@/components/polls/PollFeed'; // Assuming this is your PollCardFeed component
 
-// Simulate fetching user and their polls.
 async function getUserData(userId: string): Promise<{ user: User | null; polls: Poll[] }> {
   console.log(`[UserProfilePage] getUserData called for userId: ${userId}`);
   const user = mockUsers.find(u => u.id === userId) || null;
   
   let polls: Poll[] = [];
   if (user) {
-    // Directly filter and assign polls, assuming mockPolls contains serializable data
     polls = mockPolls.filter(p => p.creator.id === userId);
     console.log(`[UserProfilePage] Found ${polls.length} polls for user ${userId}`);
   } else {
@@ -31,14 +30,13 @@ async function getUserData(userId: string): Promise<{ user: User | null; polls: 
   return { user, polls };
 }
 
+const urlSafeText = (text: string, maxLength: number = 20) => encodeURIComponent(text.substring(0, maxLength).replace(/\s+/g, '+'));
 
 export default function UserProfilePage({ params }: { params: { userId: string } }) {
   const router = useRouter();
   const { toast } = useToast();
   
-  // As per Next.js, 'params' prop can be a Promise here. Unwrap it with React.use().
   const resolvedPageParams = use(params); 
-  // Now, resolvedPageParams is the actual object: { userId: string }
 
   const [userData, setUserData] = useState<{ user: User | null; polls: Poll[] }>({ user: null, polls: [] });
   const [isLoading, setIsLoading] = useState(true);
@@ -46,11 +44,9 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   const [currentUser, setCurrentUser] = useState<User | null>(null); 
 
   useEffect(() => {
-    // Set currentUser on client mount
     const loggedInUser = mockUsers.find(u => u.id === 'user1') || null; 
     setCurrentUser(loggedInUser);
 
-    // Use resolvedPageParams.userId
     if (resolvedPageParams && resolvedPageParams.userId) { 
       setIsLoading(true);
       getUserData(resolvedPageParams.userId)
@@ -68,14 +64,10 @@ export default function UserProfilePage({ params }: { params: { userId: string }
           setIsLoading(false);
         });
     } else {
-      // Handle the case where userId might not be available after resolution
       setIsLoading(false); 
       console.warn("[UserProfilePage] resolvedPageParams.userId is not available.");
     }
-  }, [resolvedPageParams, toast]); // Updated dependency: use resolvedPageParams directly if userId is the only part used.
-                                   // Or more specifically, resolvedPageParams.userId if it can change independently.
-                                   // Given 'params' is the top-level prop, resolvedPageParams is derived once.
-                                   // So, depending on resolvedPageParams should be fine.
+  }, [resolvedPageParams, toast]);
 
   const user = userData.user;
   const userPolls = userData.polls;
@@ -99,34 +91,39 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   const isOwnProfile = currentUser?.id === user.id;
 
   const handleShareProfile = async () => {
-    if (typeof window === 'undefined' || !navigator.share) {
+    if (typeof window === 'undefined') return;
+    const shareUrl = window.location.href;
+    const shareData = {
+      title: `${user.name}'s Profile on PollitAGo`,
+      text: `Check out ${user.name}'s profile and polls!`,
+      url: shareUrl,
+    };
+    
+    let sharedNatively = false;
+    if (navigator.share) {
       try {
-        await navigator.clipboard.writeText(window.location.href);
+        await navigator.share(shareData);
+        sharedNatively = true;
+      } catch (error: any) {
+        // Don't log permission denied or cancellation as errors to the user.
+        if (error.name !== 'AbortError' && error.name !== 'NotAllowedError') {
+            console.error('Error sharing poll via native share:', error);
+        }
+      }
+    }
+
+    if (!sharedNatively) {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
         toast({ title: "Link Copied", description: "Profile link copied to clipboard."});
       } catch (copyError) {
         toast({ title: "Error", description: "Could not copy profile link.", variant: "destructive"});
         console.error("Error copying profile link:", copyError);
       }
-      return;
-    }
-
-    try {
-      await navigator.share({
-        title: `${user.name}'s Profile on PollitAGo`,
-        text: `Check out ${user.name}'s profile and polls!`,
-        url: window.location.href,
-      });
-      toast({ title: "Profile Shared", description: "Link to profile shared successfully."});
-    } catch (error) {
-        try {
-            await navigator.clipboard.writeText(window.location.href);
-            toast({ title: "Link Copied", description: "Profile link copied to clipboard."});
-        } catch (copyError) {
-            toast({ title: "Error", description: "Could not share or copy profile link.", variant: "destructive"});
-            console.error("Error sharing/copying profile link:", error, copyError);
-        }
     }
   };
+  
+  const coverPhotoUrl = `https://placehold.co/1200x400.png?text=${urlSafeText(user.name + " Cover")}`;
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -145,7 +142,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
       <main className="flex-grow">
         <div className="relative h-48 w-full bg-muted">
           <Image
-            src="https://placehold.co/1200x400.png" 
+            src={coverPhotoUrl} 
             alt={`${user.name}'s cover photo`}
             layout="fill"
             objectFit="cover"
@@ -226,7 +223,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
           </TabsList>
           <TabsContent value="created" className="mt-0">
             {userPolls.length > 0 ? (
-              <PollCardFeed 
+              <PollCardFeedWrapper 
                 initialPolls={userPolls} 
                 userIdForFeed={user.id}
                 feedType="userCreated"
@@ -274,39 +271,87 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   );
 }
 
-// Basic PollCardFeed component placeholder
-const PollCardFeed: React.FC<{ initialPolls: Poll[], userIdForFeed?: string, feedType?: string }> = ({ initialPolls }) => {
+
+const PollCardFeedWrapper: React.FC<{ initialPolls: Poll[], userIdForFeed?: string, feedType?: string }> = ({ initialPolls }) => {
   if (!initialPolls || initialPolls.length === 0) {
-    // This case is handled by the "No Polls Created Yet" card above if feedType is "userCreated"
-    // For other feed types, or if this component were more generic, this might be shown.
     return <p className="text-center py-8 text-muted-foreground">No polls to display for this feed.</p>;
   }
+  // This wrapper assumes PollFeed is designed to take a static list of polls for profile display
+  // If PollFeed expects to do its own fetching, this needs adjustment or a different component.
+  const [polls, setPolls] = useState(initialPolls);
+  const [currentUser] = useState<User | null>(() => mockUsers.find(u => u.id === 'user1') || mockUsers[0] || null);
+  const { toast } = useToast();
+
+  const MIN_PAYOUT_PER_VOTER = 0.10; 
+  const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50; 
+
+  const handleVote = (pollId: string, optionId: string) => {
+    const pollIndex = polls.findIndex(p => p.id === pollId);
+    if (pollIndex === -1) return;
+
+    const pollToUpdate = polls[pollIndex];
+    if (pollToUpdate.isVoted) return;
+
+    const targetOption = pollToUpdate.options.find(opt => opt.id === optionId);
+    if (!targetOption) return;
+
+    if (pollToUpdate.pledgeAmount && pollToUpdate.pledgeAmount > 0) {
+      const amountToDistributeToVoters = pollToUpdate.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
+      const potentialVotesForThisOption = targetOption.votes + 1;
+       if ((amountToDistributeToVoters / potentialVotesForThisOption) < MIN_PAYOUT_PER_VOTER && potentialVotesForThisOption > 0) {
+        toast({
+          title: "Vote Not Registered",
+          description: `Adding this vote would result in a PollitPoint payout below $${MIN_PAYOUT_PER_VOTER.toFixed(2)} per voter for this option due to the current pledge.`,
+          variant: "destructive",
+          duration: 5000,
+        });
+        return;
+      }
+    }
+    
+    setPolls(prevPolls =>
+      prevPolls.map(p => {
+        if (p.id === pollId) {
+          return {
+            ...p,
+            isVoted: true,
+            votedOptionId: optionId,
+            totalVotes: p.totalVotes + 1,
+            options: p.options.map(opt =>
+              opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
+            ),
+          };
+        }
+        return p;
+      })
+    );
+  };
+
+  const handlePollActionComplete = (pollIdToRemove: string) => {
+    setPolls(prevPolls => prevPolls.filter(p => p.id !== pollIdToRemove));
+  };
+  
+  const handlePledgeOutcome = (pollId: string, outcome: 'accepted' | 'tipped_crowd') => {
+    setPolls(prevPolls =>
+      prevPolls.map(p =>
+        p.id === pollId ? { ...p, pledgeOutcome: outcome } : p
+      )
+    );
+  };
+
+
   return (
     <div className="space-y-0 divide-y divide-border">
-      {initialPolls.map(poll => (
-        <div key={poll.id} className="p-4 bg-card hover:bg-accent/20 transition-colors">
-          <NextLink href={`/polls/${poll.id}`}>
-            <div className="block cursor-pointer">
-              <div className="flex items-center space-x-2 mb-1">
-                <Avatar className="h-6 w-6">
-                    <AvatarImage src={poll.creator.avatarUrl} alt={poll.creator.name} data-ai-hint="profile avatar" />
-                    <AvatarFallback>{poll.creator.name.substring(0,1)}</AvatarFallback>
-                </Avatar>
-                <span className="text-xs font-medium text-muted-foreground">{poll.creator.name}</span>
-              </div>
-              <h3 className="font-semibold text-foreground mb-1">{poll.question}</h3>
-              <p className="text-xs text-muted-foreground">
-                {poll.options.length} options &middot; {poll.totalVotes.toLocaleString()} votes
-              </p>
-              {poll.imageUrls && poll.imageUrls.length > 0 && (
-                <div className="mt-2 w-24 h-16 rounded-md overflow-hidden bg-muted">
-                    <Image src={poll.imageUrls[0]} alt="Poll image preview" width={96} height={64} className="object-cover w-full h-full" data-ai-hint="poll preview" />
-                </div>
-              )}
-            </div>
-          </NextLink>
-        </div>
-      ))}
+       {/* This uses the PollFeed component with a modified prop to signal it's a static list */}
+      <PollFeed 
+        staticPolls={polls} // Pass polls as a static list
+        onVoteCallback={handleVote}
+        onPollActionCompleteCallback={handlePollActionComplete}
+        onPledgeOutcomeCallback={handlePledgeOutcome}
+        currentUser={currentUser}
+      />
     </div>
   );
 };
+
+    
