@@ -265,7 +265,7 @@ export default function NewPollPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {pollImageUrls.map((url, index) => (
                       <div key={index} className="relative group aspect-square">
-                        <Image src={url} alt={`Poll image preview ${index + 1}`} layout="fill" objectFit="cover" className="rounded-md shadow-sm" data-ai-hint="poll image preview" />
+                        <Image src={url} alt={`Poll image preview ${index + 1}`} layout="fill" objectFit="cover" className="rounded-md shadow-sm" data-ai-hint="poll image preview"/>
                         <Button
                           type="button"
                           variant="destructive"
@@ -434,7 +434,7 @@ export default function NewPollPage() {
           </CardContent>
           <CardFooter className="border-t pt-6">
             <Button type="submit" className="w-full text-lg py-6 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md font-semibold">
-              Post Poll
+              Poll it &amp; Go
             </Button>
           </CardFooter>
         </form>
