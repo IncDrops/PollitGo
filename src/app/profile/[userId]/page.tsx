@@ -8,12 +8,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserPlus, Settings, MessageSquare, Edit3, ChevronLeft, Share2, Search, CalendarDays, MapPin, Link as LinkIconLucide } from "lucide-react";
+import { UserPlus, Settings, MessageSquare, Edit3, ChevronLeft, Share2, Search, CalendarDays, MapPin, Link as LinkIconLucide, Flame } from "lucide-react";
 import Image from "next/image";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import PollCardFeed from '@/components/polls/PollFeed'; // Assuming this is your PollCardFeed component
+import PollFeed from '@/components/polls/PollFeed'; // Correctly import PollFeed
 
 async function getUserData(userId: string): Promise<{ user: User | null; polls: Poll[] }> {
   console.log(`[UserProfilePage] getUserData called for userId: ${userId}`);
@@ -21,7 +21,7 @@ async function getUserData(userId: string): Promise<{ user: User | null; polls: 
   
   let polls: Poll[] = [];
   if (user) {
-    polls = mockPolls.filter(p => p.creator.id === userId);
+    polls = mockPolls.filter(p => p.creator.id === userId).map(p => ({...p})); // Ensure deep copy for state updates
     console.log(`[UserProfilePage] Found ${polls.length} polls for user ${userId}`);
   } else {
     console.log(`[UserProfilePage] User not found for ID: ${userId}`);
@@ -30,7 +30,10 @@ async function getUserData(userId: string): Promise<{ user: User | null; polls: 
   return { user, polls };
 }
 
-const urlSafeText = (text: string, maxLength: number = 20) => encodeURIComponent(text.substring(0, maxLength).replace(/\s+/g, '+'));
+const urlSafeText = (text: string, maxLength: number = 20): string => {
+  const cleanedText = text.replace(/[^a-zA-Z0-9\s]/g, "").substring(0, maxLength);
+  return encodeURIComponent(cleanedText);
+};
 
 export default function UserProfilePage({ params }: { params: { userId: string } }) {
   const router = useRouter();
@@ -94,7 +97,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
     if (typeof window === 'undefined') return;
     const shareUrl = window.location.href;
     const shareData = {
-      title: `${user.name}'s Profile on PollitAGo`,
+      title: `${user.name}'s Profile on PollitGo`,
       text: `Check out ${user.name}'s profile and polls!`,
       url: shareUrl,
     };
@@ -105,7 +108,6 @@ export default function UserProfilePage({ params }: { params: { userId: string }
         await navigator.share(shareData);
         sharedNatively = true;
       } catch (error: any) {
-        // Don't log permission denied or cancellation as errors to the user.
         if (error.name !== 'AbortError' && error.name !== 'NotAllowedError') {
             console.error('Error sharing poll via native share:', error);
         }
@@ -152,7 +154,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
           <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 transform">
             <Avatar className="h-32 w-32 border-4 border-background ring-2 ring-primary shadow-lg">
               <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="profile avatar" />
-              <AvatarFallback className="text-4xl">{user.name.substring(0, 1).toUpperCase()}</AvatarFallback>
+              <AvatarFallback className="text-4xl">{user.name.split(" ").map(n => n[0]).join("").toUpperCase()}</AvatarFallback>
             </Avatar>
           </div>
         </div>
@@ -225,8 +227,8 @@ export default function UserProfilePage({ params }: { params: { userId: string }
             {userPolls.length > 0 ? (
               <PollCardFeedWrapper 
                 initialPolls={userPolls} 
-                userIdForFeed={user.id}
-                feedType="userCreated"
+                userIdForFeed={user.id} // This prop isn't strictly used by wrapper but good for context
+                feedType="userCreated" // This prop isn't strictly used by wrapper but good for context
               />
             ) : (
               <Card className="shadow-none rounded-none border-0">
@@ -276,10 +278,12 @@ const PollCardFeedWrapper: React.FC<{ initialPolls: Poll[], userIdForFeed?: stri
   if (!initialPolls || initialPolls.length === 0) {
     return <p className="text-center py-8 text-muted-foreground">No polls to display for this feed.</p>;
   }
-  // This wrapper assumes PollFeed is designed to take a static list of polls for profile display
-  // If PollFeed expects to do its own fetching, this needs adjustment or a different component.
-  const [polls, setPolls] = useState(initialPolls);
-  const [currentUser] = useState<User | null>(() => mockUsers.find(u => u.id === 'user1') || mockUsers[0] || null);
+  
+  const [polls, setPolls] = useState(initialPolls.map(p => ({...p}))); // Ensure deep copy
+  const [currentUser] = useState<User | null>(() => {
+    const user1 = mockUsers.find(u => u.id === 'user1');
+    return user1 ? {...user1} : (mockUsers[0] ? {...mockUsers[0]} : null);
+  });
   const { toast } = useToast();
 
   const MIN_PAYOUT_PER_VOTER = 0.10; 
@@ -300,12 +304,11 @@ const PollCardFeedWrapper: React.FC<{ initialPolls: Poll[], userIdForFeed?: stri
       const potentialVotesForThisOption = targetOption.votes + 1;
        if ((amountToDistributeToVoters / potentialVotesForThisOption) < MIN_PAYOUT_PER_VOTER && potentialVotesForThisOption > 0) {
         toast({
-          title: "Vote Not Registered",
-          description: `Adding this vote would result in a PollitPoint payout below $${MIN_PAYOUT_PER_VOTER.toFixed(2)} per voter for this option due to the current pledge.`,
-          variant: "destructive",
-          duration: 5000,
+          title: "Low Payout Warning",
+          description: `Your vote is counted! However, due to the current pledge and number of voters for this option, your potential PollitPoint payout might be below $${MIN_PAYOUT_PER_VOTER.toFixed(2)}.`,
+          variant: "default",
+          duration: 7000,
         });
-        return;
       }
     }
     
@@ -337,14 +340,14 @@ const PollCardFeedWrapper: React.FC<{ initialPolls: Poll[], userIdForFeed?: stri
         p.id === pollId ? { ...p, pledgeOutcome: outcome } : p
       )
     );
+     toast({ title: `Pledge Outcome: ${outcome.replace('_', ' ')}`, description: "Action simulated on client."});
   };
 
 
   return (
     <div className="space-y-0 divide-y divide-border">
-       {/* This uses the PollFeed component with a modified prop to signal it's a static list */}
-      <PollFeed 
-        staticPolls={polls} // Pass polls as a static list
+       <PollFeed 
+        staticPolls={polls} 
         onVoteCallback={handleVote}
         onPollActionCompleteCallback={handlePollActionComplete}
         onPledgeOutcomeCallback={handlePledgeOutcome}
@@ -354,4 +357,3 @@ const PollCardFeedWrapper: React.FC<{ initialPolls: Poll[], userIdForFeed?: stri
   );
 };
 
-    
