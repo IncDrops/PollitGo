@@ -91,13 +91,15 @@ export default async function UserProfilePage({ params }: { params: { userId: st
             <TabsTrigger value="activity">Activity</TabsTrigger>
           </TabsList>
           <TabsContent value="polls" className="mt-6">
+            {/* Temporarily commenting out the poll list for diagnosis */}
+            <p className="text-center text-muted-foreground py-10">Polls temporarily hidden for diagnosis. User has {polls.length} poll(s).</p>
+            {/*
             {polls.length > 0 ? (
               <div className="space-y-0">
                 {polls.map(poll => (
                   <PollCard
                     key={poll.id}
                     poll={poll}
-                    // onVote={handleVoteOnProfilePage} // Temporarily removed for diagnosis
                     currentUser={user} 
                   />
                 ))}
@@ -105,6 +107,7 @@ export default async function UserProfilePage({ params }: { params: { userId: st
             ) : (
               <p className="text-center text-muted-foreground py-10">This user hasn't created any polls yet.</p>
             )}
+            */}
           </TabsContent>
           <TabsContent value="voted" className="mt-6">
             <p className="text-center text-muted-foreground py-10">Polls voted on by {user.name} will appear here.</p>
