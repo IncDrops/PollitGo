@@ -6,17 +6,23 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search as SearchIcon, Loader2 } from "lucide-react";
 import PollCard from "@/components/polls/PollCard";
-import { mockPolls } from "@/lib/mockData";
-import type { Poll } from "@/types";
+import { mockPolls, mockUsers } from "@/lib/mockData"; // Assuming mockUsers is needed for currentUser on PollCard
+import type { Poll, User } from "@/types";
+import { useToast } from "@/hooks/use-toast"; // Import useToast
+
+const MIN_PAYOUT_PER_VOTER = 0.10; // $0.10
+const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50; // 50%
 
 export default function SearchPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<Poll[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const { toast } = useToast(); // Initialize toast
 
-  // Local state for votes within search results
-  const [votedPollsState, setVotedPollsState] = useState<Record<string, { pollId: string, optionId: string }>>({});
+  // Mock current user for PollCard. In a real app, this would come from auth context.
+  const [currentUser] = useState<User | null>(() => mockUsers.find(u => u.id === 'user1') || mockUsers[0] || null);
+
 
   const handleSearch = async (e: FormEvent) => {
     e.preventDefault();
@@ -29,11 +35,10 @@ export default function SearchPage() {
     setIsLoading(true);
     setHasSearched(true);
 
-    // Simulate API call delay
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    const filteredPolls = mockPolls.filter(poll => {
+    const filteredPolls = mockPolls.map(p => ({...p})).filter(poll => { // Create copies for safe mutation
       const questionMatch = poll.question.toLowerCase().includes(lowerCaseSearchTerm);
       const creatorMatch = poll.creator.name.toLowerCase().includes(lowerCaseSearchTerm) ||
                            poll.creator.username.toLowerCase().includes(lowerCaseSearchTerm);
@@ -41,66 +46,54 @@ export default function SearchPage() {
       return questionMatch || creatorMatch || optionsMatch;
     });
 
-    // Apply local vote state to search results
-    const resultsWithVoteState = filteredPolls.map(poll => {
-      const voteInfo = votedPollsState[poll.id];
-      if (voteInfo) {
-        return {
-          ...poll,
-          isVoted: true,
-          votedOptionId: voteInfo.optionId,
-          // Note: votes counts within options might not be updated here unless explicitly handled
-        };
-      }
-      return poll;
-    });
-
-
-    setSearchResults(resultsWithVoteState);
+    setSearchResults(filteredPolls);
     setIsLoading(false);
   };
 
   const handleVoteInSearch = (pollId: string, optionId: string) => {
-    // Update local vote state for this search session
-    setVotedPollsState(prev => ({ ...prev, [pollId]: { pollId, optionId } }));
+    const pollIndex = searchResults.findIndex(p => p.id === pollId);
+    if (pollIndex === -1) return;
 
-    // Update the displayed search results immediately
+    const pollToUpdate = searchResults[pollIndex];
+    if (pollToUpdate.isVoted) return;
+
+    const targetOption = pollToUpdate.options.find(opt => opt.id === optionId);
+    if (!targetOption) return;
+
+    if (pollToUpdate.pledgeAmount && pollToUpdate.pledgeAmount > 0) {
+      const amountToDistributeToVoters = pollToUpdate.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
+      const potentialVotesForThisOption = targetOption.votes + 1;
+       if ((amountToDistributeToVoters / potentialVotesForThisOption) < MIN_PAYOUT_PER_VOTER && potentialVotesForThisOption > 0) {
+        toast({
+          title: "Vote Not Registered",
+          description: `Adding this vote would result in a PollitPoint payout below $${MIN_PAYOUT_PER_VOTER.toFixed(2)} per voter for this option due to the current pledge.`,
+          variant: "destructive",
+          duration: 5000,
+        });
+        return;
+      }
+    }
+
     setSearchResults(prevResults =>
       prevResults.map(p => {
-        if (p.id === pollId && (!p.isVoted || p.votedOptionId !== optionId) ) { // only update if not already voted or voted for different
-          const newTotalVotes = p.isVoted ? p.totalVotes : p.totalVotes + 1; // Increment only if not previously voted
-          
+        if (p.id === pollId) {
+          const newTotalVotes = p.isVoted ? p.totalVotes : p.totalVotes + 1;
           return {
             ...p,
             isVoted: true,
             votedOptionId: optionId,
             totalVotes: newTotalVotes,
             options: p.options.map(opt => {
-              // If this is the new voted option and poll wasn't voted before for THIS option
-              if (opt.id === optionId && p.votedOptionId !== optionId) {
-                let newVotes = opt.votes +1;
-                 // If it was previously voted for another option, decrement that one.
-                 if (p.isVoted && p.votedOptionId && p.votedOptionId !== optionId) {
-                    const oldVotedOptIndex = p.options.findIndex(o => o.id === p.votedOptionId);
-                    if (oldVotedOptIndex > -1) {
-                        // This creates a new options array to avoid direct mutation
-                        const updatedOptions = [...p.options];
-                        updatedOptions[oldVotedOptIndex] = {
-                            ...updatedOptions[oldVotedOptIndex],
-                            votes: Math.max(0, updatedOptions[oldVotedOptIndex].votes -1) 
-                        };
-                        // Update the p object with new options array before returning
-                         return { ...p, isVoted: true, votedOptionId: optionId, totalVotes: newTotalVotes, options: updatedOptions.map(o => o.id === optionId ? {...o, votes: o.votes+1} : o) };
-                    }
-                 }
-                return { ...opt, votes: newVotes };
+              if (opt.id === optionId) {
+                return { ...opt, votes: opt.votes + 1 };
               }
-              // If this option was previously voted but now unselected due to new vote
-              if (opt.id !== optionId && p.votedOptionId === opt.id && p.isVoted) {
-                return {...opt, votes: Math.max(0, opt.votes -1)};
+              // If previously voted for another option, and now changing vote (though current logic prevents re-vote)
+              // This part might be redundant if re-voting on same poll is disabled once voted.
+              if (p.votedOptionId && p.votedOptionId === opt.id && p.votedOptionId !== optionId) {
+                 return { ...opt, votes: Math.max(0, opt.votes -1) };
               }
               return opt;
-            })
+            }),
           };
         }
         return p;
@@ -111,8 +104,16 @@ export default function SearchPage() {
   
   const handlePollActionCompleteInSearch = (pollIdToRemove: string) => {
     setSearchResults(prevPolls => prevPolls.filter(p => p.id !== pollIdToRemove));
-    // Optionally, update votedPollsState if needed, though swiping removes it from view.
     console.log(`Poll ${pollIdToRemove} action completed and removed from search results.`);
+  };
+
+  const handlePledgeOutcomeInSearch = (pollId: string, outcome: 'accepted' | 'tipped_crowd') => {
+    setSearchResults(prevPolls =>
+      prevPolls.map(p =>
+        p.id === pollId ? { ...p, pledgeOutcome: outcome } : p
+      )
+    );
+    toast({ title: `Pledge Outcome: ${outcome.replace('_', ' ')}`, description: `Action simulated for poll ${pollId} in search results.`});
   };
 
 
@@ -164,6 +165,8 @@ export default function SearchPage() {
                 poll={poll} 
                 onVote={handleVoteInSearch} 
                 onPollActionComplete={handlePollActionCompleteInSearch}
+                currentUser={currentUser} // Pass currentUser
+                onPledgeOutcome={handlePledgeOutcomeInSearch} // Pass pledge outcome handler
             />
           ))}
         </div>
@@ -172,3 +175,4 @@ export default function SearchPage() {
   );
 }
 
+    

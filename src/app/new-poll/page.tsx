@@ -10,15 +10,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CalendarIcon, ImagePlus, VideoIcon, X, PlusCircle, ImageIcon as ImageIconLucide, Film, LinkIcon, AlertCircle, DollarSign } from 'lucide-react';
+import { CalendarIcon, ImagePlus, VideoIcon, X, PlusCircle, ImageIcon as ImageIconLucide, Film, LinkIcon, AlertCircle, DollarSign, Info } from 'lucide-react';
 import { format } from "date-fns"
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast'; // Ensure useToast is imported
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const MAX_OPTIONS = 4;
 const MAX_POLL_IMAGES = 4;
 const MAX_OPTION_TEXT_LENGTH = 365;
+const MIN_PAYOUT_PER_MAJORITY_VOTER = 0.10; // $0.10
+const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50; // 50%
 
 interface PollOptionState {
   id: string;
@@ -461,6 +463,12 @@ export default function NewPollPage() {
                 step="0.01"
                 className="text-base rounded-md"
               />
+              {pledgeAmount && pledgeAmount > 0 && (
+                <div className="text-xs text-muted-foreground flex items-start mt-1">
+                  <Info className="h-3 w-3 mr-1.5 mt-0.5 shrink-0" />
+                  <span>Note: To ensure meaningful PollitPoint distribution (&ge;${MIN_PAYOUT_PER_MAJORITY_VOTER.toFixed(2)}/voter), voting may be limited if the majority grows too large for this pledge amount. The actual limit depends on the number of voters for the winning option.</span>
+                </div>
+              )}
             </div>
 
           </CardContent>
@@ -474,3 +482,5 @@ export default function NewPollPage() {
     </div>
   );
 }
+
+    

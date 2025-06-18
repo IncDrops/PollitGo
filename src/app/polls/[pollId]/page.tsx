@@ -20,19 +20,24 @@ import { useToast } from "@/hooks/use-toast";
 
 async function getPollDetails(pollId: string): Promise<{ poll: Poll | null; comments: CommentType[] }> {
   const poll = mockPolls.find(p => p.id === pollId) || null;
+  // Ensure poll state is fresh if found, otherwise this might refer to an old mockPolls state.
+  const freshPoll = poll ? {...mockPolls.find(p => p.id === pollId)} as Poll || null : null;
+
   const commentUser1 = mockUsers.find(u => u.id === 'user2') || mockUsers[1] || getRandomUser();
   const commentUser2 = mockUsers.find(u => u.id === 'user3') || mockUsers[2] || getRandomUser();
 
-  const comments: CommentType[] = poll ? [
+  const comments: CommentType[] = freshPoll ? [
     { id: 'comment1', user: commentUser1, text: "Great question! I'm leaning towards Summer.", createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() },
     { id: 'comment2', user: commentUser2, text: "Definitely Autumn for me, the colors are amazing.", createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
   ] : [];
-  return { poll, comments };
+  return { poll: freshPoll, comments };
 }
 
 const getRandomUser = (): User => mockUsers[Math.floor(Math.random() * mockUsers.length)];
 
 const OPTION_TEXT_TRUNCATE_LENGTH = 100;
+const MIN_PAYOUT_PER_VOTER = 0.10; // $0.10
+const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50; // 50%
 
 const PollOptionDisplay: React.FC<{
   option: PollOptionType;
@@ -40,10 +45,11 @@ const PollOptionDisplay: React.FC<{
   isVoted: boolean;
   isSelectedOption: boolean;
   deadlinePassed: boolean;
-  onVote: () => Promise<void>;
+  onVote: () => Promise<void>; // Keep as async if original onVote needs it, or simplify
   pollHasTwoOptions: boolean;
   onShowDetails: () => void;
-}> = ({ option, totalVotes, isVoted, isSelectedOption, deadlinePassed, onVote, pollHasTwoOptions, onShowDetails }) => {
+  pollPledgeAmount?: number; // Pass pledge amount to option for display or logic if needed
+}> = ({ option, totalVotes, isVoted, isSelectedOption, deadlinePassed, onVote, pollHasTwoOptions, onShowDetails, pollPledgeAmount }) => {
   const percentage = totalVotes > 0 ? (option.votes / totalVotes) * 100 : 0;
   const showResults = isVoted || deadlinePassed;
   const isTruncated = option.text.length > OPTION_TEXT_TRUNCATE_LENGTH;
@@ -53,7 +59,9 @@ const PollOptionDisplay: React.FC<{
 
   const handleOptionClick = async () => {
     if (!isVoted && !deadlinePassed) {
-      await onVote();
+      // The actual vote logic including pledge check is now handled by `handleVote` in the parent.
+      // This onVote prop here is the one passed from the parent which already has the logic.
+      await onVote(); 
     } else {
       onShowDetails();
     }
@@ -64,6 +72,16 @@ const PollOptionDisplay: React.FC<{
     onShowDetails();
   };
 
+  // Client-side check for display purposes if voting for this option might be limited
+  // This is a visual cue; actual enforcement is in the parent's handleVote.
+  let isVotingVisuallyLimited = false;
+  if (pollPledgeAmount && pollPledgeAmount > 0 && !deadlinePassed && !isVoted) {
+    const amountForVoters = pollPledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
+    if ((amountForVoters / (option.votes + 1)) < MIN_PAYOUT_PER_VOTER && (option.votes + 1) > 0) {
+      isVotingVisuallyLimited = true;
+    }
+  }
+
   return (
     <div className={cn("relative group", pollHasTwoOptions ? "flex-1" : "mb-3 w-full")}>
       <Button
@@ -71,11 +89,13 @@ const PollOptionDisplay: React.FC<{
         className={cn(
           "w-full justify-between h-auto p-3 text-left relative disabled:opacity-100 disabled:cursor-default",
            pollHasTwoOptions && "aspect-square flex flex-col items-center justify-center text-center",
-           (isVoted || deadlinePassed || isTruncated || option.affiliateLink) && "cursor-pointer hover:bg-accent/60"
+           (isVoted || deadlinePassed || isTruncated || option.affiliateLink || isVotingVisuallyLimited) && "cursor-pointer hover:bg-accent/60",
+           isVotingVisuallyLimited && "opacity-70" // Visual cue for limited voting
         )}
         onClick={handleOptionClick}
-        disabled={(isVoted || deadlinePassed) && !pollHasTwoOptions && !(isTruncated || option.affiliateLink) }
+        disabled={(isVoted || deadlinePassed || isVotingVisuallyLimited) && !pollHasTwoOptions && !(isTruncated || option.affiliateLink) }
         aria-pressed={isSelectedOption}
+        title={isVotingVisuallyLimited ? "Voting for this option may be limited due to pledge payout conditions." : undefined}
       >
         <div className={cn("flex w-full", pollHasTwoOptions ? "flex-col items-center" : "items-center")}>
           {option.imageUrl && <Image src={option.imageUrl} alt={option.text} width={pollHasTwoOptions ? 60 : 30} height={pollHasTwoOptions ? 60 : 30} className={cn("rounded-md object-cover shadow-sm", pollHasTwoOptions ? "mb-2" : "mr-2")} data-ai-hint="poll option" />}
@@ -85,10 +105,10 @@ const PollOptionDisplay: React.FC<{
           {showResults && <span className={cn("font-semibold text-sm", pollHasTwoOptions ? "mt-2" : "ml-auto pl-1")}>{percentage.toFixed(0)}%</span>}
 
           {isSelectedOption && showResults && <CheckCircle2 className={cn("w-4 h-4", pollHasTwoOptions ? "mt-1 text-primary-foreground" : "ml-1 text-primary")} />}
-
-          {(isTruncated || option.affiliateLink) && (
+          
+          {(isTruncated || option.affiliateLink || isVotingVisuallyLimited) && (
              <div
-              onClick={handleDetailsIconClick}
+              onClick={!isVotingVisuallyLimited ? handleDetailsIconClick : undefined} // Only allow details if not limited, or always allow? Let's always allow.
               role="button"
               tabIndex={0}
               onKeyDown={(e) => e.key === 'Enter' && handleDetailsIconClick(e as any)}
@@ -106,6 +126,9 @@ const PollOptionDisplay: React.FC<{
         </div>
       </Button>
       {showResults && !pollHasTwoOptions && <Progress value={percentage} className="h-1.5 mt-1 bg-primary/20 [&>div]:bg-primary" />}
+       {isVotingVisuallyLimited && !pollHasTwoOptions && (
+        <p className="text-xs text-destructive/80 mt-1 text-center">Voting for this option may be limited due to pledge payout conditions.</p>
+      )}
     </div>
   );
 };
@@ -113,7 +136,7 @@ const PollOptionDisplay: React.FC<{
 export default function PollDetailsPage({ params }: { params: { pollId: string } }) {
   const [pollData, setPollData] = useState<{ poll: Poll | null; comments: CommentType[] }>({ poll: null, comments: [] });
   const [loading, setLoading] = useState(true);
-  const [deadlinePassedState, setDeadlinePassedState] = useState(false); // Renamed to avoid conflict
+  const [deadlinePassedState, setDeadlinePassedState] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState('');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const { toast } = useToast();
@@ -125,7 +148,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
     const fetchData = async () => {
       setLoading(true);
       const data = await getPollDetails(params.pollId);
-      setPollData(prev => ({ ...prev, ...data, poll: data.poll ? {...data.poll} : null })); // Ensure poll is new object for state updates
+      setPollData(prev => ({ ...prev, ...data, poll: data.poll ? {...data.poll} : null }));
       const user1 = mockUsers.find(u => u.id === 'user1') || mockUsers[0] || getRandomUser();
       setCurrentUser(user1);
       setLoading(false);
@@ -157,22 +180,39 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
   }, [poll]);
 
   const handleVote = async (optionId: string) => {
-    console.log(`Vote action for poll ${poll?.id}, option ${optionId}`);
-    if (poll) {
-      setPollData(prevData => {
-        if (!prevData.poll || prevData.poll.isVoted) return prevData;
-        const newPoll = {
-          ...prevData.poll,
-          isVoted: true,
-          votedOptionId: optionId,
-          totalVotes: prevData.poll.totalVotes + 1,
-          options: prevData.poll.options.map(opt =>
-            opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
-          ),
-        };
-        return { ...prevData, poll: newPoll };
-      });
+    if (!poll || poll.isVoted || deadlinePassedState) return;
+
+    const targetOption = poll.options.find(opt => opt.id === optionId);
+    if (!targetOption) return;
+
+    if (poll.pledgeAmount && poll.pledgeAmount > 0) {
+      const amountToDistributeToVoters = poll.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
+      const potentialVotesForThisOption = targetOption.votes + 1;
+       if ((amountToDistributeToVoters / potentialVotesForThisOption) < MIN_PAYOUT_PER_VOTER && potentialVotesForThisOption > 0) {
+        toast({
+          title: "Vote Not Registered",
+          description: `Adding this vote would result in a PollitPoint payout below $${MIN_PAYOUT_PER_VOTER.toFixed(2)} per voter for this option due to the current pledge.`,
+          variant: "destructive",
+          duration: 5000,
+        });
+        return;
+      }
     }
+    
+    console.log(`Vote action for poll ${poll.id}, option ${optionId}`);
+    setPollData(prevData => {
+      if (!prevData.poll) return prevData; // Should not happen if poll is defined above
+      const newPoll = {
+        ...prevData.poll,
+        isVoted: true,
+        votedOptionId: optionId,
+        totalVotes: prevData.poll.totalVotes + 1,
+        options: prevData.poll.options.map(opt =>
+          opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
+        ),
+      };
+      return { ...prevData, poll: newPoll };
+    });
   };
 
   const handleCommentSubmit = async (formData: FormData) => {
@@ -209,8 +249,12 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
         await navigator.share(shareData);
         console.log('Poll shared successfully via native share.');
         sharedNatively = true;
-      } catch (error) {
-        console.error('Error sharing poll via native share:', error);
+      } catch (error: any) {
+        // Don't log permission denied or cancellation as errors to the user.
+        if (error.name !== 'AbortError' && error.name !== 'NotAllowedError') {
+            console.error('Error sharing poll via native share:', error);
+        }
+        // If it failed for any reason (including user cancel), try to copy.
       }
     }
 
@@ -316,6 +360,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
                   onVote={() => handleVote(option.id)}
                   pollHasTwoOptions={pollHasTwoOptions}
                   onShowDetails={() => handleShowOptionDetails(option)}
+                  pollPledgeAmount={poll.pledgeAmount}
                 />
               ))}
             </div>
@@ -415,3 +460,5 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
     </>
   );
 }
+
+    

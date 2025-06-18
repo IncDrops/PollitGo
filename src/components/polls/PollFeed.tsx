@@ -7,6 +7,7 @@ import PollCard from './PollCard';
 import { mockPolls, fetchMorePolls, mockUsers } from '@/lib/mockData';
 import { Loader2, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useToast } from '@/hooks/use-toast'; // Ensure useToast is imported
 
 const pollCardVariants = {
   initial: { opacity: 0, y: 50, scale: 0.95 },
@@ -22,6 +23,8 @@ const pollCardVariants = {
   }
 };
 
+const MIN_PAYOUT_PER_VOTER = 0.10; // $0.10
+const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50; // 50%
 
 export default function PollFeed() {
   const [polls, setPolls] = useState<Poll[]>([]);
@@ -29,12 +32,12 @@ export default function PollFeed() {
   const [hasMore, setHasMore] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
   const observer = useRef<IntersectionObserver | null>(null);
-  const [currentUser, setCurrentUser] = useState<User | null>(null); // For pledge creator check
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const { toast } = useToast();
 
   const [exitDirectionMap, setExitDirectionMap] = useState<Record<string, 'left' | 'right' | 'default'>>({});
 
   useEffect(() => {
-    // Simulate fetching current user
     const user1 = mockUsers.find(u => u.id === 'user1') || mockUsers[0];
     setCurrentUser(user1);
   }, []);
@@ -43,7 +46,7 @@ export default function PollFeed() {
   const loadInitialPolls = useCallback(async () => {
     setLoading(true);
     const initialPollsData = await fetchMorePolls(0, 5);
-    setPolls(initialPollsData.map(p => ({...p}))); // Create new objects for state updates
+    setPolls(initialPollsData.map(p => ({...p})));
     setHasMore(initialPollsData.length > 0);
     setLoading(false);
     setInitialLoad(false);
@@ -80,9 +83,33 @@ export default function PollFeed() {
   );
 
   const handleVote = (pollId: string, optionId: string) => {
+    const pollIndex = polls.findIndex(p => p.id === pollId);
+    if (pollIndex === -1) return;
+
+    const pollToUpdate = polls[pollIndex];
+    if (pollToUpdate.isVoted) return; // Already voted
+
+    const targetOption = pollToUpdate.options.find(opt => opt.id === optionId);
+    if (!targetOption) return;
+
+    // Check pledge payout condition
+    if (pollToUpdate.pledgeAmount && pollToUpdate.pledgeAmount > 0) {
+      const amountToDistributeToVoters = pollToUpdate.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
+      const potentialVotesForThisOption = targetOption.votes + 1;
+      if ((amountToDistributeToVoters / potentialVotesForThisOption) < MIN_PAYOUT_PER_VOTER && potentialVotesForThisOption > 0) {
+        toast({
+          title: "Vote Not Registered",
+          description: `Adding this vote would result in a PollitPoint payout below $${MIN_PAYOUT_PER_VOTER.toFixed(2)} per voter for this option due to the current pledge.`,
+          variant: "destructive",
+          duration: 5000,
+        });
+        return;
+      }
+    }
+
     setPolls(prevPolls =>
       prevPolls.map(p => {
-        if (p.id === pollId && !p.isVoted) {
+        if (p.id === pollId) {
           const newTotalVotes = p.totalVotes + 1;
           return {
             ...p,
@@ -179,3 +206,5 @@ export default function PollFeed() {
     </div>
   );
 }
+
+    
