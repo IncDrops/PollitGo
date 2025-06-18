@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { mockPolls, mockUsers } from "@/lib/mockData";
 import type { Poll, PollOption as PollOptionType, Comment as CommentType, User } from "@/types";
 import { formatDistanceToNowStrict, parseISO, isPast } from "date-fns";
-import { Clock, Heart, MessageSquare, Share2, Gift, Send, Image as ImageIconLucideShadcn, Video as VideoIconLucide, ThumbsUp, Film, Info, CheckCircle2, Loader2, Check, Users } from "lucide-react";
+import { Clock, Heart, MessageSquare, Share2, Gift, Send, Image as ImageIconLucideShadcn, Video as VideoIconLucide, ThumbsUp, Film, Info, CheckCircle2, Loader2, Check, Users, Flame } from "lucide-react";
 import Image from "next/image";
 import NextLink from "next/link";
 import { cn } from "@/lib/utils";
@@ -52,7 +52,7 @@ const PollOptionDisplay: React.FC<{
   onShowDetails: () => void;
   pollPledgeAmount?: number;
 }> = ({ option, totalVotes, isVoted, isSelectedOption, deadlinePassed, onVote, pollHasTwoOptions, onShowDetails, pollPledgeAmount }) => {
-  const { toast } = useToast(); // Ensure toast is available if used here
+  const { toast } = useToast(); 
   const percentage = totalVotes > 0 ? (option.votes / totalVotes) * 100 : 0;
   const showResults = isVoted || deadlinePassed;
   const isTruncated = option.text.length > OPTION_TEXT_TRUNCATE_LENGTH;
@@ -183,20 +183,8 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
     const targetOption = poll.options.find(opt => opt.id === optionId);
     if (!targetOption) return;
 
-    if (poll.pledgeAmount && poll.pledgeAmount > 0) {
-      const amountToDistributeToVoters = poll.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
-      const potentialVotesForThisOption = targetOption.votes + 1; // Vote is about to be added
-      if ((amountToDistributeToVoters / potentialVotesForThisOption) < MIN_PAYOUT_PER_VOTER && potentialVotesForThisOption > 0) {
-        toast({
-          title: "Low Payout Warning",
-          description: `Your vote is counted! However, due to the current pledge and number of voters for this option, your potential PollitPoint payout might be below $${MIN_PAYOUT_PER_VOTER.toFixed(2)}.`,
-          variant: "default", // Changed from destructive
-          duration: 7000,
-        });
-      }
-    }
-
     console.log(`Vote action for poll ${poll.id}, option ${optionId}`);
+    
     setPollData(prevData => {
       if (!prevData.poll) return prevData;
       const newPoll = {
@@ -208,6 +196,21 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
           opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
         ),
       };
+       // Check for low payout warning *after* optimistic update for UI consistency
+      if (newPoll.pledgeAmount && newPoll.pledgeAmount > 0) {
+        const updatedTargetOption = newPoll.options.find(opt => opt.id === optionId);
+        if (updatedTargetOption) {
+            const amountToDistributeToVoters = newPoll.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
+            if ((amountToDistributeToVoters / updatedTargetOption.votes) < MIN_PAYOUT_PER_VOTER && updatedTargetOption.votes > 0) {
+            toast({
+                title: "Low Payout Warning",
+                description: `Your vote is counted! However, due to the current pledge and number of voters for this option, your potential PollitPoint payout might be below $${MIN_PAYOUT_PER_VOTER.toFixed(2)}.`,
+                variant: "default", 
+                duration: 7000,
+            });
+            }
+        }
+      }
       return { ...prevData, poll: newPoll };
     });
   };
@@ -280,7 +283,6 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
       title: "Tip Creator",
       description: `Thank you for supporting ${poll.creator.name}! (Stripe integration placeholder).`,
     });
-    // Simulate tip count update for immediate feedback
     setPollData(prev => {
         if (!prev.poll) return prev;
         return {
@@ -338,7 +340,10 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
                 <p className="text-xs text-muted-foreground">@{poll.creator.username} &middot; {formatDistanceToNowStrict(parseISO(poll.createdAt), { addSuffix: true })}</p>
               </div>
             </div>
-            <CardTitle className="text-xl sm:text-2xl font-headline text-foreground">{poll.question}</CardTitle>
+            <CardTitle className="text-xl sm:text-2xl font-headline text-foreground flex items-center">
+              {poll.isSpicy && <Flame className="w-5 h-5 mr-2 text-orange-500 flex-shrink-0" />}
+              <span>{poll.question}</span>
+            </CardTitle>
 
             {poll.imageUrls && poll.imageUrls.length > 0 && (
               <div className="mt-4 space-y-3">
@@ -346,7 +351,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
                 <div className={cn("grid gap-2", poll.imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
                   {poll.imageUrls.map((url, index) => (
                     <div key={index} className="w-full aspect-video relative rounded-lg overflow-hidden shadow-md bg-muted/30">
-                      <Image src={url} alt={`${poll.question} - image ${index + 1}`} layout="fill" objectFit="cover" data-ai-hint={generateHintFromText(poll.question) || "poll image"} />
+                      <Image src={url} alt={`${poll.question} - image ${index + 1}`} layout="fill" objectFit="cover" data-ai-hint={(poll.imageKeywords && poll.imageKeywords.join(" ")) || generateHintFromText(poll.question) || "poll image"} />
                     </div>
                   ))}
                 </div>

@@ -7,7 +7,7 @@ import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, MessageSquare, Heart, Share2, Gift, CheckCircle2, Film, Video as VideoIconLucide, Info, Zap, Check, Users } from 'lucide-react';
+import { Clock, MessageSquare, Heart, Share2, Gift, CheckCircle2, Film, Video as VideoIconLucide, Info, Zap, Check, Users, Flame } from 'lucide-react';
 import { parseISO, isPast } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
@@ -148,12 +148,12 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
 
     if (currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0) {
       const amountToDistributeToVoters = currentPoll.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
-      const potentialVotesForThisOption = targetOption.votes + 1; // Vote is about to be added
+      const potentialVotesForThisOption = targetOption.votes + 1; 
       if ((amountToDistributeToVoters / potentialVotesForThisOption) < MIN_PAYOUT_PER_VOTER && potentialVotesForThisOption > 0) {
         toast({
           title: "Low Payout Warning",
-          description: `Due to the current pledge and number of voters for this option, your potential PollitPoint payout might be below $${MIN_PAYOUT_PER_VOTER.toFixed(2)}. Your vote is still counted!`,
-          variant: "default", // Changed from destructive
+          description: `Your vote is counted! However, due to the current pledge and number of voters for this option, your potential PollitPoint payout might be below $${MIN_PAYOUT_PER_VOTER.toFixed(2)}.`,
+          variant: "default", 
           duration: 7000,
         });
       }
@@ -273,7 +273,10 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
         console.log('Poll shared successfully via native share.');
         sharedNatively = true;
       } catch (error) {
-        console.error('Error sharing poll via native share:', error);
+        // Don't log permission denied or cancellation as errors to the user.
+        if (error.name !== 'AbortError' && error.name !== 'NotAllowedError') {
+            console.error('Error sharing poll via native share:', error);
+        }
       }
     }
 
@@ -302,6 +305,11 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
       title: "Tip Creator",
       description: `Thank you for supporting ${currentPoll.creator.name}! (Stripe integration placeholder).`,
     });
+    // Simulate tip count update for immediate feedback
+    setCurrentPoll(prev => ({
+        ...prev,
+        tipCount: (prev.tipCount || 0) + 1
+    }));
   };
 
   const handlePledgeOutcome = (outcome: 'accepted' | 'tipped_crowd') => {
@@ -343,17 +351,20 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
                 </p>
               </div>
             </div>
-            <CardTitle className="text-lg font-headline mt-3 text-foreground">{currentPoll.question}</CardTitle>
+            <CardTitle className="text-lg font-headline mt-3 text-foreground flex items-center">
+              {currentPoll.isSpicy && <Flame className="w-4 h-4 mr-2 text-orange-500 flex-shrink-0" />}
+              <span>{currentPoll.question}</span>
+            </CardTitle>
           </CardHeader>
 
           {(currentPoll.imageUrls && currentPoll.imageUrls.length > 0) && (
             <div className="w-full h-64 relative cursor-pointer bg-muted/30" onClick={onCardClick}>
               <Image
                 src={currentPoll.imageUrls[0]}
-                alt={currentPoll.question.substring(0,80)} // Truncate alt text
+                alt={currentPoll.question.substring(0,80)} 
                 layout="fill"
                 objectFit="cover"
-                data-ai-hint={generateHintFromText(currentPoll.question) || "poll image"}
+                data-ai-hint={(currentPoll.imageKeywords && currentPoll.imageKeywords.join(" ")) || generateHintFromText(currentPoll.question) || "poll image"}
                 onError={(e) => console.error('Error loading poll image:', currentPoll.imageUrls?.[0], e)}
               />
               {currentPoll.videoUrl && (
@@ -432,7 +443,7 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
               <MessageSquare className="w-5 h-5 mr-1.5" /> {currentPoll.commentsCount.toLocaleString()}
             </Button>
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" onClick={handleTipCreator}>
-              <Gift className="w-5 h-5 mr-1.5" /> Tip Creator
+              <Gift className="w-5 h-5 mr-1.5" /> Tip Creator {currentPoll.tipCount && currentPoll.tipCount > 0 ? `(${currentPoll.tipCount.toLocaleString()})` : ''}
             </Button>
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" onClick={handleShare}>
               <Share2 className="w-5 h-5" /> Share

@@ -41,6 +41,7 @@ export interface Poll {
   pledgeAmount?: number; // Amount pledged by the creator
   pledgeOutcome?: 'accepted' | 'tipped_crowd' | 'pending'; // Status of the pledge
   tipCount?: number; // Number of tips received for this poll/creator
+  isSpicy?: boolean; // Indicates if the poll content might be NSFW/spicy
 }
 
 export type NavItem = {
@@ -48,3 +49,4 @@ export type NavItem = {
   label: string;
   icon: React.ElementType;
 };
+

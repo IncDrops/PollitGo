@@ -10,7 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CalendarIcon, ImagePlus, VideoIcon, X, PlusCircle, ImageIcon as ImageIconLucide, Film, LinkIcon, AlertCircle, DollarSign, Info } from 'lucide-react';
+import { Switch } from "@/components/ui/switch";
+import { CalendarIcon, ImagePlus, VideoIcon, X, PlusCircle, ImageIcon as ImageIconLucide, Film, LinkIcon, AlertCircle, DollarSign, Info, Flame } from 'lucide-react';
 import { format } from "date-fns"
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
@@ -41,6 +42,7 @@ export default function NewPollPage() {
   ]);
   const [deadline, setDeadline] = useState<Date | undefined>(undefined);
   const [pledgeAmount, setPledgeAmount] = useState<number | undefined>(undefined);
+  const [isSpicy, setIsSpicy] = useState(false);
 
   const [pollImageUrls, setPollImageUrls] = useState<string[]>([]);
   const [pollImageFiles, setPollImageFiles] = useState<File[]>([]);
@@ -200,6 +202,7 @@ export default function NewPollPage() {
       pollVideoUrl: pollVideoUrl,
       pledgeAmount: pledgeAmount && pledgeAmount > 0 ? pledgeAmount : undefined,
       pledgeOutcome: pledgeAmount && pledgeAmount > 0 ? 'pending' : undefined,
+      isSpicy,
     };
     console.log('Submitting poll:', pollData);
     console.log('Poll Image Files:', pollImageFiles);
@@ -231,6 +234,7 @@ export default function NewPollPage() {
     setPollVideoUrl(undefined);
     setPollVideoFile(undefined);
     setPledgeAmount(undefined);
+    setIsSpicy(false);
     if (pollImageInputRef.current) pollImageInputRef.current.value = "";
     if (pollVideoInputRef.current) pollVideoInputRef.current.value = "";
   };
@@ -456,6 +460,23 @@ export default function NewPollPage() {
                 </SelectContent>
               </Select>
             </div>
+            
+            <div className="space-y-3 pt-4 border-t">
+              <div className="flex items-center space-x-2">
+                <Switch id="spicy-content-toggle" checked={isSpicy} onCheckedChange={setIsSpicy} />
+                <Label htmlFor="spicy-content-toggle" className="flex items-center text-base font-semibold">
+                  <Flame className="mr-2 h-5 w-5 text-orange-500" /> Mark as Spicy Content (18+)
+                </Label>
+              </div>
+              <Alert variant="default" className="bg-orange-500/10 border-orange-500/30 text-orange-700 dark:text-orange-400">
+                <AlertCircle className="h-4 w-4 !text-orange-500" />
+                <AlertTitle className="text-sm font-semibold !text-orange-600 dark:!text-orange-400">Heads up!</AlertTitle>
+                <AlertDescription className="text-xs !text-orange-600/80 dark:!text-orange-400/80">
+                  Toggling this indicates your poll may contain mature themes. It helps others filter content.
+                </AlertDescription>
+              </Alert>
+            </div>
+
 
             <div className="space-y-3 pt-4 border-t">
               <Label htmlFor="pledgeAmount" className="text-base font-semibold flex items-center">
