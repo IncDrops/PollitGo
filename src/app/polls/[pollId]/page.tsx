@@ -20,7 +20,6 @@ import { useToast } from "@/hooks/use-toast";
 
 async function getPollDetails(pollId: string): Promise<{ poll: Poll | null; comments: CommentType[] }> {
   const poll = mockPolls.find(p => p.id === pollId) || null;
-  // Ensure poll state is fresh if found, otherwise this might refer to an old mockPolls state.
   const freshPoll = poll ? {...mockPolls.find(p => p.id === pollId)} as Poll || null : null;
 
   const commentUser1 = mockUsers.find(u => u.id === 'user2') || mockUsers[1] || getRandomUser();
@@ -34,10 +33,13 @@ async function getPollDetails(pollId: string): Promise<{ poll: Poll | null; comm
 }
 
 const getRandomUser = (): User => mockUsers[Math.floor(Math.random() * mockUsers.length)];
+const generateHintFromText = (text: string = ""): string => {
+  return text.split(' ').slice(0, 2).join(' ').toLowerCase();
+};
 
 const OPTION_TEXT_TRUNCATE_LENGTH = 100;
-const MIN_PAYOUT_PER_VOTER = 0.10; // $0.10
-const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50; // 50%
+const MIN_PAYOUT_PER_VOTER = 0.10;
+const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50;
 
 const PollOptionDisplay: React.FC<{
   option: PollOptionType;
@@ -45,11 +47,12 @@ const PollOptionDisplay: React.FC<{
   isVoted: boolean;
   isSelectedOption: boolean;
   deadlinePassed: boolean;
-  onVote: () => Promise<void>; // Keep as async if original onVote needs it, or simplify
+  onVote: () => Promise<void>;
   pollHasTwoOptions: boolean;
   onShowDetails: () => void;
-  pollPledgeAmount?: number; // Pass pledge amount to option for display or logic if needed
+  pollPledgeAmount?: number;
 }> = ({ option, totalVotes, isVoted, isSelectedOption, deadlinePassed, onVote, pollHasTwoOptions, onShowDetails, pollPledgeAmount }) => {
+  const { toast } = useToast(); // Ensure toast is available if used here
   const percentage = totalVotes > 0 ? (option.votes / totalVotes) * 100 : 0;
   const showResults = isVoted || deadlinePassed;
   const isTruncated = option.text.length > OPTION_TEXT_TRUNCATE_LENGTH;
@@ -59,9 +62,7 @@ const PollOptionDisplay: React.FC<{
 
   const handleOptionClick = async () => {
     if (!isVoted && !deadlinePassed) {
-      // The actual vote logic including pledge check is now handled by `handleVote` in the parent.
-      // This onVote prop here is the one passed from the parent which already has the logic.
-      await onVote(); 
+      await onVote();
     } else {
       onShowDetails();
     }
@@ -72,8 +73,6 @@ const PollOptionDisplay: React.FC<{
     onShowDetails();
   };
 
-  // Client-side check for display purposes if voting for this option might be limited
-  // This is a visual cue; actual enforcement is in the parent's handleVote.
   let isVotingVisuallyLimited = false;
   if (pollPledgeAmount && pollPledgeAmount > 0 && !deadlinePassed && !isVoted) {
     const amountForVoters = pollPledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
@@ -89,26 +88,25 @@ const PollOptionDisplay: React.FC<{
         className={cn(
           "w-full justify-between h-auto p-3 text-left relative disabled:opacity-100 disabled:cursor-default",
            pollHasTwoOptions && "aspect-square flex flex-col items-center justify-center text-center",
-           (isVoted || deadlinePassed || isTruncated || option.affiliateLink || isVotingVisuallyLimited) && "cursor-pointer hover:bg-accent/60",
-           isVotingVisuallyLimited && "opacity-70" // Visual cue for limited voting
+           (isVoted || deadlinePassed || isTruncated || option.affiliateLink || isVotingVisuallyLimited) && "cursor-pointer hover:bg-accent/60"
         )}
         onClick={handleOptionClick}
-        disabled={(isVoted || deadlinePassed || isVotingVisuallyLimited) && !pollHasTwoOptions && !(isTruncated || option.affiliateLink) }
+        disabled={(isVoted || deadlinePassed) && !pollHasTwoOptions && !(isTruncated || option.affiliateLink) }
         aria-pressed={isSelectedOption}
-        title={isVotingVisuallyLimited ? "Voting for this option may be limited due to pledge payout conditions." : undefined}
+        title={isVotingVisuallyLimited ? "Voting for this option is allowed, but your potential PollitPoint payout might be low due to pledge conditions." : undefined}
       >
         <div className={cn("flex w-full", pollHasTwoOptions ? "flex-col items-center" : "items-center")}>
-          {option.imageUrl && <Image src={option.imageUrl} alt={option.text} width={pollHasTwoOptions ? 60 : 30} height={pollHasTwoOptions ? 60 : 30} className={cn("rounded-md object-cover shadow-sm", pollHasTwoOptions ? "mb-2" : "mr-2")} data-ai-hint="poll option" />}
+          {option.imageUrl && <Image src={option.imageUrl} alt={option.text} width={pollHasTwoOptions ? 60 : 30} height={pollHasTwoOptions ? 60 : 30} className={cn("rounded-md object-cover shadow-sm", pollHasTwoOptions ? "mb-2" : "mr-2")} data-ai-hint={generateHintFromText(option.text) || "option visual"} />}
           {option.videoUrl && !option.imageUrl && <VideoIconLucide className={cn("text-muted-foreground", pollHasTwoOptions ? "mb-2 h-10 w-10" : "w-5 h-5 mr-2")} />}
           <span className={cn("flex-grow", pollHasTwoOptions ? "text-sm mt-1 leading-tight" : "text-sm")}>{truncatedText}</span>
 
           {showResults && <span className={cn("font-semibold text-sm", pollHasTwoOptions ? "mt-2" : "ml-auto pl-1")}>{percentage.toFixed(0)}%</span>}
 
           {isSelectedOption && showResults && <CheckCircle2 className={cn("w-4 h-4", pollHasTwoOptions ? "mt-1 text-primary-foreground" : "ml-1 text-primary")} />}
-          
+
           {(isTruncated || option.affiliateLink || isVotingVisuallyLimited) && (
              <div
-              onClick={!isVotingVisuallyLimited ? handleDetailsIconClick : undefined} // Only allow details if not limited, or always allow? Let's always allow.
+              onClick={handleDetailsIconClick}
               role="button"
               tabIndex={0}
               onKeyDown={(e) => e.key === 'Enter' && handleDetailsIconClick(e as any)}
@@ -127,7 +125,7 @@ const PollOptionDisplay: React.FC<{
       </Button>
       {showResults && !pollHasTwoOptions && <Progress value={percentage} className="h-1.5 mt-1 bg-primary/20 [&>div]:bg-primary" />}
        {isVotingVisuallyLimited && !pollHasTwoOptions && (
-        <p className="text-xs text-destructive/80 mt-1 text-center">Voting for this option may be limited due to pledge payout conditions.</p>
+        <p className="text-xs text-amber-600 mt-1 text-center">Low Payout Warning: Your vote is counted, but potential PollitPoint payout might be small for this option.</p>
       )}
     </div>
   );
@@ -187,21 +185,20 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
 
     if (poll.pledgeAmount && poll.pledgeAmount > 0) {
       const amountToDistributeToVoters = poll.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
-      const potentialVotesForThisOption = targetOption.votes + 1;
-       if ((amountToDistributeToVoters / potentialVotesForThisOption) < MIN_PAYOUT_PER_VOTER && potentialVotesForThisOption > 0) {
+      const potentialVotesForThisOption = targetOption.votes + 1; // Vote is about to be added
+      if ((amountToDistributeToVoters / potentialVotesForThisOption) < MIN_PAYOUT_PER_VOTER && potentialVotesForThisOption > 0) {
         toast({
-          title: "Vote Not Registered",
-          description: `Adding this vote would result in a PollitPoint payout below $${MIN_PAYOUT_PER_VOTER.toFixed(2)} per voter for this option due to the current pledge.`,
-          variant: "destructive",
-          duration: 5000,
+          title: "Low Payout Warning",
+          description: `Your vote is counted! However, due to the current pledge and number of voters for this option, your potential PollitPoint payout might be below $${MIN_PAYOUT_PER_VOTER.toFixed(2)}.`,
+          variant: "default", // Changed from destructive
+          duration: 7000,
         });
-        return;
       }
     }
-    
+
     console.log(`Vote action for poll ${poll.id}, option ${optionId}`);
     setPollData(prevData => {
-      if (!prevData.poll) return prevData; // Should not happen if poll is defined above
+      if (!prevData.poll) return prevData;
       const newPoll = {
         ...prevData.poll,
         isVoted: true,
@@ -234,7 +231,8 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
     }
   };
 
-  const handleShare = async () => {
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!poll || typeof window === 'undefined') return;
     const shareUrl = `${window.location.origin}/polls/${poll.id}`;
     const shareData = {
@@ -250,11 +248,9 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
         console.log('Poll shared successfully via native share.');
         sharedNatively = true;
       } catch (error: any) {
-        // Don't log permission denied or cancellation as errors to the user.
         if (error.name !== 'AbortError' && error.name !== 'NotAllowedError') {
             console.error('Error sharing poll via native share:', error);
         }
-        // If it failed for any reason (including user cancel), try to copy.
       }
     }
 
@@ -274,6 +270,27 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
         });
       }
     }
+  };
+
+  const handleTipCreator = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!poll) return;
+    console.log(`Tip Creator button clicked for poll ${poll.id}. Stripe integration would be initiated here.`);
+    toast({
+      title: "Tip Creator",
+      description: `Thank you for supporting ${poll.creator.name}! (Stripe integration placeholder).`,
+    });
+    // Simulate tip count update for immediate feedback
+    setPollData(prev => {
+        if (!prev.poll) return prev;
+        return {
+            ...prev,
+            poll: {
+                ...prev.poll,
+                tipCount: (prev.poll.tipCount || 0) + 1
+            }
+        };
+    });
   };
 
   const handleShowOptionDetails = (option: PollOptionType) => {
@@ -310,7 +327,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
             <div className="flex items-center space-x-3 mb-3">
               <NextLink href={`/profile/${poll.creator.id}`}>
                 <Avatar className="h-12 w-12 border cursor-pointer">
-                  <AvatarImage src={poll.creator.avatarUrl} alt={poll.creator.name} data-ai-hint="profile avatar"/>
+                  <AvatarImage src={poll.creator.avatarUrl} alt={poll.creator.name} data-ai-hint={generateHintFromText(poll.creator.name) || "profile avatar"}/>
                   <AvatarFallback>{poll.creator.name.substring(0, 1)}</AvatarFallback>
                 </Avatar>
               </NextLink>
@@ -329,7 +346,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
                 <div className={cn("grid gap-2", poll.imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
                   {poll.imageUrls.map((url, index) => (
                     <div key={index} className="w-full aspect-video relative rounded-lg overflow-hidden shadow-md bg-muted/30">
-                      <Image src={url} alt={`${poll.question} - image ${index + 1}`} layout="fill" objectFit="cover" data-ai-hint="poll image" />
+                      <Image src={url} alt={`${poll.question} - image ${index + 1}`} layout="fill" objectFit="cover" data-ai-hint={generateHintFromText(poll.question) || "poll image"} />
                     </div>
                   ))}
                 </div>
@@ -397,8 +414,8 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
                 <Heart className="w-5 h-5 mr-1.5" /> {poll.likes.toLocaleString()} Likes
               </Button>
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
-                <Gift className="w-5 h-5 mr-1.5" /> {poll.tipCount ? poll.tipCount.toLocaleString() : 0} Tip Creator
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" onClick={handleTipCreator}>
+                <Gift className="w-5 h-5 mr-1.5" /> Tip Creator {poll.tipCount && poll.tipCount > 0 ? `(${poll.tipCount.toLocaleString()})` : ''}
               </Button>
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" onClick={handleShare}>
                 <Share2 className="w-5 h-5 mr-1.5" /> Share
@@ -412,7 +429,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
               <form action={handleCommentSubmit} id="comment-form" className="flex items-start space-x-2 mb-6">
                 {currentUser && (
                   <Avatar className="h-10 w-10 border">
-                    <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} data-ai-hint="profile avatar" />
+                    <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} data-ai-hint={generateHintFromText(currentUser.name) || "profile avatar"} />
                     <AvatarFallback>{currentUser.name.substring(0,1)}</AvatarFallback>
                   </Avatar>
                 )}
@@ -427,7 +444,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
                   <div key={comment.id} className="flex items-start space-x-3">
                     <NextLink href={`/profile/${comment.user.id}`}>
                       <Avatar className="h-10 w-10 border cursor-pointer">
-                        <AvatarImage src={comment.user.avatarUrl} alt={comment.user.name} data-ai-hint="profile avatar" />
+                        <AvatarImage src={comment.user.avatarUrl} alt={comment.user.name} data-ai-hint={generateHintFromText(comment.user.name) || "profile avatar"} />
                         <AvatarFallback>{comment.user.name.substring(0, 1)}</AvatarFallback>
                       </Avatar>
                     </NextLink>

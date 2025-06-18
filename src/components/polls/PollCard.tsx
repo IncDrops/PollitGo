@@ -20,15 +20,16 @@ import { mockUsers } from '@/lib/mockData'; // Assuming currentUser might be moc
 
 interface PollCardProps {
   poll: Poll;
-  onVote?: (pollId: string, optionId: string) => void; // Made optional
+  onVote?: (pollId: string, optionId: string) => void;
   onPollActionComplete?: (pollId: string, swipeDirection?: 'left' | 'right') => void;
   onPledgeOutcome?: (pollId: string, outcome: 'accepted' | 'tipped_crowd') => void;
   currentUser?: User | null;
 }
 
 const OPTION_TEXT_TRUNCATE_LENGTH = 100;
+const MIN_PAYOUT_PER_VOTER = 0.10;
+const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50;
 
-// Helper function to generate a data-ai-hint from text (first two words)
 const generateHintFromText = (text: string = ""): string => {
   return text.split(' ').slice(0, 2).join(' ').toLowerCase();
 };
@@ -36,7 +37,7 @@ const generateHintFromText = (text: string = ""): string => {
 const PollOption: React.FC<{
   option: PollOptionType;
   totalVotes: number;
-  onVoteOptionClick: () => void; 
+  onVoteOptionClick: () => void;
   isVoted: boolean;
   isSelectedOption: boolean;
   deadlinePassed: boolean;
@@ -83,11 +84,11 @@ const PollOption: React.FC<{
           {option.imageUrl && (
             <Image
               src={option.imageUrl}
-              alt={option.text.substring(0, 50)} // Shorter alt text
+              alt={option.text.substring(0, 50)}
               width={pollHasTwoOptions ? 60 : 40}
               height={pollHasTwoOptions ? 60 : 40}
               className={cn("rounded-md object-cover shadow-sm", pollHasTwoOptions ? "mb-2" : "mr-2")}
-              data-ai-hint={generateHintFromText(option.text)}
+              data-ai-hint={generateHintFromText(option.text) || "option visual"}
             />
           )}
           {option.videoUrl && !option.imageUrl && <VideoIconLucide className={cn("text-muted-foreground", pollHasTwoOptions ? "mb-2 h-10 w-10" : "w-5 h-5 mr-2")} />}
@@ -139,6 +140,27 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
 
   const canSwipe = currentPoll.options.length === 2 && !currentPoll.isVoted && !deadlinePassed && !!onPollActionComplete && !!onVote;
 
+  const handleInternalVote = (optionId: string) => {
+    if (!onVote) return;
+
+    const targetOption = currentPoll.options.find(opt => opt.id === optionId);
+    if (!targetOption) return;
+
+    if (currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0) {
+      const amountToDistributeToVoters = currentPoll.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
+      const potentialVotesForThisOption = targetOption.votes + 1; // Vote is about to be added
+      if ((amountToDistributeToVoters / potentialVotesForThisOption) < MIN_PAYOUT_PER_VOTER && potentialVotesForThisOption > 0) {
+        toast({
+          title: "Low Payout Warning",
+          description: `Due to the current pledge and number of voters for this option, your potential PollitPoint payout might be below $${MIN_PAYOUT_PER_VOTER.toFixed(2)}. Your vote is still counted!`,
+          variant: "default", // Changed from destructive
+          duration: 7000,
+        });
+      }
+    }
+    onVote(currentPoll.id, optionId);
+  };
+
   const handlers = useSwipeable({
     onSwiped: async (eventData) => {
       if (!canSwipe || !onVote) return;
@@ -149,10 +171,10 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
       if (Math.abs(eventData.deltaX) > threshold) {
         if (eventData.dir === 'Right') {
           swipeDirection = 'right';
-          onVote(currentPoll.id, currentPoll.options[0].id);
+          handleInternalVote(currentPoll.options[0].id);
         } else if (eventData.dir === 'Left') {
           swipeDirection = 'left';
-          onVote(currentPoll.id, currentPoll.options[1].id);
+          handleInternalVote(currentPoll.options[1].id);
         }
         onPollActionComplete?.(currentPoll.id, swipeDirection);
       }
@@ -221,21 +243,21 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
   };
 
   const onCardClick = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('[aria-label="View option details"]')) {
-        return;
-    }
-    if ((e.target as HTMLElement).closest('button, a, [data-swipe-handler]') || (canSwipe && (e.target as HTMLElement).closest('[role="button"]'))) {
+    // Prevent navigation if an interactive element within the card was clicked
+    const targetElement = e.target as HTMLElement;
+    if (targetElement.closest('button, a, [data-swipe-handler], [role="button"][aria-label="View option details"]')) {
       return;
     }
     router.push(`/polls/${currentPoll.id}`);
   };
 
   const onCreatorClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Prevent card click when creator info is clicked
     router.push(`/profile/${currentPoll.creator.id}`);
   };
 
-  const handleShare = async () => {
+  const handleShare = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click
     if (typeof window === 'undefined') return;
     const shareUrl = `${window.location.origin}/polls/${currentPoll.id}`;
     const shareData = {
@@ -273,6 +295,15 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
     }
   };
 
+  const handleTipCreator = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent card click
+    console.log(`Tip Creator button clicked for poll ${currentPoll.id}. Stripe integration would be initiated here.`);
+    toast({
+      title: "Tip Creator",
+      description: `Thank you for supporting ${currentPoll.creator.name}! (Stripe integration placeholder).`,
+    });
+  };
+
   const handlePledgeOutcome = (outcome: 'accepted' | 'tipped_crowd') => {
     setCurrentPoll(prev => ({ ...prev, pledgeOutcome: outcome }));
     if (onPledgeOutcome) {
@@ -285,7 +316,7 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
 
 
   const pollHasTwoOptions = currentPoll.options.length === 2;
-  const canVoteOnPoll = !!onVote && !currentPoll.isVoted && !deadlinePassed; 
+  const canVoteOnPoll = !!onVote && !currentPoll.isVoted && !deadlinePassed;
   const isCreator = currentUser?.id === currentPoll.creator.id;
   const showPledgeOutcomeButtons = isCreator && deadlinePassed && currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0 && (currentPoll.pledgeOutcome === 'pending' || currentPoll.pledgeOutcome === undefined);
 
@@ -302,7 +333,7 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
           <CardHeader className="p-4 cursor-pointer" onClick={onCardClick}>
             <div onClick={onCreatorClick} role="button" tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && onCreatorClick(e)} className="flex items-center space-x-3">
               <Avatar className="h-10 w-10 border">
-                <AvatarImage src={currentPoll.creator.avatarUrl} alt={currentPoll.creator.name} data-ai-hint={generateHintFromText(currentPoll.creator.name)} />
+                <AvatarImage src={currentPoll.creator.avatarUrl} alt={currentPoll.creator.name} data-ai-hint={generateHintFromText(currentPoll.creator.name) || "profile avatar"} />
                 <AvatarFallback>{currentPoll.creator.name.substring(0, 1)}</AvatarFallback>
               </Avatar>
               <div>
@@ -317,12 +348,13 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
 
           {(currentPoll.imageUrls && currentPoll.imageUrls.length > 0) && (
             <div className="w-full h-64 relative cursor-pointer bg-muted/30" onClick={onCardClick}>
-              <Image 
-                src={currentPoll.imageUrls[0]} 
+              <Image
+                src={currentPoll.imageUrls[0]}
                 alt={currentPoll.question.substring(0,80)} // Truncate alt text
-                layout="fill" 
-                objectFit="cover" 
-                data-ai-hint={generateHintFromText(currentPoll.question)} 
+                layout="fill"
+                objectFit="cover"
+                data-ai-hint={generateHintFromText(currentPoll.question) || "poll image"}
+                onError={(e) => console.error('Error loading poll image:', currentPoll.imageUrls?.[0], e)}
               />
               {currentPoll.videoUrl && (
                 <div className="absolute bottom-2 right-2 bg-black/70 p-1.5 rounded-md backdrop-blur-sm shadow-md" title="Video available">
@@ -350,8 +382,8 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
                   key={option.id}
                   option={option}
                   totalVotes={currentPoll.totalVotes}
-                  onVoteOptionClick={() => { 
-                     if (canVoteOnPoll && !pollHasTwoOptions && onVote) onVote(currentPoll.id, option.id);
+                  onVoteOptionClick={() => {
+                     if (canVoteOnPoll && !pollHasTwoOptions && onVote) handleInternalVote(option.id);
                      else handleShowOptionDetails(option);
                   }}
                   isVoted={!!currentPoll.isVoted}
@@ -399,11 +431,11 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" onClick={onCardClick}>
               <MessageSquare className="w-5 h-5 mr-1.5" /> {currentPoll.commentsCount.toLocaleString()}
             </Button>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
-              <Gift className="w-5 h-5 mr-1.5" /> {currentPoll.tipCount ? currentPoll.tipCount.toLocaleString() : 0}
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" onClick={handleTipCreator}>
+              <Gift className="w-5 h-5 mr-1.5" /> Tip Creator
             </Button>
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" onClick={handleShare}>
-              <Share2 className="w-5 h-5" />
+              <Share2 className="w-5 h-5" /> Share
             </Button>
           </CardFooter>
         </Card>
@@ -418,4 +450,3 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
     </>
   );
 }
-

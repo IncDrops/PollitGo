@@ -25,37 +25,36 @@ const pollCardVariants = {
 
 const MIN_PAYOUT_PER_VOTER = 0.10;
 const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50;
-const BATCH_SIZE = 7; 
+const BATCH_SIZE = 10; // Increased from 7
 
 interface PollFeedProps {
-  staticPolls?: Poll[]; // For displaying a fixed list, e.g., on profile page
+  staticPolls?: Poll[];
   onVoteCallback?: (pollId: string, optionId: string) => void;
   onPollActionCompleteCallback?: (pollId: string, swipeDirection?: 'left' | 'right') => void;
   onPledgeOutcomeCallback?: (pollId: string, outcome: 'accepted' | 'tipped_crowd') => void;
-  currentUser?: User | null; // Propagate currentUser if PollFeed is used elsewhere
+  currentUser?: User | null;
 }
 
-export default function PollFeed({ 
-  staticPolls, 
-  onVoteCallback, 
+export default function PollFeed({
+  staticPolls,
+  onVoteCallback,
   onPollActionCompleteCallback,
   onPledgeOutcomeCallback,
-  currentUser: propCurrentUser 
+  currentUser: propCurrentUser
 }: PollFeedProps) {
   const [polls, setPolls] = useState<Poll[]>(staticPolls || []);
   const [loading, setLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(!staticPolls); // No more if static list
-  const [initialLoadComplete, setInitialLoadComplete] = useState(!!staticPolls); // Already loaded if static
+  const [hasMore, setHasMore] = useState(!staticPolls);
+  const [initialLoadComplete, setInitialLoadComplete] = useState(!!staticPolls);
   const observer = useRef<IntersectionObserver | null>(null);
   const loaderTriggerRef = useRef<HTMLDivElement | null>(null);
-  
-  // Use propCurrentUser if provided, otherwise try to get from mockUsers (for standalone feed)
+
   const [currentUser, setCurrentUser] = useState<User | null>(propCurrentUser || null);
   const { toast } = useToast();
   const [exitDirectionMap, setExitDirectionMap] = useState<Record<string, 'left' | 'right' | 'default'>>({});
 
   useEffect(() => {
-    if (!propCurrentUser) { // Only fetch if not passed as prop
+    if (!propCurrentUser) {
       const user1 = mockUsers.find(u => u.id === 'user1') || mockUsers[0];
       setCurrentUser(user1);
     }
@@ -87,15 +86,15 @@ export default function PollFeed({
 
 
   useEffect(() => {
-    if (staticPolls) return; // Don't run this effect for static lists
-    if (initialLoadComplete && !loading && hasMore && polls.length > 0 && polls.length < BATCH_SIZE ) { 
+    if (staticPolls) return;
+    if (initialLoadComplete && !loading && hasMore && polls.length > 0 && polls.length < BATCH_SIZE ) {
       loadMorePolls();
     }
   }, [staticPolls, polls.length, initialLoadComplete, loading, hasMore, loadMorePolls]);
 
 
   useEffect(() => {
-    if (staticPolls || loading || !initialLoadComplete || !hasMore) return; // Don't run for static lists
+    if (staticPolls || loading || !initialLoadComplete || !hasMore) return;
 
     const currentLoaderTrigger = loaderTriggerRef.current;
     if (currentLoaderTrigger) {
@@ -103,8 +102,8 @@ export default function PollFeed({
         if (entries[0]?.isIntersecting && hasMore && !loading) {
           loadMorePolls();
         }
-      }, { rootMargin: "200px" }); 
-      
+      }, { rootMargin: "400px" }); // Increased from 200px
+
       obs.observe(currentLoaderTrigger);
       observer.current = obs;
     }
@@ -114,15 +113,15 @@ export default function PollFeed({
         observer.current.unobserve(currentLoaderTrigger);
       }
       if (observer.current) {
-        observer.current.disconnect(); 
+        observer.current.disconnect();
         observer.current = null;
       }
     };
-  }, [staticPolls, loading, hasMore, initialLoadComplete, loadMorePolls]); 
+  }, [staticPolls, loading, hasMore, initialLoadComplete, loadMorePolls]);
 
 
   const handleVote = (pollId: string, optionId: string) => {
-    if (onVoteCallback) { // If used in Profile page, delegate to its handler
+    if (onVoteCallback) {
       onVoteCallback(pollId, optionId);
       return;
     }
@@ -138,15 +137,14 @@ export default function PollFeed({
 
     if (pollToUpdate.pledgeAmount && pollToUpdate.pledgeAmount > 0) {
       const amountToDistributeToVoters = pollToUpdate.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
-      const potentialVotesForThisOption = targetOption.votes + 1;
+      const potentialVotesForThisOption = targetOption.votes + 1; // Vote is about to be added
       if ((amountToDistributeToVoters / potentialVotesForThisOption) < MIN_PAYOUT_PER_VOTER && potentialVotesForThisOption > 0) {
         toast({
-          title: "Vote Not Registered",
-          description: `Adding this vote would result in a PollitPoint payout below $${MIN_PAYOUT_PER_VOTER.toFixed(2)} per voter for this option due to the current pledge.`,
-          variant: "destructive",
-          duration: 5000,
+          title: "Low Payout Warning",
+          description: `Due to the current pledge and number of voters for this option, your potential PollitPoint payout might be below $${MIN_PAYOUT_PER_VOTER.toFixed(2)}. Your vote is still counted!`,
+          variant: "default",
+          duration: 7000,
         });
-        return;
       }
     }
 
@@ -208,8 +206,7 @@ export default function PollFeed({
         </div>
       );
   }
-  
-  // If it's a static list and it's empty (this case should be handled by parent for profile page context)
+
   if (staticPolls && polls.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
@@ -231,7 +228,7 @@ export default function PollFeed({
             initial="initial"
             animate="animate"
             exit="exit"
-            className="min-h-[1px]" 
+            className="min-h-[1px]"
           >
             <PollCard
               poll={poll}
@@ -243,12 +240,12 @@ export default function PollFeed({
           </motion.div>
         ))}
       </AnimatePresence>
-      
+
       {!staticPolls && initialLoadComplete && hasMore && !loading && (
         <div ref={loaderTriggerRef} style={{ height: '1px', marginTop: '-1px' }} aria-hidden="true"></div>
       )}
 
-      {!staticPolls && loading && initialLoadComplete && ( 
+      {!staticPolls && loading && initialLoadComplete && (
         <div className="flex justify-center items-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="ml-2 text-muted-foreground">Loading more polls...</p>
@@ -262,5 +259,3 @@ export default function PollFeed({
     </div>
   );
 }
-
-    

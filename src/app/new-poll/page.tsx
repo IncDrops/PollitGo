@@ -12,15 +12,15 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { CalendarIcon, ImagePlus, VideoIcon, X, PlusCircle, ImageIcon as ImageIconLucide, Film, LinkIcon, AlertCircle, DollarSign, Info } from 'lucide-react';
 import { format } from "date-fns"
-import { useToast } from '@/hooks/use-toast'; // Ensure useToast is imported
+import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const MAX_OPTIONS = 4;
 const MAX_POLL_IMAGES = 4;
 const MAX_OPTION_TEXT_LENGTH = 365;
-const MIN_PAYOUT_PER_MAJORITY_VOTER = 0.10; // $0.10
-const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50; // 50%
+const MIN_PAYOUT_PER_MAJORITY_VOTER = 0.10;
+const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50;
 
 interface PollOptionState {
   id: string;
@@ -51,10 +51,8 @@ export default function NewPollPage() {
   const pollVideoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Set the default deadline only on the client-side after hydration
-    // to avoid server-client mismatch from new Date()
     const defaultDeadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-    defaultDeadline.setSeconds(0); // Consistent with quick select logic
+    defaultDeadline.setSeconds(0);
     setDeadline(defaultDeadline);
   }, []);
 
@@ -149,7 +147,7 @@ export default function NewPollPage() {
   const setOptionVideo = useCallback((optionId: string, event: React.ChangeEvent<HTMLInputElement>) => {
      if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
-       if (file.size > 10 * 1024 * 1024) {
+       if (file.size > 10 * 1024 * 1024) { // 10MB limit for option videos
          toast({ title: "Video Too Large", description: "Option video file should be less than 10MB.", variant: "destructive" });
          return;
       }
@@ -208,11 +206,21 @@ export default function NewPollPage() {
     console.log('Poll Video File:', pollVideoFile);
     console.log('Option Files:', options.map(o => ({image: o.imageFile, video: o.videoFile})));
 
+    if (pollData.pledgeAmount && pollData.pledgeAmount > 0) {
+        console.log(`Pledge amount $${pollData.pledgeAmount} submitted. Stripe integration placeholder: This would trigger Stripe payment processing.`);
+        toast({
+            title: 'Pledge Submitted (Simulated)',
+            description: `Your pledge of $${pollData.pledgeAmount.toFixed(2)} would be processed via Stripe now.`,
+            duration: 5000,
+        });
+    }
+
     toast({
       title: 'Poll Created! (Simulated)',
       description: 'Your poll has been successfully submitted to the console.',
     });
 
+    // Reset form
     setQuestion('');
     setOptions([{ id: `option-${Date.now()}`, text: '' }, { id: `option-${Date.now() + 1}`, text: '' }]);
     const newDefaultDeadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -282,7 +290,7 @@ export default function NewPollPage() {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {pollImageUrls.map((url, index) => (
                       <div key={index} className="relative group aspect-square">
-                        <Image src={url} alt={`Poll image preview ${index + 1}`} layout="fill" objectFit="cover" className="rounded-md shadow-sm" data-ai-hint="poll image preview"/>
+                        <Image src={url} alt={`Poll image preview ${index + 1}`} layout="fill" objectFit="cover" className="rounded-md shadow-sm" data-ai-hint="poll image"/>
                         <Button
                           type="button"
                           variant="destructive"
@@ -338,7 +346,7 @@ export default function NewPollPage() {
                         />
                     </div>
                     <div className="flex items-center space-x-2 pt-2 border-t mt-3">
-                      <span className="text-xs text-muted-foreground">Media (1 image OR 1 video):</span>
+                      <span className="text-xs text-muted-foreground">Media (1 image OR 1 video max 10MB):</span>
                       {!option.videoFile && !option.videoUrl && (
                         option.imageFile || option.imageUrl ? (
                           <div className="flex items-center space-x-1">

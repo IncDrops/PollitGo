@@ -6,21 +6,20 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search as SearchIcon, Loader2 } from "lucide-react";
 import PollCard from "@/components/polls/PollCard";
-import { mockPolls, mockUsers } from "@/lib/mockData"; // Assuming mockUsers is needed for currentUser on PollCard
+import { mockPolls, mockUsers } from "@/lib/mockData";
 import type { Poll, User } from "@/types";
-import { useToast } from "@/hooks/use-toast"; // Import useToast
+import { useToast } from "@/hooks/use-toast";
 
-const MIN_PAYOUT_PER_VOTER = 0.10; // $0.10
-const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50; // 50%
+const MIN_PAYOUT_PER_VOTER = 0.10;
+const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50;
 
 export default function SearchPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState<Poll[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-  const { toast } = useToast(); // Initialize toast
+  const { toast } = useToast();
 
-  // Mock current user for PollCard. In a real app, this would come from auth context.
   const [currentUser] = useState<User | null>(() => mockUsers.find(u => u.id === 'user1') || mockUsers[0] || null);
 
 
@@ -38,7 +37,7 @@ export default function SearchPage() {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
-    const filteredPolls = mockPolls.map(p => ({...p})).filter(poll => { // Create copies for safe mutation
+    const filteredPolls = mockPolls.map(p => ({...p})).filter(poll => {
       const questionMatch = poll.question.toLowerCase().includes(lowerCaseSearchTerm);
       const creatorMatch = poll.creator.name.toLowerCase().includes(lowerCaseSearchTerm) ||
                            poll.creator.username.toLowerCase().includes(lowerCaseSearchTerm);
@@ -62,15 +61,14 @@ export default function SearchPage() {
 
     if (pollToUpdate.pledgeAmount && pollToUpdate.pledgeAmount > 0) {
       const amountToDistributeToVoters = pollToUpdate.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
-      const potentialVotesForThisOption = targetOption.votes + 1;
-       if ((amountToDistributeToVoters / potentialVotesForThisOption) < MIN_PAYOUT_PER_VOTER && potentialVotesForThisOption > 0) {
+      const potentialVotesForThisOption = targetOption.votes + 1; // Vote is about to be added
+      if ((amountToDistributeToVoters / potentialVotesForThisOption) < MIN_PAYOUT_PER_VOTER && potentialVotesForThisOption > 0) {
         toast({
-          title: "Vote Not Registered",
-          description: `Adding this vote would result in a PollitPoint payout below $${MIN_PAYOUT_PER_VOTER.toFixed(2)} per voter for this option due to the current pledge.`,
-          variant: "destructive",
-          duration: 5000,
+          title: "Low Payout Warning",
+          description: `Your vote is counted! However, due to the current pledge and number of voters for this option, your potential PollitPoint payout might be below $${MIN_PAYOUT_PER_VOTER.toFixed(2)}.`,
+          variant: "default", // Changed from destructive
+          duration: 7000,
         });
-        return;
       }
     }
 
@@ -87,11 +85,6 @@ export default function SearchPage() {
               if (opt.id === optionId) {
                 return { ...opt, votes: opt.votes + 1 };
               }
-              // If previously voted for another option, and now changing vote (though current logic prevents re-vote)
-              // This part might be redundant if re-voting on same poll is disabled once voted.
-              if (p.votedOptionId && p.votedOptionId === opt.id && p.votedOptionId !== optionId) {
-                 return { ...opt, votes: Math.max(0, opt.votes -1) };
-              }
               return opt;
             }),
           };
@@ -101,7 +94,7 @@ export default function SearchPage() {
     );
     console.log(`Vote recorded for poll ${pollId}, option ${optionId} in search results.`);
   };
-  
+
   const handlePollActionCompleteInSearch = (pollIdToRemove: string) => {
     setSearchResults(prevPolls => prevPolls.filter(p => p.id !== pollIdToRemove));
     console.log(`Poll ${pollIdToRemove} action completed and removed from search results.`);
@@ -160,13 +153,13 @@ export default function SearchPage() {
         <div className="space-y-0 max-w-md mx-auto">
           <h2 className="text-xl font-semibold mb-4 text-foreground">Search Results ({searchResults.length})</h2>
           {searchResults.map(poll => (
-            <PollCard 
-                key={poll.id} 
-                poll={poll} 
-                onVote={handleVoteInSearch} 
+            <PollCard
+                key={poll.id}
+                poll={poll}
+                onVote={handleVoteInSearch}
                 onPollActionComplete={handlePollActionCompleteInSearch}
-                currentUser={currentUser} // Pass currentUser
-                onPledgeOutcome={handlePledgeOutcomeInSearch} // Pass pledge outcome handler
+                currentUser={currentUser}
+                onPledgeOutcome={handlePledgeOutcomeInSearch}
             />
           ))}
         </div>
@@ -174,5 +167,3 @@ export default function SearchPage() {
     </div>
   );
 }
-
-    
