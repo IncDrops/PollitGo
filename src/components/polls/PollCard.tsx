@@ -20,10 +20,10 @@ import { mockUsers } from '@/lib/mockData'; // Assuming currentUser might be moc
 
 interface PollCardProps {
   poll: Poll;
-  onVote: (pollId: string, optionId: string) => void;
+  onVote?: (pollId: string, optionId: string) => void; // Made optional
   onPollActionComplete?: (pollId: string, swipeDirection?: 'left' | 'right') => void;
-  onPledgeOutcome?: (pollId: string, outcome: 'accepted' | 'tipped_crowd') => void; // For simulated pledge action
-  currentUser?: User | null; // Pass current user to determine if they are the creator
+  onPledgeOutcome?: (pollId: string, outcome: 'accepted' | 'tipped_crowd') => void;
+  currentUser?: User | null;
 }
 
 const OPTION_TEXT_TRUNCATE_LENGTH = 100;
@@ -31,14 +31,14 @@ const OPTION_TEXT_TRUNCATE_LENGTH = 100;
 const PollOption: React.FC<{
   option: PollOptionType;
   totalVotes: number;
-  onVote: () => void;
+  onVoteOptionClick: () => void; // Changed prop name to avoid confusion
   isVoted: boolean;
   isSelectedOption: boolean;
   deadlinePassed: boolean;
   pollHasTwoOptions: boolean;
   canVote: boolean;
   onShowDetails: () => void;
-}> = ({ option, totalVotes, onVote, isVoted, isSelectedOption, deadlinePassed, pollHasTwoOptions, canVote, onShowDetails }) => {
+}> = ({ option, totalVotes, onVoteOptionClick, isVoted, isSelectedOption, deadlinePassed, pollHasTwoOptions, canVote, onShowDetails }) => {
   const percentage = totalVotes > 0 && (isVoted || deadlinePassed) ? (option.votes / totalVotes) * 100 : 0;
   const showResults = isVoted || deadlinePassed;
   const isTruncated = option.text.length > OPTION_TEXT_TRUNCATE_LENGTH;
@@ -47,11 +47,8 @@ const PollOption: React.FC<{
     : option.text;
 
   const handleOptionClick = () => {
-    if (canVote && !isVoted && !deadlinePassed && !pollHasTwoOptions) {
-      onVote();
-    } else {
-      onShowDetails();
-    }
+    // This click now primarily calls the passed handler, which might be onVote or onShowDetails
+    onVoteOptionClick();
   };
 
   const handleDetailsIconClick = (e: React.MouseEvent) => {
@@ -124,11 +121,11 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
   const [deadlinePassed, setDeadlinePassed] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [createdAtFormatted, setCreatedAtFormatted] = useState<string | null>(null);
-  const [currentPoll, setCurrentPoll] = useState<Poll>(poll); // Local state for pledge outcome changes
+  const [currentPoll, setCurrentPoll] = useState<Poll>(poll);
 
 
   useEffect(() => {
-    setCurrentPoll(poll); // Sync with prop changes
+    setCurrentPoll(poll);
   }, [poll]);
 
   const [selectedOptionForModal, setSelectedOptionForModal] = useState<PollOptionType | null>(null);
@@ -136,11 +133,11 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
 
   const controls = useAnimationControls();
 
-  const canSwipe = currentPoll.options.length === 2 && !currentPoll.isVoted && !deadlinePassed && !!onPollActionComplete;
+  const canSwipe = currentPoll.options.length === 2 && !currentPoll.isVoted && !deadlinePassed && !!onPollActionComplete && !!onVote;
 
   const handlers = useSwipeable({
     onSwiped: async (eventData) => {
-      if (!canSwipe) return;
+      if (!canSwipe || !onVote) return;
 
       const threshold = 80;
       let swipeDirection: 'left' | 'right' | undefined = undefined;
@@ -165,11 +162,8 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
     let diff = targetDate.getTime() - now.getTime();
 
     if (diff <= 0) {
-      setDeadlinePassed(true); // Keep this for general deadline display
       return "Ended";
     }
-    setDeadlinePassed(false); // Keep this for general deadline display
-
 
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     diff -= days * (1000 * 60 * 60 * 24);
@@ -198,7 +192,7 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
     const deadlineDate = parseISO(currentPoll.deadline);
     const updateTimer = () => {
         setTimeRemaining(formatTimeDifference(deadlineDate));
-        setDeadlinePassed(isPast(deadlineDate)); // More direct way to set deadlinePassed
+        setDeadlinePassed(isPast(deadlineDate));
     };
     updateTimer();
     const intervalId = setInterval(updateTimer, 1000);
@@ -287,7 +281,7 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
 
 
   const pollHasTwoOptions = currentPoll.options.length === 2;
-  const canVoteOnPoll = !currentPoll.isVoted && !deadlinePassed;
+  const canVoteOnPoll = !!onVote && !currentPoll.isVoted && !deadlinePassed; // onVote must exist to be able to vote
   const isCreator = currentUser?.id === currentPoll.creator.id;
   const showPledgeOutcomeButtons = isCreator && deadlinePassed && currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0 && (currentPoll.pledgeOutcome === 'pending' || currentPoll.pledgeOutcome === undefined);
 
@@ -346,8 +340,8 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
                   key={option.id}
                   option={option}
                   totalVotes={currentPoll.totalVotes}
-                  onVote={() => {
-                     if (canVoteOnPoll && !pollHasTwoOptions) onVote(currentPoll.id, option.id);
+                  onVoteOptionClick={() => { // Changed prop name here
+                     if (canVoteOnPoll && !pollHasTwoOptions && onVote) onVote(currentPoll.id, option.id);
                      else handleShowOptionDetails(option);
                   }}
                   isVoted={!!currentPoll.isVoted}

@@ -8,20 +8,20 @@ import { UserPlus, MessageSquare, Award, Star } from "lucide-react";
 import type { User, Poll } from "@/types";
 import Image from "next/image";
 
-// Simulate fetching user and their polls
-async function getUserData(userId: string): Promise<{ user: User | null; polls: Poll[] }> {
-  const user = mockUsers.find(u => u.id === userId) || null;
-  const polls = user ? mockPolls.filter(p => p.creator.id === userId) : [];
-  return { user, polls };
-}
-
-// Define Server Action at the module's top level
+// Server Action is defined at the module's top level
 async function handleVoteOnProfilePage(pollId: string, optionId: string) {
   "use server"; 
   console.log(`Vote action from profile page (server): poll ${pollId}, option ${optionId}`);
   // This is a placeholder. Real voting logic would involve database updates.
   // Revalidating paths or updating cache might be needed if data changes.
 };
+
+// Simulate fetching user and their polls
+async function getUserData(userId: string): Promise<{ user: User | null; polls: Poll[] }> {
+  const user = mockUsers.find(u => u.id === userId) || null;
+  const polls = user ? mockPolls.filter(p => p.creator.id === userId) : [];
+  return { user, polls };
+}
 
 
 export default async function UserProfilePage({ params }: { params: { userId: string } }) {
@@ -92,12 +92,12 @@ export default async function UserProfilePage({ params }: { params: { userId: st
           </TabsList>
           <TabsContent value="polls" className="mt-6">
             {polls.length > 0 ? (
-              <div className="space-y-0"> {/* Adjusted from space-y-6 to space-y-0 for tighter card layout if desired */}
+              <div className="space-y-0">
                 {polls.map(poll => (
                   <PollCard
                     key={poll.id}
                     poll={poll}
-                    onVote={handleVoteOnProfilePage} // Use the top-level server action
+                    // onVote={handleVoteOnProfilePage} // Temporarily removed for diagnosis
                     currentUser={user} 
                   />
                 ))}
