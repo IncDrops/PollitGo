@@ -22,10 +22,11 @@ const firebaseConfig = {
 // Check if the API key is provided. This is crucial for Firebase services to work.
 if (!firebaseConfig.apiKey) {
   console.error(
-    "Firebase API Key is missing. " +
+    "Firebase API Key is missing or undefined. " +
     "Please ensure that NEXT_PUBLIC_FIREBASE_API_KEY is set in your environment variables. " +
+    "For local development, this is typically set in a .env.local file in the project root. " +
     "If deploying, check your hosting provider's environment variable settings. " +
-    "For local development, this is typically set in a .env.local file."
+    "After adding/updating .env.local, restart your development server."
   );
 }
 
