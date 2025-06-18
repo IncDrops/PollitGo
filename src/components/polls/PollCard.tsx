@@ -484,7 +484,7 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
               <Gift className="w-5 h-5 mr-1.5" /> Tip Creator {currentPoll.tipCount && currentPoll.tipCount > 0 ? `(${currentPoll.tipCount.toLocaleString()})` : ''}
             </Button>
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" onClick={handleShare}>
-              <Share2 className="w-5 h-5" /> Share
+              <Share2 className="w-5 h-5" />
             </Button>
           </CardFooter>
         </Card>
