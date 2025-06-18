@@ -139,6 +139,7 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
   // Removed onPollActionComplete from canSwipe as we are handling animation internally
   const canSwipe = currentPoll.options.length === 2 && !currentPoll.isVoted && !deadlinePassed && !!onVote;
 
+  // **MOVED handleInternalVote FUNCTION DEFINITION HERE**
   const handleInternalVote = (optionId: string) => {
     if (!onVote) return;
 
@@ -159,11 +160,27 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
     }
     // Still call onVote to inform parent, but local state updates control visual feedback
     onVote(currentPoll.id, optionId);
+
+    // Local state update logic - now correctly inside handleInternalVote
+    setCurrentPoll(prevPoll => {
+        const updatedOptions = prevPoll.options.map(opt =>
+            opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
+        );
+        return {
+            ...prevPoll,
+            isVoted: true,
+            votedOptionId: optionId,
+            totalVotes: prevPoll.totalVotes + 1,
+            options: updatedOptions,
+        };
+    });
   };
+  // **END OF MOVED FUNCTION DEFINITION**
+
 
   const handlers = useSwipeable({
     onSwiped: async (eventData) => {
-      if (!canSwipe || !onVote) return;
+      if (!canSwipe || typeof onVote === 'undefined') return; // Used typeof check here
 
       const threshold = 80;
       let swipedOptionId: string | undefined = undefined;
@@ -187,52 +204,9 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
             transition: { duration: 0.4, ease: "easeOut" } // Faster ease-out
           });
 
-          // 2. Update local state (immediately after animation starts/completes out)
-          // This happens while the card is off-screen
-          const handleInternalVote = (optionId: string) => {
-            if (!onVote) return;
-          
-            const targetOption = currentPoll.options.find(opt => opt.id === optionId);
-            if (!targetOption) return;
-          
-            if (currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0) {
-              const amountToDistributeToVoters = currentPoll.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
-              const potentialVotesForThisOption = targetOption.votes + 1;
-              if ((amountToDistributeToVoters / potentialVotesForThisOption) < MIN_PAYOUT_PER_VOTER && potentialVotesForThisOption > 0) {
-                toast({
-                  title: "Low Payout Warning",
-                  description: `Your vote is counted! However, due to the current pledge and number of voters for this option, your potential PollitPoint payout might be below $${MIN_PAYOUT_PER_VOTER.toFixed(2)}.`,
-                  variant: "default",
-                  duration: 7000,
-                });
-              }
-            }
-          
-            // Call onVote to inform parent (this should happen regardless of local state update)
-            onVote(currentPoll.id, optionId);
-          
-            // **ADD or MOVE THE FOLLOWING CODE HERE**
-            // This is the local state update logic that was previously only in onSwiped
-            // It needs to be inside handleInternalVote so it runs for both swipe and click
-            setCurrentPoll(prevPoll => {
-                const updatedOptions = prevPoll.options.map(opt =>
-                    opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
-                );
-                return {
-                    ...prevPoll,
-                    isVoted: true,
-                    votedOptionId: optionId,
-                    totalVotes: prevPoll.totalVotes + 1,
-                    options: updatedOptions,
-                };
-            });
-            // **END OF CODE TO ADD or MOVE**
-          
-            // If you had any other code after the local state update in your onSwiped handler,
-            // it might need to be adjusted or removed depending on its purpose now that
-            // the state update is within handleInternalVote.
-          };
-          
+          // 2. Call handleInternalVote - this now includes local state update
+          handleInternalVote(swipedOptionId);
+
           // 3. Animate back in
           await controls.start({
             x: 0, // Animate back to original position
@@ -388,7 +362,7 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
 
   const pollHasTwoOptions = currentPoll.options.length === 2;
   const canVoteOnPoll = !!onVote && !currentPoll.isVoted && !deadlinePassed;
-  const isCreator = currentUser?.id === currentPoll.creator.id; // Fixed this line
+  const isCreator = currentUser?.id === currentPoll.creator.id;
   const showPledgeOutcomeButtons = isCreator && deadlinePassed && currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0 && (currentPoll.pledgeOutcome === 'pending' || currentPoll.pledgeOutcome === undefined);
 
   return (
@@ -457,9 +431,13 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
                   option={option}
                   totalVotes={currentPoll.totalVotes}
  onVoteOptionClick={() => {
-                    if (!canSwipe || typeof onVote === 'undefined') return;
-
-                     else handleShowOptionDetails(option);
+                    if (canVoteOnPoll && !pollHasTwoOptions) {
+                        // For multi-option polls (not swipeable), call handleInternalVote on click
+                         handleInternalVote(option.id);
+                    } else {
+                       // For swipeable or already voted/deadline passed, show details
+                       handleShowOptionDetails(option);
+                    }
                   }}
                   isVoted={!!currentPoll.isVoted}
                   isSelectedOption={currentPoll.votedOptionId === option.id}

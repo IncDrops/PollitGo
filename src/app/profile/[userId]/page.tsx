@@ -13,7 +13,8 @@ import Image from "next/image";
 import NextLink from "next/link";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
-import PollFeed from '@/components/polls/PollFeed'; // Correctly import PollFeed
+import PollFeed from '@/components/polls/PollFeed';
+import useAuth from '@/hooks/useAuth';
 
 async function getUserData(userId: string): Promise<{ user: User | null; polls: Poll[] }> {
   console.log(`[UserProfilePage] getUserData called for userId: ${userId}`);
@@ -21,7 +22,7 @@ async function getUserData(userId: string): Promise<{ user: User | null; polls: 
   
   let polls: Poll[] = [];
   if (user) {
-    polls = mockPolls.filter(p => p.creator.id === userId).map(p => ({...p})); // Ensure deep copy for state updates
+    polls = mockPolls.filter(p => p.creator.id === userId).map(p => ({...p}));
     console.log(`[UserProfilePage] Found ${polls.length} polls for user ${userId}`);
   } else {
     console.log(`[UserProfilePage] User not found for ID: ${userId}`);
@@ -30,8 +31,8 @@ async function getUserData(userId: string): Promise<{ user: User | null; polls: 
   return { user, polls };
 }
 
-const urlSafeText = (text: string, maxLength: number = 20): string => {
-  const cleanedText = text.replace(/[^a-zA-Z0-9\s]/g, "").substring(0, maxLength);
+const urlSafeText = (text: string, maxLength: number = 15): string => {
+  const cleanedText = text.replace(/[^a-zA-Z0-9\\s]/g, "").substring(0, maxLength);
   return encodeURIComponent(cleanedText);
 };
 
@@ -41,22 +42,23 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   
   const resolvedPageParams = use(params); 
 
+  const { user: authUser, loading: authLoading } = useAuth();
   const [userData, setUserData] = useState<{ user: User | null; polls: Poll[] }>({ user: null, polls: [] });
   const [isLoading, setIsLoading] = useState(true);
-  
-  const [currentUser, setCurrentUser] = useState<User | null>(null); 
 
   useEffect(() => {
-    const loggedInUser = mockUsers.find(u => u.id === 'user1') || null; 
-    setCurrentUser(loggedInUser);
-
-    if (resolvedPageParams && resolvedPageParams.userId) { 
+    if (resolvedPageParams && resolvedPageParams.userId) {
       setIsLoading(true);
       getUserData(resolvedPageParams.userId)
         .then(data => {
           setUserData(data);
           if (!data.user) {
             console.warn(`[UserProfilePage] User not found for ID ${resolvedPageParams.userId} after fetch.`);
+            toast({ 
+              title: "User Not Found", 
+              description: `Profile for ID ${resolvedPageParams.userId} could not be loaded.`, 
+              variant: "destructive" 
+            });
           }
         })
         .catch(error => {
@@ -69,13 +71,14 @@ export default function UserProfilePage({ params }: { params: { userId: string }
     } else {
       setIsLoading(false); 
       console.warn("[UserProfilePage] resolvedPageParams.userId is not available.");
-    }
+      toast({ title: "Error", description: "User ID not provided for profile.", variant: "destructive" });
+    }    
   }, [resolvedPageParams, toast]);
 
   const user = userData.user;
   const userPolls = userData.polls;
 
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         Loading profile...
@@ -86,12 +89,12 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   if (!user) {
     return (
       <div className="container mx-auto px-4 py-8 text-center text-destructive">
-        User not found.
+        User profile could not be loaded. They may not exist.
       </div>
     );
   }
   
-  const isOwnProfile = currentUser?.id === user.id;
+  const isOwnProfile = authUser?.uid === user.id;
 
   const handleShareProfile = async () => {
     if (typeof window === 'undefined') return;
@@ -109,7 +112,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
         sharedNatively = true;
       } catch (error: any) {
         if (error.name !== 'AbortError' && error.name !== 'NotAllowedError') {
-            console.error('Error sharing poll via native share:', error);
+            console.error('Error sharing profile via native share:', error);
         }
       }
     }
@@ -125,11 +128,11 @@ export default function UserProfilePage({ params }: { params: { userId: string }
     }
   };
   
-  const coverPhotoUrl = `https://placehold.co/1200x400.png?text=${urlSafeText(user.name + " Cover")}`;
+  const coverPhotoUrl = `https://placehold.co/1200x400.png?text=${urlSafeText(user.name + " Cover", 25)}`;
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm border-b">
+      <header className="sticky top-[80px] sm:top-0 z-40 bg-background/80 backdrop-blur-sm border-b"> {/* Adjusted top for main nav */}
         <div className="container mx-auto h-14 flex items-center justify-between px-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ChevronLeft className="h-6 w-6" />
@@ -141,7 +144,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
         </div>
       </header>
 
-      <main className="flex-grow">
+      <main className="flex-grow pt-0"> {/* Removed pt-14 as header is sticky and handles its own space */}
         <div className="relative h-48 w-full bg-muted">
           <Image
             src={coverPhotoUrl} 
@@ -217,7 +220,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
         </div>
 
         <Tabs defaultValue="created" className="w-full mt-0">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 rounded-none border-b">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 rounded-none border-b sticky top-[136px] sm:top-[56px] z-30 bg-background/95 backdrop-blur-sm"> {/* Adjusted top for both navs */}
             <TabsTrigger value="created">Created</TabsTrigger>
             <TabsTrigger value="voted">Voted</TabsTrigger>
             <TabsTrigger value="media">Media</TabsTrigger>
@@ -227,8 +230,8 @@ export default function UserProfilePage({ params }: { params: { userId: string }
             {userPolls.length > 0 ? (
               <PollCardFeedWrapper 
                 initialPolls={userPolls} 
-                userIdForFeed={user.id} // This prop isn't strictly used by wrapper but good for context
-                feedType="userCreated" // This prop isn't strictly used by wrapper but good for context
+                userIdForFeed={user.id}
+                feedType="userCreated"
               />
             ) : (
               <Card className="shadow-none rounded-none border-0">
@@ -273,17 +276,13 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   );
 }
 
-
 const PollCardFeedWrapper: React.FC<{ initialPolls: Poll[], userIdForFeed?: string, feedType?: string }> = ({ initialPolls }) => {
   if (!initialPolls || initialPolls.length === 0) {
     return <p className="text-center py-8 text-muted-foreground">No polls to display for this feed.</p>;
   }
   
-  const [polls, setPolls] = useState(initialPolls.map(p => ({...p}))); // Ensure deep copy
-  const [currentUser] = useState<User | null>(() => {
-    const user1 = mockUsers.find(u => u.id === 'user1');
-    return user1 ? {...user1} : (mockUsers[0] ? {...mockUsers[0]} : null);
-  });
+  const [polls, setPolls] = useState(initialPolls.map(p => ({...p})));
+  const { user: authUser } = useAuth(); // Use authUser from useAuth directly
   const { toast } = useToast();
 
   const MIN_PAYOUT_PER_VOTER = 0.10; 
@@ -343,7 +342,6 @@ const PollCardFeedWrapper: React.FC<{ initialPolls: Poll[], userIdForFeed?: stri
      toast({ title: `Pledge Outcome: ${outcome.replace('_', ' ')}`, description: "Action simulated on client."});
   };
 
-
   return (
     <div className="space-y-0 divide-y divide-border">
        <PollFeed 
@@ -351,9 +349,8 @@ const PollCardFeedWrapper: React.FC<{ initialPolls: Poll[], userIdForFeed?: stri
         onVoteCallback={handleVote}
         onPollActionCompleteCallback={handlePollActionComplete}
         onPledgeOutcomeCallback={handlePledgeOutcome}
-        currentUser={currentUser}
+        currentUser={authUser} // Pass authUser as currentUser
       />
     </div>
   );
 };
-
