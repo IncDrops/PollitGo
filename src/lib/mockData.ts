@@ -66,687 +66,129 @@ const parseTimeRemaining = (timeString: string): number => {
 };
 
 const getRandomUser = (): User => mockUsers[Math.floor(Math.random() * mockUsers.length)];
-const findUser = (name: string): User => {
-  const found = mockUsers.find(u => u.name.toLowerCase().startsWith(name.toLowerCase()));
-  if (found) return found;
-  console.warn(`User starting with "${name}" not found for poll, returning random user.`);
-  return getRandomUser();
-}
 
 const generateCreatedAt = (deadlineString: string): string => {
   const deadlineMs = parseTimeRemaining(deadlineString);
   let createdAgoMs;
 
   if (deadlineMs <= 60 * 60 * 1000) { // Deadline is within an hour
-    createdAgoMs = Math.random() * (deadlineMs * 0.5); // Created within the first half of the deadline duration
+    createdAgoMs = Math.random() * (deadlineMs * 0.5);
   } else if (deadlineMs <= 24 * 60 * 60 * 1000) { // Deadline is within a day
-    createdAgoMs = Math.random() * (6 * 60 * 60 * 1000) + (15 * 60 * 1000); // Created 15 mins to 6 hours ago
+    createdAgoMs = Math.random() * (6 * 60 * 60 * 1000) + (15 * 60 * 1000);
   } else { // Deadline is more than a day
-    createdAgoMs = Math.random() * (3 * 24 * 60 * 60 * 1000) + (1 * 24 * 60 * 60 * 1000); // Created 1 to 3 days ago
+    createdAgoMs = Math.random() * (3 * 24 * 60 * 60 * 1000) + (1 * 24 * 60 * 60 * 1000);
   }
   return new Date(Date.now() - createdAgoMs).toISOString();
 };
 
 type PollSkeleton = Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'commentsCount' | 'likes' | 'tipCount' | 'pledgeAmount' | 'pledgeOutcome'>;
 
-
-const basePolls: PollSkeleton[]  = [
-  {
-    id: 'poll_original_seasons_s1',
-    creator: findUser('Alice Wonderland'),
-    question: 'What is your favorite season?',
-    imageUrls: ['https://placehold.co/600x400.png?text=SeasonsPoll&bg=FFC0CB&text=000', 'https://placehold.co/600x400.png?text=Flowers&bg=90EE90&text=000'],
-    options: [
-      { id: 'opt_s1_a', text: 'Spring - a time for new beginnings and fresh blooms. The weather is mild and perfect for outdoor activities. Plus, baby animals!', imageUrl: 'https://placehold.co/300x200.png?text=Spring&bg=98FB98&text=000', affiliateLink: 'https://example.com/spring-decor' },
-      { id: 'opt_s1_b', text: 'Summer - long sunny days, beach trips, and vacations. Who doesn’t love the warmth and endless evenings? Grilling season is also a huge plus.', imageUrl: 'https://placehold.co/300x200.png?text=Summer&bg=FFFFE0&text=000', affiliateLink: 'https://example.com/summer-gear' },
-      { id: 'opt_s1_c', text: 'Autumn - cozy sweaters, pumpkin spice everything, and beautiful foliage. The crisp air is invigorating, and Halloween is the best holiday.', imageUrl: 'https://placehold.co/300x200.png?text=Autumn&bg=FFA07A&text=000', affiliateLink: 'https://example.com/autumn-fashion' },
-      { id: 'opt_s1_d', text: 'Winter - snow days, hot cocoa by the fireplace, and the holiday season. It’s a magical time for cuddling up and enjoying the festive spirit.', imageUrl: 'https://placehold.co/300x200.png?text=Winter&bg=ADD8E6&text=000', affiliateLink: 'https://example.com/winter-sports' },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("7 days")).toISOString(),
-    createdAt: generateCreatedAt("7 days"),
-  },
-  {
-    id: 'poll_userlist1_cereal_box_art_cba1',
-    creator: findUser('Cereal Consumer'),
-    question: "Should I stop eating this brand of cereal now that they changed the box art and it feels weird?",
-    imageUrls: ['https://placehold.co/600x400.png?text=CerealArtPoll&bg=AFEEEE&text=000'],
-    options: [
-        { id: 'opt_cba1_a', text: "Yes, follow your instincts", votes: generateRandomVotes() },
-        { id: 'opt_cba1_b', text: "Chill, it's just a box", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("3 days")).toISOString(),
-    createdAt: generateCreatedAt("3 days"),
-  },
-  {
-    id: 'poll_original_language_l1',
-    creator: findUser('Bob The Builder'),
-    question: 'Best programming language for beginners in 2024?',
-    imageUrls: ['https://placehold.co/600x400.png?text=CodePoll&bg=DDA0DD&text=000'],
-    options: [
-      { id: 'opt_l1_a', text: 'Python', votes: 300, affiliateLink: 'https://example.com/python-course' },
-      { id: 'opt_l1_b', text: 'JavaScript', votes: 280, affiliateLink: 'https://example.com/js-bootcamp' },
-      { id: 'opt_l1_c', text: 'Java', votes: 150 },
-      { id: 'opt_l1_d', text: 'C#', votes: 100 },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("3 days")).toISOString(),
-    createdAt: generateCreatedAt("3 days"),
-  },
-  {
-    id: 'poll_userlist1_sneaky_link_bestie_slb1',
-    creator: findUser('Drama Llama'),
-    question: "Should I make my bestie's man my sneaky link if he already DMed me twice?",
-    imageUrls: ['https://placehold.co/600x400.png?text=SneakyLinkPoll&bg=FF69B4&text=000'],
-    options: [
-        { id: 'opt_slb1_a', text: "Slide quietly", votes: generateRandomVotes() },
-        { id: 'opt_slb1_b', text: "You need therapy", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("1 hour")).toISOString(),
-    createdAt: generateCreatedAt("1 hour"),
-  },
-  {
-    id: 'poll_original_travel_t1',
-    creator: findUser('Charlie Chaplin'),
-    question: 'Which travel destination for next summer?',
-    imageUrls: ['https://placehold.co/600x400.png?text=TravelPoll&bg=87CEEB&text=000'],
-    videoUrl: 'placeholder-video-url',
-    options: [
-      { id: 'opt_t1_a', text: 'Paris, France', votes: 180, videoUrl: 'placeholder-option-video-url', affiliateLink: 'https://example.com/paris-tours' },
-      { id: 'opt_t1_b', text: 'Tokyo, Japan', votes: 220, videoUrl: 'placeholder-option-video-url', affiliateLink: 'https://example.com/tokyo-hotels' },
-      { id: 'opt_t1_c', text: 'Rome, Italy', votes: 160, videoUrl: 'placeholder-option-video-url' },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("30 days")).toISOString(),
-    createdAt: generateCreatedAt("30 days"),
-  },
-  {
-    id: 'poll_userlist1_rapper_battle_rb1',
-    creator: findUser('Rap Analyst'),
-    question: "Trippie Redd vs Hurricane Wisdom — who’s the better rapper, PERIOD?",
-    imageUrls: ['https://placehold.co/600x400.png?text=RapBattlePoll&bg=F0E68C&text=000'],
-    options: [
-        { id: 'opt_rb1_a', text: "Trippie Redd", votes: generateRandomVotes() },
-        { id: 'opt_rb1_b', text: "Hurricane Wisdom", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("7 minutes")).toISOString(),
-    createdAt: generateCreatedAt("7 minutes"),
-  },
-  {
-    id: 'poll_sophia_vcard_main_sv1',
-    creator: findUser('Sophia Miller'),
-    question: "Finna lose my V-card, besties. To wrap it or not to wrap it? Low-key kinda nervous but also wanna YOLO. What's the tea?",
-    imageUrls: ['https://placehold.co/600x400.png?text=YOLOPoll&bg=E6E6FA&text=000'],
-    options: [
-      { id: 'opt_sv1_a', text: "Wrap it like it's your favorite mixtape ('cause STIs are NOT a vibe). Safety first, always! Think about long-term health and peace of mind. It's a sign of respect for yourself and your partner.", votes: generateRandomVotes(), affiliateLink: 'https://example.com/safe-sex-info' },
-      { id: 'opt_sv1_b', text: "The stars whisper secrets of protection... and pleasure. Choose wisely. Sometimes the most mysterious path is the safest one, leading to even greater joys when approached with care and consideration.", votes: generateRandomVotes() },
-      { id: 'opt_sv1_c', text: "Raw doggin' it? Only if you both got clean bills of health & discussed risks. Otherwise, glove up! This is a serious decision with potential lifelong consequences. Honesty and testing are key.", votes: generateRandomVotes() },
-      { id: 'opt_sv1_d', text: "Let the spirits guide you... to the condom aisle. Then flip a coin for flavor. A little humor can ease the nerves, but ultimately, the choice for protection is a wise one. Make it fun, but make it safe.", votes: generateRandomVotes(), affiliateLink: 'https://example.com/condom-variety-pack' },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("6 hours, 38 minutes")).toISOString(),
-    createdAt: generateCreatedAt("6 hours, 38 minutes"),
-  },
-  {
-    id: 'poll_userlist1_wife_beer_permission_wbp1',
-    creator: findUser('Thirsty Hubby'),
-    question: "My wife said no to another beer. Should I crack it anyway?",
-    imageUrls: ['https://placehold.co/600x400.png?text=BeerQuestPoll&bg=FFE4B5&text=000'],
-    options: [
-        { id: 'opt_wbp1_a', text: "Yes, freedom is brewed", votes: generateRandomVotes() },
-        { id: 'opt_wbp1_b', text: "Nah bro, she’s your ride", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("1 minute")).toISOString(),
-    createdAt: generateCreatedAt("1 minute"),
-  },
-  {
-    id: 'poll_generic_movie_night_gm1',
-    creator: findUser('Alex Johnson'),
-    question: 'Movie night! What genre should we watch?',
-    imageUrls: ['https://placehold.co/600x400.png?text=MovieNightPoll&bg=7FFFD4&text=000'],
-    options: [
-      { id: 'opt_gm1_a', text: 'Comedy', votes: generateRandomVotes() },
-      { id: 'opt_gm1_b', text: 'Horror', votes: generateRandomVotes() },
-      { id: 'opt_gm1_c', text: 'Sci-Fi', votes: generateRandomVotes() },
-      { id: 'opt_gm1_d', text: 'Documentary', votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("2 hours")).toISOString(),
-    createdAt: generateCreatedAt("2 hours"),
-  },
-  {
-    id: 'poll_userlist2_toxic_trait_closure_ghosted_ttcg1',
-    creator: findUser('Toxic Trait Tom'),
-    question: "My toxic trait is thinking I need closure from someone I ghosted. Should I message them?",
-    imageUrls: ['https://placehold.co/600x400.png?text=ToxicClosurePoll&bg=FFDAB9&text=000'],
-    options: [
-        { id: 'opt_ttcg1_a', text: "Yes, give them whiplash", votes: generateRandomVotes() },
-        { id: 'opt_ttcg1_b', text: "No, vanish like smoke", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("3 hours")).toISOString(),
-    createdAt: generateCreatedAt("3 hours"),
-  },
-  {
-    id: 'poll_generic_weekend_activity_gwa1',
-    creator: findUser('Emma Davis'),
-    question: 'Ideal weekend activity?',
-    options: [
-      { id: 'opt_gwa1_a', text: 'Hiking in nature', votes: generateRandomVotes() },
-      { id: 'opt_gwa1_b', text: 'Binge-watching a series', votes: generateRandomVotes() },
-      { id: 'opt_gwa1_c', text: 'Trying a new restaurant', votes: generateRandomVotes() },
-      { id: 'opt_gwa1_d', text: 'Reading a book', votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("5 days")).toISOString(),
-    createdAt: generateCreatedAt("5 days"),
-  },
-  {
-    id: 'poll_userlist1_ghost_closure_text_gct1',
-    creator: findUser('Ghost Ponderer'),
-    question: "Should I text the person I ghosted for closure (for me, not them)?",
-    options: [
-        { id: 'opt_gct1_a', text: "Do it, you need answers", votes: generateRandomVotes() },
-        { id: 'opt_gct1_b', text: "Leave them in peace, lol", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("10 hours")).toISOString(),
-    createdAt: generateCreatedAt("10 hours"),
-  },
-  {
-    id: 'poll_generic_coffee_tea_gct2',
-    creator: findUser('Liam Garcia'),
-    question: 'Coffee or Tea to start the day?',
-    imageUrls: ['https://placehold.co/600x400.png?text=MorningBrewPoll&bg=F5DEB3&text=000'],
-    options: [
-      { id: 'opt_gct2_a', text: 'Coffee, definitely!', votes: generateRandomVotes() },
-      { id: 'opt_gct2_b', text: 'Tea, for a calm start.', votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("1 day")).toISOString(),
-    createdAt: generateCreatedAt("1 day"),
-  },
-  {
-    id: 'poll_userlist1_hoodie_retirement_hr1',
-    creator: findUser('Hoodie Champion'),
-    question: "My favorite hoodie is falling apart. Should I retire it or wear it till it's literal threads?",
-    options: [
-        { id: 'opt_hr1_a', text: "Retire with honors", votes: generateRandomVotes() },
-        { id: 'opt_hr1_b', text: "Threads of glory!", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("2 days")).toISOString(),
-    createdAt: generateCreatedAt("2 days"),
-  },
-   {
-    id: 'poll_userlist2_forgave_drunk_reminder_fdr1',
-    creator: findUser('Delulu Deb'),
-    question: "I forgave my ex when I was drunk. Does it count? Should I remind them I was drunk?",
-    imageUrls: ['https://placehold.co/600x400.png?text=DrunkForgivenessPoll&bg=FFB6C1&text=000'],
-    options: [
-        { id: 'fdr1_opt_a', text: "Yes, full disclosure", votes: generateRandomVotes() },
-        { id: 'fdr1_opt_b', text: "No, let it ride lol", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("24 hours")).toISOString(),
-    createdAt: generateCreatedAt("24 hours"),
-  },
-  {
-    id: 'poll_userlist2_charger_9_months_c9m1',
-    creator: findUser('Charger Hoarder'),
-    question: "My friend 'borrowed' my charger 9 months ago. Is it mine or theirs now?",
-    options: [
-        { id: 'c9m1_opt_a', text: "Still yours, demand it!", votes: generateRandomVotes() },
-        { id: 'c9m1_opt_b', text: "It's adopted, let it go", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("6 hours")).toISOString(),
-    createdAt: generateCreatedAt("6 hours"),
-  },
-  {
-    id: 'poll_userlist2_cold_spaghetti_standards_css1',
-    creator: findUser('Fridge Raider'),
-    question: "Eating cold spaghetti from the fridge at 3 AM. Have I hit rock bottom or peak living?",
-    imageUrls: ['https://placehold.co/600x400.png?text=ColdSpaghettiPoll&bg=FFFACD&text=000'],
-    options: [
-        { id: 'css1_opt_a', text: "Rock bottom, seek help", votes: generateRandomVotes() },
-        { id: 'css1_opt_b', text: "Peak living, iconic", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("15 minutes")).toISOString(),
-    createdAt: generateCreatedAt("15 minutes"),
-  },
-  {
-    id: 'poll_userlist2_rewatch_texts_wounds_rtw1',
-    creator: findUser('Archive Diver'),
-    question: "Re-reading old texts from my ex and crying. Should I delete the archive or keep picking the scab?",
-    options: [
-        { id: 'rtw1_opt_a', text: "Delete and heal, queen", votes: generateRandomVotes() },
-        { id: 'rtw1_opt_b', text: "Nah, feel your feels", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("1 day")).toISOString(),
-    createdAt: generateCreatedAt("1 day"),
-  },
-  {
-    id: 'poll_userlist1_chicken_tenders_date_ctd1',
-    creator: findUser('Tender Lover'),
-    question: "Is it acceptable to order chicken tenders on a first date at a fancy restaurant?",
-    imageUrls: ['https://placehold.co/600x400.png?text=TenderDatePoll&bg=FAFAD2&text=000'],
-    options: [
-        { id: 'opt_ctd1_a', text: "Yes, be yourself", votes: generateRandomVotes() },
-        { id: 'opt_ctd1_b', text: "Maybe not the best first impression", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("8 hours")).toISOString(),
-    createdAt: generateCreatedAt("8 hours"),
-  },
-  {
-    id: 'poll_userlist2_you_up_reply_yur1',
-    creator: findUser('Late Night Texter'),
-    question: "Got a 'you up?' text at 2 AM. How should I reply for maximum chaos/comedy?",
-    imageUrls: ['https://placehold.co/600x400.png?text=LateNightReplyPoll&bg=D8BFD8&text=000'],
-    options: [
-        { id: 'yur1_opt_a', text: "'New phone, who dis?'", votes: generateRandomVotes() },
-        { id: 'yur1_opt_b', text: "'Yes, and I was just thinking of you... not.'", votes: generateRandomVotes() },
-        { id: 'yur1_opt_c', text: "Send a Wikipedia link to 'Sleep'", votes: generateRandomVotes() },
-        { id: 'yur1_opt_d', text: "Ignore and post a cryptic story", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("5 minutes")).toISOString(),
-    createdAt: generateCreatedAt("5 minutes"),
-  },
-  {
-    id: 'poll_userlist2_situationship_risk_sr1',
-    creator: findUser('Chaos Agent'),
-    question: "My situationship is getting too comfy. Should I risk it all by asking 'What are we?'",
-    imageUrls: ['https://placehold.co/600x400.png?text=SituationshipPoll&bg=FFEBCD&text=000'],
-    options: [
-        { id: 'sr1_opt_a', text: "Yes, clarity is key (or chaos)", votes: generateRandomVotes() },
-        { id: 'sr1_opt_b', text: "No, enjoy the ambiguity, coward", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("12 hours")).toISOString(),
-    createdAt: generateCreatedAt("12 hours"),
-  },
-   {
-    id: 'poll_userlist1_thirst_trap_respect_ttr1',
-    creator: findUser('Insta Model'),
-    question: "If I post a thirst trap, can I still demand respect?",
-    options: [
-        { id: 'opt_ttr1_a', text: "Yes, respect is unconditional", votes: generateRandomVotes() },
-        { id: 'opt_ttr1_b', text: "It's complicated...", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("4 hours")).toISOString(),
-    createdAt: generateCreatedAt("4 hours"),
-  },
-  {
-    id: 'poll_userlist2_toothbrush_confront_tc1',
-    creator: findUser('Toothbrush Sharer'),
-    question: "I think my roommate is using my toothbrush. How do I confront them without making it weird?",
-    options: [
-        { id: 'tc1_opt_a', text: "Hide it and see what happens", votes: generateRandomVotes() },
-        { id: 'tc1_opt_b', text: "Leave a passive-aggressive note", votes: generateRandomVotes() },
-        { id: 'tc1_opt_c', text: "Buy them a new one and say 'Thought you'd like this!'", votes: generateRandomVotes() },
-        { id: 'tc1_opt_d', text: "Just ask them directly but nicely", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("2 days")).toISOString(),
-    createdAt: generateCreatedAt("2 days"),
-  },
-  {
-    id: 'poll_userlist1_ignore_message_normal_imn1',
-    creator: findUser('Message Ignorer'),
-    question: "Is it normal to ignore someone's message for 3 days then reply like nothing happened?",
-    options: [
-        { id: 'opt_imn1_a', text: "Totally normal behavior", votes: generateRandomVotes() },
-        { id: 'opt_imn1_b', text: "That's kinda rude, ngl", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("5 hours")).toISOString(),
-    createdAt: generateCreatedAt("5 hours"),
-  },
-  {
-    id: 'poll_userlist2_bestie_ex_stories_bes1',
-    creator: findUser('Story Blocker'),
-    question: "My bestie keeps posting stories with their new partner (my ex's ex). Mute or unfriend?",
-    options: [
-        { id: 'bes1_opt_a', text: "Mute for your sanity", votes: generateRandomVotes() },
-        { id: 'bes1_opt_b', text: "Unfriend, cut the cord", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("30 minutes")).toISOString(),
-    createdAt: generateCreatedAt("30 minutes"),
-  },
-  {
-    id: 'poll_userlist1_charger_return_keep_crk1',
-    creator: findUser('Charger Keeper'),
-    question: "My friend left their charger at my place. Should I return it or is it fair game now?",
-    imageUrls: ['https://placehold.co/600x400.png?text=ChargerDilemmaPoll&bg=F0FFF0&text=000'],
-    options: [
-        { id: 'opt_crk1_a', text: "Return it, good karma", votes: generateRandomVotes() },
-        { id: 'opt_crk1_b', text: "Finders keepers, new charger!", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("1 day")).toISOString(),
-    createdAt: generateCreatedAt("1 day"),
-  },
-  {
-    id: 'poll_userlist2_venmo_fries_request_vfr1',
-    creator: findUser('Fries Fighter'),
-    question: "My friend ate 3 of my fries. Can I Venmo request them $0.75?",
-    options: [
-        { id: 'vfr1_opt_a', text: "Yes, principle matters", votes: generateRandomVotes() },
-        { id: 'vfr1_opt_b', text: "No, that's petty AF", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("1 hour")).toISOString(),
-    createdAt: generateCreatedAt("1 hour"),
-  },
-  {
-    id: 'poll_userlist1_party_snacks_selfies_pss1',
-    creator: findUser('Party Planner'),
-    question: "Hosting a party. Focus on good snacks or good selfie lighting?",
-    options: [
-        { id: 'opt_pss1_a', text: "Snacks are supreme", votes: generateRandomVotes() },
-        { id: 'opt_pss1_b', text: "Lighting for the 'gram!", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("4 days")).toISOString(),
-    createdAt: generateCreatedAt("4 days"),
-  },
-  {
-    id: 'poll_userlist2_text_ex_mom_tem1',
-    creator: findUser('Ex Mom Texter'),
-    question: "Is it weird to still text my ex's mom happy birthday?",
-    imageUrls: ['https://placehold.co/600x400.png?text=ExMomTextPoll&bg=FFF0F5&text=000'],
-    options: [
-        { id: 'tem1_opt_a', text: "Sweet, if you were close", votes: generateRandomVotes() },
-        { id: 'tem1_opt_b', text: "Kinda weird, move on", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("6 days")).toISOString(),
-    createdAt: generateCreatedAt("6 days"),
-  },
-  {
-    id: 'poll_userlist1_podcast_trauma_dump_ptd1',
-    creator: findUser('Podcast Dreamer'),
-    question: "Should I start a podcast to trauma dump or get a therapist?",
-    imageUrls: ['https://placehold.co/600x400.png?text=PodcastTherapyPoll&bg=FAEBD7&text=000'],
-    options: [
-        { id: 'opt_ptd1_a', text: "Podcast, share your story!", votes: generateRandomVotes() },
-        { id: 'opt_ptd1_b', text: "Therapist, professional help first", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("9 hours")).toISOString(),
-    createdAt: generateCreatedAt("9 hours"),
-  },
-  {
-    id: 'poll_userlist2_not_like_other_people_nlp1',
-    creator: findUser('Red Flag Racer'),
-    question: "My date said 'I'm not like other people.' Red flag or intriguing?",
-    options: [
-        { id: 'nlp1_opt_a', text: "Massive red flag, abort!", votes: generateRandomVotes() },
-        { id: 'nlp1_opt_b', text: "Intriguing, tell me more...", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("2 hours")).toISOString(),
-    createdAt: generateCreatedAt("2 hours"),
-  },
-  {
-    id: 'poll_userlist1_spotify_stalk_confess_ssc1',
-    creator: findUser('Spotify Stalker'),
-    question: "I stalk my crush's Spotify. Should I confess or keep my intel secret?",
-    options: [
-        { id: 'opt_ssc1_a', text: "Confess, it's kinda cute", votes: generateRandomVotes() },
-        { id: 'opt_ssc1_b', text: "Secret intel for the win", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("12 hours")).toISOString(),
-    createdAt: generateCreatedAt("12 hours"),
-  },
-  {
-    id: 'poll_userlist2_podcast_group_chat_dump_pgcd1',
-    creator: findUser('Group Chat Guru'),
-    question: "Turning our unhinged group chat into a podcast. Good idea or recipe for disaster?",
-    imageUrls: ['https://placehold.co/600x400.png?text=GroupChatPodcastPoll&bg=F5FFFA&text=000'],
-    options: [
-        { id: 'pgcd1_opt_a', text: "Genius! I'd listen.", votes: generateRandomVotes() },
-        { id: 'pgcd1_opt_b', text: "Friendships will end.", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("3 days")).toISOString(),
-    createdAt: generateCreatedAt("3 days"),
-  },
-  {
-    id: 'poll_userlist1_lol_ok_meaning_lom1',
-    creator: findUser('Text Detective'),
-    question: "What does 'lol ok' REALLY mean in a text?",
-    imageUrls: ['https://placehold.co/600x400.png?text=TextMeaningPoll&bg=E0FFFF&text=000'],
-    options: [
-        { id: 'opt_lom1_a', text: "They're mildly amused", votes: generateRandomVotes() },
-        { id: 'opt_lom1_b', text: "They're politely ending it", votes: generateRandomVotes() },
-        { id: 'opt_lom1_c', text: "They hate you secretly", votes: generateRandomVotes() },
-        { id: 'opt_lom1_d', text: "It means nothing, chill", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("25 minutes")).toISOString(),
-    createdAt: generateCreatedAt("25 minutes"),
-  },
-  {
-    id: 'poll_userlist2_kitkat_eating_method_kem1',
-    creator: findUser('KitKat Connoisseur'),
-    question: "How do you eat a KitKat? Break off fingers or bite into the whole thing like a psycho?",
-    imageUrls: ['https://placehold.co/600x400.png?text=KitKatPoll&bg=FFF5EE&text=000'],
-    options: [
-        { id: 'kem1_opt_a', text: "Break fingers, civilized", votes: generateRandomVotes() },
-        { id: 'kem1_opt_b', text: "Whole thing, chaos mode", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("10 minutes")).toISOString(),
-    createdAt: generateCreatedAt("10 minutes"),
-  },
-  {
-    id: 'poll_userlist1_hiking_touch_grass_htg1',
-    creator: findUser('Grass Avoider'),
-    question: "My friends want to go hiking. Is 'touching grass' overrated?",
-    options: [
-        { id: 'opt_htg1_a', text: "Yes, indoors forever", votes: generateRandomVotes() },
-        { id: 'opt_htg1_b', text: "No, fresh air is good!", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("7 days")).toISOString(),
-    createdAt: generateCreatedAt("7 days"),
-  },
-  {
-    id: 'poll_userlist2_hoodie_hostage_return_hhr1',
-    creator: findUser('Hoodie Hostage Holder'),
-    question: "I have 3 of my ex's hoodies. Do I return them or are they mine now by emotional distress compensation?",
-    options: [
-        { id: 'hhr1_opt_a', text: "Return them, be the bigger person", votes: generateRandomVotes() },
-        { id: 'hhr1_opt_b', text: "Keep 'em, trophies of war", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("4 days")).toISOString(),
-    createdAt: generateCreatedAt("4 days"),
-  },
-  {
-    id: 'poll_userlist1_tattoo_idea_list_new_person_tilnp1',
-    creator: findUser('Tattoo Thinker'),
-    question: "I have a list of tattoo ideas I made with my ex. Can I still get them or is that weird with a new person?",
-    options: [
-        { id: 'opt_tilnp1_a', text: "Get them, your body your art!", votes: generateRandomVotes() },
-        { id: 'opt_tilnp1_b', text: "Too weird, new list time", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("10 days")).toISOString(),
-    createdAt: generateCreatedAt("10 days"),
-  },
-  {
-    id: 'poll_userlist2_dm_after_likes_dal1',
-    creator: findUser('DM Slider'),
-    question: "How many of my posts should someone like before I can slide into their DMs?",
-    options: [
-        { id: 'dal1_opt_a', text: "1 like is an invitation", votes: generateRandomVotes() },
-        { id: 'dal1_opt_b', text: "3-5, show genuine interest", votes: generateRandomVotes() },
-        { id: 'dal1_opt_c', text: "10+, make it obvious", votes: generateRandomVotes() },
-        { id: 'dal1_opt_d', text: "Likes don't matter, shoot your shot", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("2 days")).toISOString(),
-    createdAt: generateCreatedAt("2 days"),
-  },
-  {
-    id: 'poll_userlist1_ex_dog_pic_like_edpl1',
-    creator: findUser('Dog Pic Defender'),
-    question: "My ex liked a picture of my dog. Are they trying to get back with me or just like dogs?",
-    imageUrls: ['https://placehold.co/600x400.png?text=DogPicLikePoll&bg=FFFFF0&text=000'],
-    options: [
-        { id: 'opt_edpl1_a', text: "They want you back!", votes: generateRandomVotes() },
-        { id: 'opt_edpl1_b', text: "They just like dogs, chill", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("20 hours")).toISOString(),
-    createdAt: generateCreatedAt("20 hours"),
-  },
-  {
-    id: 'poll_userlist2_wyd_mid_crisis_reply_wmcr1',
-    creator: findUser('Crisis Responder'),
-    question: "Someone texted 'wyd' while I'm having an existential crisis. Best reply?",
-    options: [
-        { id: 'wmcr1_opt_a', text: "'Contemplating the void, u?'", votes: generateRandomVotes() },
-        { id: 'wmcr1_opt_b', text: "'Nm, hbu?' (lie)", votes: generateRandomVotes() },
-        { id: 'wmcr1_opt_c', text: "Full trauma dump", votes: generateRandomVotes() },
-        { id: 'wmcr1_opt_d', text: "Send a picture of a possum", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("50 minutes")).toISOString(),
-    createdAt: generateCreatedAt("50 minutes"),
-  },
-  {
-    id: 'poll_userlist1_quit_job_spiritually_dead_qjsd1',
-    creator: findUser('Job Quitter Pro'),
-    question: "My job makes me spiritually dead. Should I quit with no backup plan?",
-    imageUrls: ['https://placehold.co/600x400.png?text=QuitJobPoll&bg=FDF5E6&text=000'],
-    options: [
-        { id: 'opt_qjsd1_a', text: "Yes, YOLO, follow your spirit", votes: generateRandomVotes() },
-        { id: 'opt_qjsd1_b', text: "No, secure a new job first, adulting!", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("14 days")).toISOString(),
-    createdAt: generateCreatedAt("14 days"),
-  },
-  {
-    id: 'poll_userlist2_friend_bad_breath_fbb1',
-    creator: findUser('Breath Buddy'),
-    question: "My friend has bad breath. How do I tell them without ruining the friendship?",
-    options: [
-        { id: 'fbb1_opt_a', text: "Offer gum/mints constantly", votes: generateRandomVotes() },
-        { id: 'fbb1_opt_b', text: "Tell them directly but privately", votes: generateRandomVotes() },
-        { id: 'fbb1_opt_c', text: "Anonymous note (risky!)", votes: generateRandomVotes() },
-        { id: 'fbb1_opt_d', text: "Suffer in silence", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("18 hours")).toISOString(),
-    createdAt: generateCreatedAt("18 hours"),
-  },
-  {
-    id: 'poll_userlist1_playlist_string_cheese_psc1',
-    creator: findUser('Cheese Critic'),
-    question: "Is it weirder to make a playlist for your cat or to eat string cheese by biting into it?",
-    options: [
-        { id: 'opt_psc1_a', text: "Cat playlist is weirder", votes: generateRandomVotes() },
-        { id: 'opt_psc1_b', text: "String cheese bite is weirder", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("3 hours")).toISOString(),
-    createdAt: generateCreatedAt("3 hours"),
-  },
-  {
-    id: 'poll_userlist2_cancel_plans_ugly_day_cpud1',
-    creator: findUser('Ugly Day Canceller'),
-    question: "Woke up feeling ugly. Is that a valid reason to cancel plans?",
-    options: [
-        { id: 'cpud1_opt_a', text: "Absolutely, self-care!", votes: generateRandomVotes() },
-        { id: 'cpud1_opt_b', text: "No, push through it", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("45 minutes")).toISOString(),
-    createdAt: generateCreatedAt("45 minutes"),
-  },
-  {
-    id: 'poll_userlist1_feet_pics_gas_money_fpgm1',
-    creator: findUser('Feet Pic Financier'),
-    question: "My friend suggested selling feet pics for gas money. Good idea or nah?",
-    options: [
-        { id: 'opt_fpgm1_a', text: "Secure the bag, sis/bro!", votes: generateRandomVotes() },
-        { id: 'opt_fpgm1_b', text: "Maybe explore other options...", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("6 hours")).toISOString(),
-    createdAt: generateCreatedAt("6 hours"),
-  },
-  {
-    id: 'poll_userlist2_create_own_poll_unhinged_copu1',
-    creator: findUser('Poll Progenitor'),
-    question: "Should I create my own poll because I’m tired of pretending I don’t have unhinged opinions too?",
-    imageUrls: ['https://placehold.co/600x400.png?text=MyUnhingedPoll&bg=FFEFD5&text=000'],
-    options: [
-        { id: 'opt_copu1_a', text: "Do it now", votes: generateRandomVotes() },
-        { id: 'opt_copu1_b', text: "This is your sign", votes: generateRandomVotes() },
-    ],
-    deadline: new Date(Date.now() + parseTimeRemaining("2 days")).toISOString(),
-    createdAt: generateCreatedAt("2 days"),
-  },
+const twoOptionPolls: PollSkeleton[] = [
+  // 40 Two-Option Polls
+  { id: '2opt_cereal_art', creator: getRandomUser(), question: "New cereal box art is weird, stop eating?", imageUrls: ['https://placehold.co/600x400.png?text=CerealArt&bg=AFEEEE&text=000'], options: [{ id: '2opt_cereal_a', text: "Trust gut, ditch it" }, { id: '2opt_cereal_b', text: "It's just a box, chill" }], deadline: new Date(Date.now() + parseTimeRemaining("3 days")).toISOString(), createdAt: generateCreatedAt("3 days") },
+  { id: '2opt_sneaky_link', creator: getRandomUser(), question: "Bestie's man DMed me twice. Sneaky link?", imageUrls: ['https://placehold.co/600x400.png?text=SneakyLink&bg=FF69B4&text=000'], options: [{ id: '2opt_sneaky_a', text: "Slide quietly" }, { id: '2opt_sneaky_b', text: "Therapy, girl" }], deadline: new Date(Date.now() + parseTimeRemaining("1 hour")).toISOString(), createdAt: generateCreatedAt("1 hour") },
+  { id: '2opt_rapper_battle', creator: getRandomUser(), question: "Trippie Redd vs Hurricane Wisdom: better rapper?", imageUrls: ['https://placehold.co/600x400.png?text=RapBattle&bg=F0E68C&text=000'], options: [{ id: '2opt_rap_a', text: "Trippie Redd" }, { id: '2opt_rap_b', text: "Hurricane Wisdom" }], deadline: new Date(Date.now() + parseTimeRemaining("7 minutes")).toISOString(), createdAt: generateCreatedAt("7 minutes") },
+  { id: '2opt_wife_beer', creator: getRandomUser(), question: "Wife said no more beer. Crack one anyway?", imageUrls: ['https://placehold.co/600x400.png?text=BeerQuest&bg=FFE4B5&text=000'], options: [{ id: '2opt_beer_a', text: "Freedom is brewed" }, { id: '2opt_beer_b', text: "Nah, she's your ride" }], deadline: new Date(Date.now() + parseTimeRemaining("1 minute")).toISOString(), createdAt: generateCreatedAt("1 minute") },
+  { id: '2opt_toxic_closure_ghosted', creator: getRandomUser(), question: "Toxic trait: need closure from someone I ghosted. Message them?", imageUrls: ['https://placehold.co/600x400.png?text=ToxicClosure&bg=FFDAB9&text=000'], options: [{ id: '2opt_toxic_a', text: "Yes, give whiplash" }, { id: '2opt_toxic_b', text: "No, vanish like smoke" }], deadline: new Date(Date.now() + parseTimeRemaining("3 hours")).toISOString(), createdAt: generateCreatedAt("3 hours") },
+  { id: '2opt_ghost_closure_text', creator: getRandomUser(), question: "Text person I ghosted for *my* closure?", options: [{ id: '2opt_ghost_a', text: "Do it, you need answers" }, { id: '2opt_ghost_b', text: "Leave them in peace" }], deadline: new Date(Date.now() + parseTimeRemaining("10 hours")).toISOString(), createdAt: generateCreatedAt("10 hours") },
+  { id: '2opt_hoodie_retirement', creator: getRandomUser(), question: "Favorite hoodie falling apart. Retire or wear to threads?", options: [{ id: '2opt_hoodie_a', text: "Retire with honors" }, { id: '2opt_hoodie_b', text: "Threads of glory!" }], deadline: new Date(Date.now() + parseTimeRemaining("2 days")).toISOString(), createdAt: generateCreatedAt("2 days") },
+  { id: '2opt_forgave_drunk_reminder', creator: getRandomUser(), question: "Forgave ex when drunk. Counts? Remind them I was drunk?", imageUrls: ['https://placehold.co/600x400.png?text=DrunkForgive&bg=FFB6C1&text=000'], options: [{ id: '2opt_forgive_a', text: "Yes, full disclosure" }, { id: '2opt_forgive_b', text: "No, let it ride lol" }], deadline: new Date(Date.now() + parseTimeRemaining("24 hours")).toISOString(), createdAt: generateCreatedAt("24 hours") },
+  { id: '2opt_charger_9_months', creator: getRandomUser(), question: "Friend 'borrowed' charger 9 months ago. Mine or theirs now?", options: [{ id: '2opt_charger9_a', text: "Still yours, demand it!" }, { id: '2opt_charger9_b', text: "Adopted, let it go" }], deadline: new Date(Date.now() + parseTimeRemaining("6 hours")).toISOString(), createdAt: generateCreatedAt("6 hours") },
+  { id: '2opt_cold_spaghetti_standards', creator: getRandomUser(), question: "Eating cold spaghetti from fridge at 3 AM. Rock bottom or peak living?", imageUrls: ['https://placehold.co/600x400.png?text=ColdSpaghetti&bg=FFFACD&text=000'], options: [{ id: '2opt_spaghetti_a', text: "Rock bottom, seek help" }, { id: '2opt_spaghetti_b', text: "Peak living, iconic" }], deadline: new Date(Date.now() + parseTimeRemaining("15 minutes")).toISOString(), createdAt: generateCreatedAt("15 minutes") },
+  { id: '2opt_rewatch_texts_wounds', creator: getRandomUser(), question: "Re-reading old ex texts & crying. Delete archive or keep picking scab?", options: [{ id: '2opt_rewatch_a', text: "Delete & heal, queen" }, { id: '2opt_rewatch_b', text: "Nah, feel your feels" }], deadline: new Date(Date.now() + parseTimeRemaining("1 day")).toISOString(), createdAt: generateCreatedAt("1 day") },
+  { id: '2opt_chicken_tenders_date', creator: getRandomUser(), question: "Order chicken tenders on fancy first date: Y/N?", imageUrls: ['https://placehold.co/600x400.png?text=TenderDate&bg=FAFAD2&text=000'], options: [{ id: '2opt_tenders_a', text: "Yes, be yourself" }, { id: '2opt_tenders_b', text: "Bad first impression" }], deadline: new Date(Date.now() + parseTimeRemaining("8 hours")).toISOString(), createdAt: generateCreatedAt("8 hours") },
+  { id: '2opt_situationship_risk', creator: getRandomUser(), question: "Situationship too comfy. Risk it by asking 'What are we?'", imageUrls: ['https://placehold.co/600x400.png?text=Situationship&bg=FFEBCD&text=000'], options: [{ id: '2opt_situation_a', text: "Yes, clarity or chaos!" }, { id: '2opt_situation_b', text: "No, enjoy ambiguity" }], deadline: new Date(Date.now() + parseTimeRemaining("12 hours")).toISOString(), createdAt: generateCreatedAt("12 hours") },
+  { id: '2opt_thirst_trap_respect', creator: getRandomUser(), question: "Post thirst trap, can I still demand respect?", options: [{ id: '2opt_thirst_a', text: "Yes, respect unconditional" }, { id: '2opt_thirst_b', text: "It's complicated..." }], deadline: new Date(Date.now() + parseTimeRemaining("4 hours")).toISOString(), createdAt: generateCreatedAt("4 hours") },
+  { id: '2opt_ignore_message_normal', creator: getRandomUser(), question: "Ignore message 3 days, then reply like nothing happened: Normal?", options: [{ id: '2opt_ignore_a', text: "Totally normal" }, { id: '2opt_ignore_b', text: "Kinda rude, ngl" }], deadline: new Date(Date.now() + parseTimeRemaining("5 hours")).toISOString(), createdAt: generateCreatedAt("5 hours") },
+  { id: '2opt_bestie_ex_stories', creator: getRandomUser(), question: "Bestie posts stories with their new partner (my ex's ex). Mute or unfriend?", options: [{ id: '2opt_bestie_a', text: "Mute for sanity" }, { id: '2opt_bestie_b', text: "Unfriend, cut cord" }], deadline: new Date(Date.now() + parseTimeRemaining("30 minutes")).toISOString(), createdAt: generateCreatedAt("30 minutes") },
+  { id: '2opt_charger_return_keep', creator: getRandomUser(), question: "Friend left charger. Return or fair game?", imageUrls: ['https://placehold.co/600x400.png?text=ChargerDilemma&bg=F0FFF0&text=000'], options: [{ id: '2opt_charger_a', text: "Return, good karma" }, { id: '2opt_charger_b', text: "Finders keepers!" }], deadline: new Date(Date.now() + parseTimeRemaining("1 day")).toISOString(), createdAt: generateCreatedAt("1 day") },
+  { id: '2opt_venmo_fries_request', creator: getRandomUser(), question: "Friend ate 3 of my fries. Venmo request $0.75?", options: [{ id: '2opt_venmo_a', text: "Yes, principle matters" }, { id: '2opt_venmo_b', text: "No, petty AF" }], deadline: new Date(Date.now() + parseTimeRemaining("1 hour")).toISOString(), createdAt: generateCreatedAt("1 hour") },
+  { id: '2opt_party_snacks_selfies', creator: getRandomUser(), question: "Hosting party: Focus on good snacks or good selfie lighting?", options: [{ id: '2opt_party_a', text: "Snacks supreme" }, { id: '2opt_party_b', text: "Lighting for the 'gram!" }], deadline: new Date(Date.now() + parseTimeRemaining("4 days")).toISOString(), createdAt: generateCreatedAt("4 days") },
+  { id: '2opt_text_ex_mom', creator: getRandomUser(), question: "Still text ex's mom happy birthday: Weird or sweet?", imageUrls: ['https://placehold.co/600x400.png?text=ExMomText&bg=FFF0F5&text=000'], options: [{ id: '2opt_exmom_a', text: "Sweet, if close" }, { id: '2opt_exmom_b', text: "Kinda weird, move on" }], deadline: new Date(Date.now() + parseTimeRemaining("6 days")).toISOString(), createdAt: generateCreatedAt("6 days") },
+  { id: '2opt_podcast_trauma_dump', creator: getRandomUser(), question: "Start podcast to trauma dump or get therapist?", imageUrls: ['https://placehold.co/600x400.png?text=PodcastTherapy&bg=FAEBD7&text=000'], options: [{ id: '2opt_podcast_a', text: "Podcast, share story!" }, { id: '2opt_podcast_b', text: "Therapist, help first" }], deadline: new Date(Date.now() + parseTimeRemaining("9 hours")).toISOString(), createdAt: generateCreatedAt("9 hours") },
+  { id: '2opt_not_like_other_people', creator: getRandomUser(), question: "Date said 'I'm not like other people.' Red flag or intriguing?", options: [{ id: '2opt_redflag_a', text: "Massive red flag, abort!" }, { id: '2opt_redflag_b', text: "Intriguing, tell more..." }], deadline: new Date(Date.now() + parseTimeRemaining("2 hours")).toISOString(), createdAt: generateCreatedAt("2 hours") },
+  { id: '2opt_spotify_stalk_confess', creator: getRandomUser(), question: "I stalk crush's Spotify. Confess or keep intel secret?", options: [{ id: '2opt_spotify_a', text: "Confess, kinda cute" }, { id: '2opt_spotify_b', text: "Secret intel for win" }], deadline: new Date(Date.now() + parseTimeRemaining("12 hours")).toISOString(), createdAt: generateCreatedAt("12 hours") },
+  { id: '2opt_podcast_group_chat_dump', creator: getRandomUser(), question: "Turn unhinged group chat into podcast. Good idea or disaster?", imageUrls: ['https://placehold.co/600x400.png?text=GroupChatPodcast&bg=F5FFFA&text=000'], options: [{ id: '2opt_groupchat_a', text: "Genius! I'd listen." }, { id: '2opt_groupchat_b', text: "Friendships will end." }], deadline: new Date(Date.now() + parseTimeRemaining("3 days")).toISOString(), createdAt: generateCreatedAt("3 days") },
+  { id: '2opt_kitkat_eating_method', creator: getRandomUser(), question: "Eat KitKat: Break fingers or bite whole thing like psycho?", imageUrls: ['https://placehold.co/600x400.png?text=KitKatPoll&bg=FFF5EE&text=000'], options: [{ id: '2opt_kitkat_a', text: "Break fingers, civilized" }, { id: '2opt_kitkat_b', text: "Whole thing, chaos mode" }], deadline: new Date(Date.now() + parseTimeRemaining("10 minutes")).toISOString(), createdAt: generateCreatedAt("10 minutes") },
+  { id: '2opt_hiking_touch_grass', creator: getRandomUser(), question: "Friends want to hike. Is 'touching grass' overrated?", options: [{ id: '2opt_grass_a', text: "Yes, indoors forever" }, { id: '2opt_grass_b', text: "No, fresh air is good!" }], deadline: new Date(Date.now() + parseTimeRemaining("7 days")).toISOString(), createdAt: generateCreatedAt("7 days") },
+  { id: '2opt_hoodie_hostage_return', creator: getRandomUser(), question: "Have 3 ex's hoodies. Return or emotional distress compensation?", options: [{ id: '2opt_hostage_a', text: "Return, bigger person" }, { id: '2opt_hostage_b', text: "Keep 'em, trophies" }], deadline: new Date(Date.now() + parseTimeRemaining("4 days")).toISOString(), createdAt: generateCreatedAt("4 days") },
+  { id: '2opt_tattoo_idea_list_new_person', creator: getRandomUser(), question: "Tattoo ideas list from ex. Still get w/ new person?", options: [{ id: '2opt_tattoo_a', text: "Get them, your body!" }, { id: '2opt_tattoo_b', text: "Too weird, new list" }], deadline: new Date(Date.now() + parseTimeRemaining("10 days")).toISOString(), createdAt: generateCreatedAt("10 days") },
+  { id: '2opt_ex_dog_pic_like', creator: getRandomUser(), question: "Ex liked pic of my dog. Wants me back or just likes dogs?", imageUrls: ['https://placehold.co/600x400.png?text=DogPicLike&bg=FFFFF0&text=000'], options: [{ id: '2opt_dogpic_a', text: "They want you back!" }, { id: '2opt_dogpic_b', text: "Just likes dogs, chill" }], deadline: new Date(Date.now() + parseTimeRemaining("20 hours")).toISOString(), createdAt: generateCreatedAt("20 hours") },
+  { id: '2opt_quit_job_spiritually_dead', creator: getRandomUser(), question: "Job makes me spiritually dead. Quit with no backup plan?", imageUrls: ['https://placehold.co/600x400.png?text=QuitJob&bg=FDF5E6&text=000'], options: [{ id: '2opt_quitjob_a', text: "Yes, YOLO, follow spirit" }, { id: '2opt_quitjob_b', text: "No, secure job first" }], deadline: new Date(Date.now() + parseTimeRemaining("14 days")).toISOString(), createdAt: generateCreatedAt("14 days") },
+  { id: '2opt_playlist_string_cheese', creator: getRandomUser(), question: "Weirder: Playlist for cat or biting string cheese?", options: [{ id: '2opt_catcheese_a', text: "Cat playlist weirder" }, { id: '2opt_catcheese_b', text: "String cheese bite weirder" }], deadline: new Date(Date.now() + parseTimeRemaining("3 hours")).toISOString(), createdAt: generateCreatedAt("3 hours") },
+  { id: '2opt_feet_pics_gas_money', creator: getRandomUser(), question: "Friend suggested selling feet pics for gas money. Good idea?", options: [{ id: '2opt_feetpics_a', text: "Secure the bag!" }, { id: '2opt_feetpics_b', text: "Explore other options..." }], deadline: new Date(Date.now() + parseTimeRemaining("6 hours")).toISOString(), createdAt: generateCreatedAt("6 hours") },
+  { id: '2opt_create_own_poll_unhinged', creator: getRandomUser(), question: "Create own poll b/c tired of pretending I don't have unhinged opinions?", imageUrls: ['https://placehold.co/600x400.png?text=MyUnhingedPoll&bg=FFEFD5&text=000'], options: [{ id: '2opt_createpoll_a', text: "Do it now" }, { id: '2opt_createpoll_b', text: "This is your sign" }], deadline: new Date(Date.now() + parseTimeRemaining("2 days")).toISOString(), createdAt: generateCreatedAt("2 days") },
+  { id: '2opt_coffee_vs_tea', creator: getRandomUser(), question: "Morning kickstart: Coffee or Tea?", imageUrls: ['https://placehold.co/600x400.png?text=MorningBrew&bg=F5DEB3&text=000'], options: [{ id: '2opt_coffee_a', text: "Coffee for the win!" }, { id: '2opt_coffee_b', text: "Tea, calm and steady" }], deadline: new Date(Date.now() + parseTimeRemaining("1 day")).toISOString(), createdAt: generateCreatedAt("1 day") },
+  { id: '2opt_pineapple_pizza', creator: getRandomUser(), question: "Pineapple on pizza: Culinary crime or delicious delight?", options: [{ id: '2opt_pizza_a', text: "Crime against humanity" }, { id: '2opt_pizza_b', text: "Sweet & savory perfection" }], deadline: new Date(Date.now() + parseTimeRemaining("5 hours")).toISOString(), createdAt: generateCreatedAt("5 hours") },
+  { id: '2opt_early_bird_night_owl', creator: getRandomUser(), question: "Are you an early bird or a night owl?", imageUrls: ['https://placehold.co/600x400.png?text=Productivity&bg=E0FFFF&text=000'], options: [{ id: '2opt_birdowl_a', text: "Early bird gets the worm!" }, { id: '2opt_birdowl_b', text: "Night owl, thrive in dark" }], deadline: new Date(Date.now() + parseTimeRemaining("30 minutes")).toISOString(), createdAt: generateCreatedAt("30 minutes") },
+  { id: '2opt_call_vs_text', creator: getRandomUser(), question: "Quick question: Better to call or text?", options: [{ id: '2opt_calltext_a', text: "Text, quick and easy" }, { id: '2opt_calltext_b', text: "Call, more personal" }], deadline: new Date(Date.now() + parseTimeRemaining("2 hours")).toISOString(), createdAt: generateCreatedAt("2 hours") },
+  { id: '2opt_work_from_home_office', creator: getRandomUser(), question: "Ideal work setup: Work from home or in the office?", imageUrls: ['https://placehold.co/600x400.png?text=WorkSetup&bg=FFF8DC&text=000'], options: [{ id: '2opt_wfh_a', text: "Home sweet office" }, { id: '2opt_wfh_b', text: "Office for collaboration" }], deadline: new Date(Date.now() + parseTimeRemaining("10 days")).toISOString(), createdAt: generateCreatedAt("10 days") },
+  { id: '2opt_android_vs_ios', creator: getRandomUser(), question: "Smartphone allegiance: Android or iOS?", options: [{ id: '2opt_mobileos_a', text: "Android for customization" }, { id: '2opt_mobileos_b', text: "iOS for simplicity" }], deadline: new Date(Date.now() + parseTimeRemaining("6 days")).toISOString(), createdAt: generateCreatedAt("6 days") },
+  { id: '2opt_cancel_plans_ugly_day', creator: getRandomUser(), question: "Woke up feeling ugly. Valid reason to cancel plans?", options: [{ id: 'opt_cpud1_a', text: "Absolutely, self-care!" }, { id: 'opt_cpud1_b', text: "No, push through it" }], deadline: new Date(Date.now() + parseTimeRemaining("45 minutes")).toISOString(), createdAt: generateCreatedAt("45 minutes") },
 ];
 
-// Duplicate the basePolls to make the feed longer
-const duplicatedPolls1: PollSkeleton[] = basePolls.map(poll => ({
-  ...poll,
-  id: `${poll.id}_dup1`,
-  question: `${poll.question} (V2)`, // Slight variation
-  options: poll.options.map(opt => ({ ...opt, id: `${opt.id}_dup1` })),
-  creator: getRandomUser(), // Assign a random creator to make it look different
-  deadline: new Date(Date.now() + parseTimeRemaining("1 day") + Math.random() * parseTimeRemaining("10 days")).toISOString(), // Vary deadlines
-  createdAt: generateCreatedAt("5 days")
-}));
+const threeOptionPolls: PollSkeleton[] = [
+  // 20 Three-Option Polls
+  { id: '3opt_travel_destination', creator: getRandomUser(), question: 'Next summer travel: Paris, Tokyo, or Rome?', imageUrls: ['https://placehold.co/600x400.png?text=TravelChoice&bg=87CEEB&text=000'], videoUrl: 'placeholder-video-url', options: [{ id: '3opt_travel_a', text: 'Paris, France', videoUrl: 'placeholder-option-video-url', affiliateLink: 'https://example.com/paris-tours' }, { id: '3opt_travel_b', text: 'Tokyo, Japan', videoUrl: 'placeholder-option-video-url', affiliateLink: 'https://example.com/tokyo-hotels' }, { id: '3opt_travel_c', text: 'Rome, Italy', videoUrl: 'placeholder-option-video-url' }], deadline: new Date(Date.now() + parseTimeRemaining("30 days")).toISOString(), createdAt: generateCreatedAt("30 days") },
+  { id: '3opt_weekend_activity', creator: getRandomUser(), question: 'Ideal weekend: Hiking, Binge-watching, or New Restaurant?', options: [{ id: '3opt_weekend_a', text: 'Hiking in nature' }, { id: '3opt_weekend_b', text: 'Binge-watching a series' }, { id: '3opt_weekend_c', text: 'Trying a new restaurant' }], deadline: new Date(Date.now() + parseTimeRemaining("5 days")).toISOString(), createdAt: generateCreatedAt("5 days") },
+  { id: '3opt_social_media', creator: getRandomUser(), question: 'Favorite social media: Instagram, TikTok, or X (Twitter)?', imageUrls: ['https://placehold.co/600x400.png?text=SocialMedia&bg=ADD8E6&text=000'], options: [{ id: '3opt_social_a', text: 'Instagram' }, { id: '3opt_social_b', text: 'TikTok' }, { id: '3opt_social_c', text: 'X (Twitter)' }], deadline: new Date(Date.now() + parseTimeRemaining("2 days")).toISOString(), createdAt: generateCreatedAt("2 days") },
+  { id: '3opt_music_genre', creator: getRandomUser(), question: 'Current music mood: Pop, Rock, or Electronic?', options: [{ id: '3opt_music_a', text: 'Pop anthems' }, { id: '3opt_music_b', text: 'Classic Rock' }, { id: '3opt_music_c', text: 'Electronic beats' }], deadline: new Date(Date.now() + parseTimeRemaining("12 hours")).toISOString(), createdAt: generateCreatedAt("12 hours") },
+  { id: '3opt_pet_preference', creator: getRandomUser(), question: 'Preferred pet: Dog, Cat, or Something else?', imageUrls: ['https://placehold.co/600x400.png?text=Pets&bg=90EE90&text=000'], options: [{ id: '3opt_pet_a', text: 'Dog (Man\'s best friend)' }, { id: '3opt_pet_b', text: 'Cat (Feline overlord)' }, { id: '3opt_pet_c', text: 'Something else (Fish, bird, etc.)' }], deadline: new Date(Date.now() + parseTimeRemaining("7 days")).toISOString(), createdAt: generateCreatedAt("7 days") },
+  { id: '3opt_book_genre', creator: getRandomUser(), question: 'Next book to read: Fantasy, Thriller, or Romance?', options: [{ id: '3opt_book_a', text: 'Epic Fantasy saga' }, { id: '3opt_book_b', text: 'Gripping Thriller' }, { id: '3opt_book_c', text: 'Heartwarming Romance' }], deadline: new Date(Date.now() + parseTimeRemaining("4 days")).toISOString(), createdAt: generateCreatedAt("4 days") },
+  { id: '3opt_exercise_type', creator: getRandomUser(), question: 'Favorite way to exercise: Gym, Running, or Home workout?', imageUrls: ['https://placehold.co/600x400.png?text=Fitness&bg=FFC0CB&text=000'], options: [{ id: '3opt_exercise_a', text: 'Pumping iron at the Gym' }, { id: '3opt_exercise_b', text: 'Hitting the pavement Running' }, { id: '3opt_exercise_c', text: 'Convenient Home workout' }], deadline: new Date(Date.now() + parseTimeRemaining("1 day")).toISOString(), createdAt: generateCreatedAt("1 day") },
+  { id: '3opt_gaming_platform', creator: getRandomUser(), question: 'Gaming platform of choice: PC, Console, or Mobile?', options: [{ id: '3opt_gaming_a', text: 'PC Master Race' }, { id: '3opt_gaming_b', text: 'Console (PlayStation/Xbox/Switch)' }, { id: '3opt_gaming_c', text: 'Mobile gaming on the go' }], deadline: new Date(Date.now() + parseTimeRemaining("6 hours")).toISOString(), createdAt: generateCreatedAt("6 hours") },
+  { id: '3opt_dessert_choice', creator: getRandomUser(), question: 'Ultimate dessert: Chocolate cake, Ice cream, or Fruit tart?', imageUrls: ['https://placehold.co/600x400.png?text=Desserts&bg=FFE4C4&text=000'], options: [{ id: '3opt_dessert_a', text: 'Decadent Chocolate Cake' }, { id: '3opt_dessert_b', text: 'Cool & Creamy Ice Cream' }, { id: '3opt_dessert_c', text: 'Fresh Fruit Tart' }], deadline: new Date(Date.now() + parseTimeRemaining("3 hours")).toISOString(), createdAt: generateCreatedAt("3 hours") },
+  { id: '3opt_superpower', creator: getRandomUser(), question: 'If you could have one superpower: Flight, Invisibility, or Telepathy?', options: [{ id: '3opt_super_a', text: 'Soar with Flight' }, { id: '3opt_super_b', text: 'Sneak with Invisibility' }, { id: '3opt_super_c', text: 'Read minds with Telepathy' }], deadline: new Date(Date.now() + parseTimeRemaining("10 days")).toISOString(), createdAt: generateCreatedAt("10 days") },
+  { id: '3opt_you_up_reply_chaos', creator: getRandomUser(), question: "Got 'you up?' text at 2 AM. Max chaos/comedy reply?", imageUrls: ['https://placehold.co/600x400.png?text=LateNightReply&bg=D8BFD8&text=000'], options: [{ id: 'yur1_opt_a', text: "'New phone, who dis?'" }, { id: 'yur1_opt_b', text: "'Yes, and I was just thinking of you... not.'" }, { id: 'yur1_opt_c', text: "Send Wikipedia link to 'Sleep'" }], deadline: new Date(Date.now() + parseTimeRemaining("5 minutes")).toISOString(), createdAt: generateCreatedAt("5 minutes") },
+  { id: '3opt_toothbrush_confront', creator: getRandomUser(), question: "Think roommate uses my toothbrush. How to confront?", options: [{ id: 'tc1_opt_a', text: "Hide it and see" }, { id: 'tc1_opt_b', text: "Passive-aggressive note" }, { id: 'tc1_opt_c', text: "Buy them new one, hint hint" }], deadline: new Date(Date.now() + parseTimeRemaining("2 days")).toISOString(), createdAt: generateCreatedAt("2 days") },
+  { id: '3opt_dm_after_likes', creator: getRandomUser(), question: "How many posts like before I DM?", options: [{ id: 'dal1_opt_a', text: "1 like is invitation" }, { id: 'dal1_opt_b', text: "3-5, show interest" }, { id: 'dal1_opt_c', text: "Likes don't matter, shoot shot" }], deadline: new Date(Date.now() + parseTimeRemaining("2 days")).toISOString(), createdAt: generateCreatedAt("2 days") },
+  { id: '3opt_wyd_mid_crisis_reply', creator: getRandomUser(), question: "Texted 'wyd' during existential crisis. Best reply?", options: [{ id: 'wmcr1_opt_a', text: "'Contemplating void, u?'" }, { id: 'wmcr1_opt_b', text: "'Nm, hbu?' (lie)" }, { id: 'wmcr1_opt_c', text: "Full trauma dump" }], deadline: new Date(Date.now() + parseTimeRemaining("50 minutes")).toISOString(), createdAt: generateCreatedAt("50 minutes") },
+  { id: '3opt_friend_bad_breath', creator: getRandomUser(), question: "Friend has bad breath. How to tell them?", options: [{ id: 'fbb1_opt_a', text: "Offer gum constantly" }, { id: 'fbb1_opt_b', text: "Tell privately & nicely" }, { id: 'fbb1_opt_c', text: "Suffer in silence" }], deadline: new Date(Date.now() + parseTimeRemaining("18 hours")).toISOString(), createdAt: generateCreatedAt("18 hours") },
+  { id: '3opt_vacation_type', creator: getRandomUser(), question: 'Ideal vacation: Beach relaxation, City exploration, or Mountain adventure?', imageUrls: ['https://placehold.co/600x400.png?text=VacationType&bg=B0E0E6&text=000'], options: [{ id: '3opt_vac_a', text: 'Beach & Sun' }, { id: '3opt_vac_b', text: 'Urban Adventure' }, { id: '3opt_vac_c', text: 'Mountain Retreat' }], deadline: new Date(Date.now() + parseTimeRemaining("15 days")).toISOString(), createdAt: generateCreatedAt("15 days") },
+  { id: '3opt_learning_skill', creator: getRandomUser(), question: 'Skill to learn next: New language, Coding, or Musical instrument?', options: [{ id: '3opt_skill_a', text: 'Learn a Language' }, { id: '3opt_skill_b', text: 'Start Coding' }, { id: '3opt_skill_c', text: 'Play an Instrument' }], deadline: new Date(Date.now() + parseTimeRemaining("20 days")).toISOString(), createdAt: generateCreatedAt("20 days") },
+  { id: '3opt_movie_snack', creator: getRandomUser(), question: 'Best movie snack: Popcorn, Candy, or Nachos?', imageUrls: ['https://placehold.co/600x400.png?text=MovieSnacks&bg=FFD700&text=000'], options: [{ id: '3opt_snack_a', text: 'Classic Popcorn' }, { id: '3opt_snack_b', text: 'Sweet Candy' }, { id: '3opt_snack_c', text: 'Cheesy Nachos' }], deadline: new Date(Date.now() + parseTimeRemaining("45 minutes")).toISOString(), createdAt: generateCreatedAt("45 minutes") },
+  { id: '3opt_transport_mode', creator: getRandomUser(), question: 'Preferred city transport: Public transit, Cycling, or Walking?', options: [{ id: '3opt_trans_a', text: 'Efficient Public Transit' }, { id: '3opt_trans_b', text: 'Eco-friendly Cycling' }, { id: '3opt_trans_c', text: 'Healthy Walking' }], deadline: new Date(Date.now() + parseTimeRemaining("8 days")).toISOString(), createdAt: generateCreatedAt("8 days") },
+  { id: '3opt_season_preference', creator: getRandomUser(), question: 'Favorite season group: Spring/Summer, Autumn, or Winter?', imageUrls: ['https://placehold.co/600x400.png?text=SeasonsGroup&bg=98FB98&text=000'], options: [{ id: '3opt_season_a', text: 'Warm Spring/Summer' }, { id: '3opt_season_b', text: 'Cozy Autumn' }, { id: '3opt_season_c', text: 'Crisp Winter' }], deadline: new Date(Date.now() + parseTimeRemaining("5 days")).toISOString(), createdAt: generateCreatedAt("5 days") },
+];
 
-const duplicatedPolls2: PollSkeleton[] = basePolls.map(poll => ({
-  ...poll,
-  id: `${poll.id}_dup2`,
-  question: `${poll.question} (The Sequel)`, // Another variation
-  options: poll.options.map(opt => ({ ...opt, id: `${opt.id}_dup2` })),
-  creator: getRandomUser(),
-  deadline: new Date(Date.now() + parseTimeRemaining("2 hours") + Math.random() * parseTimeRemaining("3 days")).toISOString(),
-  createdAt: generateCreatedAt("2 days")
-}));
+const fourOptionPolls: PollSkeleton[] = [
+  // 10 Four-Option Polls
+  { id: '4opt_seasons', creator: getRandomUser(), question: 'What is your favorite season overall?', imageUrls: ['https://placehold.co/600x400.png?text=SeasonsPoll&bg=FFC0CB&text=000', 'https://placehold.co/600x400.png?text=Flowers&bg=90EE90&text=000'], options: [{ id: '4opt_s1_a', text: 'Spring - new beginnings', imageUrl: 'https://placehold.co/300x200.png?text=Spring&bg=98FB98&text=000', affiliateLink: 'https://example.com/spring-decor' }, { id: '4opt_s1_b', text: 'Summer - sunny days', imageUrl: 'https://placehold.co/300x200.png?text=Summer&bg=FFFFE0&text=000', affiliateLink: 'https://example.com/summer-gear' }, { id: '4opt_s1_c', text: 'Autumn - cozy vibes', imageUrl: 'https://placehold.co/300x200.png?text=Autumn&bg=FFA07A&text=000', affiliateLink: 'https://example.com/autumn-fashion' }, { id: '4opt_s1_d', text: 'Winter - snow & holidays', imageUrl: 'https://placehold.co/300x200.png?text=Winter&bg=ADD8E6&text=000', affiliateLink: 'https://example.com/winter-sports' }], deadline: new Date(Date.now() + parseTimeRemaining("7 days")).toISOString(), createdAt: generateCreatedAt("7 days") },
+  { id: '4opt_language_beginners', creator: getRandomUser(), question: 'Best programming language for beginners 2024?', imageUrls: ['https://placehold.co/600x400.png?text=CodePoll&bg=DDA0DD&text=000'], options: [{ id: '4opt_l1_a', text: 'Python', affiliateLink: 'https://example.com/python-course' }, { id: '4opt_l1_b', text: 'JavaScript', affiliateLink: 'https://example.com/js-bootcamp' }, { id: '4opt_l1_c', text: 'Java' }, { id: '4opt_l1_d', text: 'C#' }], deadline: new Date(Date.now() + parseTimeRemaining("3 days")).toISOString(), createdAt: generateCreatedAt("3 days") },
+  { id: '4opt_vcard_decision', creator: getRandomUser(), question: "Losing V-card: To wrap or not? What's the tea?", imageUrls: ['https://placehold.co/600x400.png?text=YOLOPoll&bg=E6E6FA&text=000'], options: [{ id: '4opt_sv1_a', text: "Wrap it! STIs NOT a vibe.", affiliateLink: 'https://example.com/safe-sex-info' }, { id: '4opt_sv1_b', text: "Stars whisper protection... & pleasure." }, { id: '4opt_sv1_c', text: "Raw doggin'? Only if both clean & discussed." }, { id: '4opt_sv1_d', text: "Spirits guide to condom aisle. Flip coin for flavor.", affiliateLink: 'https://example.com/condom-variety-pack' }], deadline: new Date(Date.now() + parseTimeRemaining("6 hours, 38 minutes")).toISOString(), createdAt: generateCreatedAt("6 hours, 38 minutes") },
+  { id: '4opt_movie_night_genre', creator: getRandomUser(), question: 'Movie night! What genre should we watch?', imageUrls: ['https://placehold.co/600x400.png?text=MovieNightPoll&bg=7FFFD4&text=000'], options: [{ id: '4opt_gm1_a', text: 'Comedy' }, { id: '4opt_gm1_b', text: 'Horror' }, { id: '4opt_gm1_c', text: 'Sci-Fi' }, { id: '4opt_gm1_d', text: 'Documentary' }], deadline: new Date(Date.now() + parseTimeRemaining("2 hours")).toISOString(), createdAt: generateCreatedAt("2 hours") },
+  { id: '4opt_lol_ok_meaning', creator: getRandomUser(), question: "What does 'lol ok' REALLY mean in a text?", imageUrls: ['https://placehold.co/600x400.png?text=TextMeaningPoll&bg=E0FFFF&text=000'], options: [{ id: '4opt_lom1_a', text: "Mildly amused" }, { id: '4opt_lom1_b', text: "Politely ending it" }, { id: '4opt_lom1_c', text: "Hates you secretly" }, { id: '4opt_lom1_d', text: "Means nothing, chill" }], deadline: new Date(Date.now() + parseTimeRemaining("25 minutes")).toISOString(), createdAt: generateCreatedAt("25 minutes") },
+  { id: '4opt_communication_style', creator: getRandomUser(), question: 'Preferred communication: Texts, Calls, Emails, or In-person?', options: [{ id: '4opt_comm_a', text: 'Quick Texts' }, { id: '4opt_comm_b', text: 'Voice Calls' }, { id: '4opt_comm_c', text: 'Formal Emails' }, { id: '4opt_comm_d', text: 'Face-to-face' }], deadline: new Date(Date.now() + parseTimeRemaining("4 days")).toISOString(), createdAt: generateCreatedAt("4 days") },
+  { id: '4opt_dream_car_type', creator: getRandomUser(), question: 'Dream car type: Sports Car, SUV, Truck, or Luxury Sedan?', imageUrls: ['https://placehold.co/600x400.png?text=DreamCar&bg=BADA55&text=000'], options: [{ id: '4opt_car_a', text: 'Sleek Sports Car' }, { id: '4opt_car_b', text: 'Versatile SUV' }, { id: '4opt_car_c', text: 'Rugged Truck' }, { id: '4opt_car_d', text: 'Elegant Luxury Sedan' }], deadline: new Date(Date.now() + parseTimeRemaining("25 days")).toISOString(), createdAt: generateCreatedAt("25 days") },
+  { id: '4opt_coffee_style', creator: getRandomUser(), question: 'How do you take your coffee: Black, With Sugar, With Cream, or All of the above?', options: [{ id: '4opt_coffee_s_a', text: 'Black as night' }, { id: '4opt_coffee_s_b', text: 'A little sweet (Sugar)' }, { id: '4opt_coffee_s_c', text: 'Creamy & smooth' }, { id: '4opt_coffee_s_d', text: 'The works! (Cream & Sugar)' }], deadline: new Date(Date.now() + parseTimeRemaining("50 minutes")).toISOString(), createdAt: generateCreatedAt("50 minutes") },
+  { id: '4opt_ideal_living', creator: getRandomUser(), question: 'Ideal living situation: City Apartment, Suburban House, Countryside Farm, or Beachfront Villa?', imageUrls: ['https://placehold.co/600x400.png?text=LivingSituation&bg=AEC6CF&text=000'], options: [{ id: '4opt_live_a', text: 'Bustling City Apartment' }, { id: '4opt_live_b', text: 'Quiet Suburban House' }, { id: '4opt_live_c', text: 'Peaceful Countryside Farm' }, { id: '4opt_live_d', text: 'Relaxing Beachfront Villa' }], deadline: new Date(Date.now() + parseTimeRemaining("40 days")).toISOString(), createdAt: generateCreatedAt("40 days") },
+  { id: '4opt_hobby_type', creator: getRandomUser(), question: 'Preferred hobby type: Creative, Active, Relaxing, or Intellectual?', options: [{ id: '4opt_hobby_a', text: 'Creative (Art, Writing)' }, { id: '4opt_hobby_b', text: 'Active (Sports, Hiking)' }, { id: '4opt_hobby_c', text: 'Relaxing (Reading, Meditation)' }, { id: '4opt_hobby_d', text: 'Intellectual (Puzzles, Learning)' }], deadline: new Date(Date.now() + parseTimeRemaining("9 days")).toISOString(), createdAt: generateCreatedAt("9 days") },
+];
 
-const initialPolls: PollSkeleton[] = [...basePolls, ...duplicatedPolls1, ...duplicatedPolls2];
 
+const basePolls: PollSkeleton[] = [
+  ...twoOptionPolls,
+  ...threeOptionPolls,
+  ...fourOptionPolls
+];
 
-const allPollsFull: Poll[] = initialPolls.map((pollSkeleton, index) => {
-  const totalVotes = pollSkeleton.options.reduce((sum, option) => sum + option.votes, 0);
-  const shouldBeVoted = (index % 4 === 0); // Vote on every 4th poll for variety
+const allPollsFull: Poll[] = basePolls.map((pollSkeleton, index) => {
+  const totalInitialVotes = pollSkeleton.options.reduce((sum, option) => sum + (option.votes || 0), 0);
+  // Ensure votes are randomized if not explicitly set
+  const optionsWithVotes = pollSkeleton.options.map(opt => ({
+    ...opt,
+    votes: opt.votes || generateRandomVotes() // Generate if 0 or undefined
+  }));
+  const totalVotes = optionsWithVotes.reduce((sum, option) => sum + option.votes, 0);
+
+  const shouldBeVoted = (index % 4 === 0); 
   let determinedVotedOptionId: string | undefined = undefined;
-  if (shouldBeVoted && pollSkeleton.options.length > 0) {
-    determinedVotedOptionId = pollSkeleton.options[Math.floor(Math.random() * pollSkeleton.options.length)].id;
+  if (shouldBeVoted && optionsWithVotes.length > 0) {
+    determinedVotedOptionId = optionsWithVotes[Math.floor(Math.random() * optionsWithVotes.length)].id;
   }
 
-  let pledgeAmount = generateRandomPledge(index % 5 === 0); // Pledge on every 5th poll
+  let pledgeAmount = generateRandomPledge(index % 5 === 0); 
   let pledgeOutcome: 'accepted' | 'tipped_crowd' | 'pending' | undefined = undefined;
-
-  let tipCountGenerated = generateRandomTips();
-  const likes = (index * 17 % 250) + 10;
-  const commentsCount = (index * 7 % 35) + 2;
-
-  const specificPledges: Record<string, {pledge: number, tips: number}> = {
-    'poll_userlist1_cereal_box_art_cba1': { pledge: 7, tips: 2 },
-    'poll_userlist1_sneaky_link_bestie_slb1': { pledge: 50, tips: 8 },
-    'poll_userlist1_rapper_battle_rb1': { pledge: 3, tips: 1 },
-    'poll_userlist1_wife_beer_permission_wbp1': { pledge: 100, tips: 12 },
-    'poll_userlist1_ghost_closure_text_gct1': { pledge: 15, tips: 5 },
-    'poll_userlist1_hoodie_retirement_hr1': { pledge: 4, tips: 0 },
-    'poll_userlist1_chicken_tenders_date_ctd1': { pledge: 22, tips: 3 },
-    'poll_userlist1_thirst_trap_respect_ttr1': { pledge: 13, tips: 1 },
-    'poll_userlist1_ignore_message_normal_imn1': { pledge: 6, tips: 0 },
-    'poll_userlist1_charger_return_keep_crk1': { pledge: 5, tips: 6 },
-    'poll_userlist1_party_snacks_selfies_pss1': { pledge: 20, tips: 3 },
-    'poll_userlist1_podcast_trauma_dump_ptd1': { pledge: 27, tips: 2 },
-    'poll_userlist1_spotify_stalk_confess_ssc1': { pledge: 2, tips: 1 },
-    'poll_userlist1_lol_ok_meaning_lom1': { pledge: 8, tips: 9 },
-    'poll_userlist1_hiking_touch_grass_htg1': { pledge: 11, tips: 4 },
-    'poll_userlist1_tattoo_idea_list_new_person_tilnp1': { pledge: 30, tips: 7 },
-    'poll_userlist1_ex_dog_pic_like_edpl1': { pledge: 9, tips: 0 },
-    'poll_userlist1_quit_job_spiritually_dead_qjsd1': { pledge: 75, tips: 15 },
-    'poll_userlist1_playlist_string_cheese_psc1': { pledge: 10, tips: 2 },
-    'poll_userlist1_feet_pics_gas_money_fpgm1': { pledge: 40, tips: 6 },
-    'poll_userlist2_toxic_trait_closure_ghosted_ttcg1': { pledge: 15, tips: 4 },
-    'poll_userlist2_forgave_drunk_reminder_fdr1': { pledge: 22, tips: 6 },
-    'poll_userlist2_charger_9_months_c9m1': { pledge: 8, tips: 1 },
-    'poll_userlist2_cold_spaghetti_standards_css1': { pledge: 5, tips: 0 },
-    'poll_userlist2_rewatch_texts_wounds_rtw1': { pledge: 13, tips: 2 },
-    'poll_userlist2_you_up_reply_yur1': { pledge: 40, tips: 3 },
-    'poll_userlist2_situationship_risk_sr1': { pledge: 50, tips: 7 },
-    'poll_userlist2_toothbrush_confront_tc1': { pledge: 100, tips: 12 },
-    'poll_userlist2_bestie_ex_stories_bes1': { pledge: 33, tips: 9 },
-    'poll_userlist2_venmo_fries_request_vfr1': { pledge: 4.37, tips: 0 },
-    'poll_userlist2_text_ex_mom_tem1': { pledge: 18, tips: 5 },
-    'poll_userlist2_not_like_other_people_nlp1': { pledge: 11, tips: 1 },
-    'poll_userlist2_podcast_group_chat_dump_pgcd1': { pledge: 27, tips: 4 },
-    'poll_userlist2_kitkat_eating_method_kem1': { pledge: 6, tips: 2 },
-    'poll_userlist2_hoodie_hostage_return_hhr1': { pledge: 15, tips: 3 },
-    'poll_userlist2_dm_after_likes_dal1': { pledge: 10, tips: 1 },
-    'poll_userlist2_wyd_mid_crisis_reply_wmcr1': { pledge: 20, tips: 2 },
-    'poll_userlist2_friend_bad_breath_fbb1': { pledge: 8, tips: 6 },
-    'poll_userlist2_cancel_plans_ugly_day_cpud1': { pledge: 14, tips: 3 },
-    'poll_userlist2_create_own_poll_unhinged_copu1': { pledge: 0, tips: 0 }, // No pledge for this specific one
-  };
-
-  // Apply specific pledges to base polls (non-duplicated versions)
-  if (specificPledges[pollSkeleton.id]) {
-    pledgeAmount = specificPledges[pollSkeleton.id].pledge;
-    tipCountGenerated = specificPledges[pollSkeleton.id].tips;
-  }
-
 
   if (pledgeAmount && pledgeAmount > 0) {
       pledgeOutcome = 'pending';
@@ -755,17 +197,17 @@ const allPollsFull: Poll[] = initialPolls.map((pollSkeleton, index) => {
     pledgeOutcome = undefined;
   }
 
-
   return {
     ...pollSkeleton,
+    options: optionsWithVotes, // Use options with ensured votes
     totalVotes,
     isVoted: shouldBeVoted,
     votedOptionId: determinedVotedOptionId,
-    likes,
-    commentsCount,
+    likes: (index * 17 % 250) + 10,
+    commentsCount: (index * 7 % 35) + 2,
     pledgeAmount,
     pledgeOutcome,
-    tipCount: tipCountGenerated,
+    tipCount: generateRandomTips(),
   };
 });
 
@@ -775,9 +217,10 @@ export const mockPolls: Poll[] = allPollsFull;
 
 export const fetchMorePolls = async (offset: number, limit: number): Promise<Poll[]> => {
   console.log(`Fetching more polls: offset ${offset}, limit ${limit}`);
-  // Simulate network delay
-  await new Promise(resolve => setTimeout(resolve, 300)); // Reverted to 300ms
+  await new Promise(resolve => setTimeout(resolve, 300)); 
 
   const newPollsToServe = mockPolls.slice(offset, offset + limit);
   return newPollsToServe;
 };
+
+    
