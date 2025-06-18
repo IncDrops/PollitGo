@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockUsers, mockPolls } from "@/lib/mockData";
 import PollCard from "@/components/polls/PollCard";
-import { UserPlus, MessageSquare, Edit3, Settings2, Users, Check, Award, Star } from "lucide-react";
+import { UserPlus, MessageSquare, Award, Star } from "lucide-react";
 import type { User, Poll } from "@/types";
 import Image from "next/image";
 
@@ -15,6 +15,14 @@ async function getUserData(userId: string): Promise<{ user: User | null; polls: 
   return { user, polls };
 }
 
+// Define Server Action at the module's top level
+async function handleVoteOnProfilePage(pollId: string, optionId: string) {
+  "use server"; 
+  console.log(`Vote action from profile page (server): poll ${pollId}, option ${optionId}`);
+  // This is a placeholder. Real voting logic would involve database updates.
+  // Revalidating paths or updating cache might be needed if data changes.
+};
+
 
 export default async function UserProfilePage({ params }: { params: { userId: string } }) {
   const { user, polls } = await getUserData(params.userId);
@@ -22,17 +30,6 @@ export default async function UserProfilePage({ params }: { params: { userId: st
   if (!user) {
     return <div className="container mx-auto px-4 py-8 text-center text-destructive">User not found.</div>;
   }
-
-  // Dummy handler for voting, as PollCard requires it
-  // This needs to be a Server Action or handled differently if real interaction is needed from a Server Component.
-  // For display purposes in PollCard (which is a client component), this onVote prop will be handled by PollCard's internal logic or needs re-evaluation if actual voting from profile page is a feature.
-  const handleVote = async (pollId: string, optionId: string) => {
-    "use server"; 
-    console.log(`Vote action from profile page (server): poll ${pollId}, option ${optionId}`);
-    // This is a placeholder. Real voting logic would involve database updates.
-    // Revalidating paths or updating cache might be needed if data changes.
-  };
-
 
   return (
     <div className="bg-background min-h-screen">
@@ -100,9 +97,8 @@ export default async function UserProfilePage({ params }: { params: { userId: st
                   <PollCard
                     key={poll.id}
                     poll={poll}
-                    onVote={handleVote} // This handleVote is a server action stub. PollCard's own client-side vote logic will handle UI updates.
+                    onVote={handleVoteOnProfilePage} // Use the top-level server action
                     currentUser={user} 
-                    // onPledgeOutcome prop removed as it's a non-serializable function from a Server Component
                   />
                 ))}
               </div>
