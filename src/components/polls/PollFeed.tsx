@@ -70,11 +70,8 @@ export default function PollFeed() {
 
   useEffect(() => {
     // This effect reacts to changes in polls.length, typically after a poll is removed.
-    // Only run if initial load is complete and not currently loading.
     if (initialLoadComplete && !loading && hasMore) {
-      // If the number of polls drops below a threshold (e.g., less than BATCH_SIZE), try to load more.
-      // This helps refill the feed after items are removed.
-      if (polls.length < BATCH_SIZE && polls.length > 0) { // Check polls.length > 0 to avoid loop on empty
+      if (polls.length < BATCH_SIZE && polls.length > 0) { 
         loadMorePolls();
       }
     }
@@ -87,11 +84,10 @@ export default function PollFeed() {
       if (observer.current) observer.current.disconnect();
 
       observer.current = new IntersectionObserver((entries) => {
-        // Only trigger if initial load is complete, entry is intersecting, and there's more data
         if (initialLoadComplete && entries[0]?.isIntersecting && hasMore && !loading) {
           loadMorePolls();
         }
-      });
+      }, { rootMargin: "200px" }); // Added rootMargin here
 
       if (node) observer.current.observe(node);
     },
@@ -144,7 +140,6 @@ export default function PollFeed() {
   const handlePollActionComplete = (pollIdToRemove: string, swipeDirection?: 'left' | 'right') => {
     setExitDirectionMap(prev => ({ ...prev, [pollIdToRemove]: swipeDirection || 'default' }));
     setPolls(prevPolls => prevPolls.filter(p => p.id !== pollIdToRemove));
-    // The useEffect watching polls.length will now handle loading more if necessary
   };
 
   const handlePledgeOutcome = (pollId: string, outcome: 'accepted' | 'tipped_crowd') => {
@@ -188,7 +183,7 @@ export default function PollFeed() {
               initial="initial"
               animate="animate"
               exit="exit"
-              className="min-h-[1px]" // Prevents layout shift issues with Framer Motion
+              className="min-h-[1px]" 
               ref={isLastElement ? lastPollElementRef : null}
             >
               <PollCard
@@ -202,7 +197,7 @@ export default function PollFeed() {
           );
         })}
       </AnimatePresence>
-      {loading && initialLoadComplete && ( // Only show loading indicator if initial load is done
+      {loading && initialLoadComplete && ( 
         <div className="flex justify-center items-center py-8">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
           <p className="ml-2 text-muted-foreground">Loading more polls...</p>
@@ -216,3 +211,4 @@ export default function PollFeed() {
     </div>
   );
 }
+
