@@ -4,6 +4,7 @@ export interface User {
   name: string;
   avatarUrl: string;
   username: string;
+  pollitPointsBalance?: number;
 }
 
 export interface PollOption {
@@ -34,9 +35,10 @@ export interface Poll {
   likes: number;
   totalVotes: number;
   commentsCount: number;
-  isVoted?: boolean; 
+  isVoted?: boolean;
   votedOptionId?: string;
   pledgeAmount?: number; // Amount pledged by the creator
+  pledgeOutcome?: 'accepted' | 'tipped_crowd' | 'pending'; // Status of the pledge
   tipCount?: number; // Number of tips received for this poll/creator
 }
 
@@ -45,4 +47,3 @@ export type NavItem = {
   label: string;
   icon: React.ElementType;
 };
-

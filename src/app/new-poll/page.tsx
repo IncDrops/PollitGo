@@ -10,11 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { CalendarIcon, ImagePlus, VideoIcon, X, PlusCircle, ImageIcon as ImageIconLucide, Film, LinkIcon } from 'lucide-react';
+import { CalendarIcon, ImagePlus, VideoIcon, X, PlusCircle, ImageIcon as ImageIconLucide, Film, LinkIcon, AlertCircle, DollarSign } from 'lucide-react';
 import { format } from "date-fns"
 import { useToast } from '@/hooks/use-toast';
-import Image from 'next/image'; // For Next/Image component
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'; // For alerts
+import Image from 'next/image';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const MAX_OPTIONS = 4;
 const MAX_POLL_IMAGES = 4;
@@ -24,9 +24,9 @@ interface PollOptionState {
   id: string;
   text: string;
   imageUrl?: string;
-  imageFile?: File; // For image preview
-  videoUrl?: string; // Placeholder for video
-  videoFile?: File; // For video file handling (not fully implemented for upload)
+  imageFile?: File;
+  videoUrl?: string;
+  videoFile?: File;
   affiliateLink?: string;
 }
 
@@ -38,12 +38,13 @@ export default function NewPollPage() {
     { id: `option-${Date.now() + 1}`, text: '' },
   ]);
   const [deadline, setDeadline] = useState<Date | undefined>(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)); // Default 7 days
-  
+  const [pledgeAmount, setPledgeAmount] = useState<number | undefined>(undefined);
+
   const [pollImageUrls, setPollImageUrls] = useState<string[]>([]);
   const [pollImageFiles, setPollImageFiles] = useState<File[]>([]);
   const pollImageInputRef = useRef<HTMLInputElement>(null);
 
-  const [pollVideoUrl, setPollVideoUrl] = useState<string | undefined>(); // For preview or placeholder
+  const [pollVideoUrl, setPollVideoUrl] = useState<string | undefined>();
   const [pollVideoFile, setPollVideoFile] = useState<File | undefined>();
   const pollVideoInputRef = useRef<HTMLInputElement>(null);
 
@@ -69,12 +70,12 @@ export default function NewPollPage() {
   const handleOptionChange = (id: string, field: keyof Omit<PollOptionState, 'id' | 'imageFile' | 'videoFile'>, value: string) => {
     setOptions(options.map(option => option.id === id ? { ...option, [field]: value } : option));
   };
-  
+
   const handlePollImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       const files = Array.from(event.target.files);
       const newImageFiles = files.slice(0, MAX_POLL_IMAGES - pollImageFiles.length);
-      
+
       if (pollImageFiles.length + newImageFiles.length > MAX_POLL_IMAGES) {
         toast({
           title: "Image Limit Exceeded",
@@ -82,7 +83,7 @@ export default function NewPollPage() {
           variant: "destructive",
         });
       }
-      
+
       setPollImageFiles(prev => [...prev, ...newImageFiles]);
       const newImageUrls = newImageFiles.map(file => URL.createObjectURL(file));
       setPollImageUrls(prev => [...prev, ...newImageUrls]);
@@ -93,28 +94,28 @@ export default function NewPollPage() {
     setPollImageUrls(prev => prev.filter((_, index) => index !== indexToRemove));
     setPollImageFiles(prev => prev.filter((_, index) => index !== indexToRemove));
     if (pollImageInputRef.current) {
-      pollImageInputRef.current.value = ""; // Reset file input
+      pollImageInputRef.current.value = "";
     }
   }, []);
 
   const handlePollVideoFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
-      if (file.size > 60 * 1024 * 1024) { // Example 60MB limit for ~60s video
+      if (file.size > 60 * 1024 * 1024) {
          toast({ title: "Video Too Large", description: "Video file should be less than 60MB.", variant: "destructive" });
          if (pollVideoInputRef.current) pollVideoInputRef.current.value = "";
          return;
       }
       setPollVideoFile(file);
-      setPollVideoUrl(URL.createObjectURL(file)); // Show local preview
+      setPollVideoUrl(URL.createObjectURL(file));
     }
   };
-  
+
   const handleRemovePollVideo = useCallback(() => {
     setPollVideoUrl(undefined);
     setPollVideoFile(undefined);
     if (pollVideoInputRef.current) {
-      pollVideoInputRef.current.value = ""; // Reset file input
+      pollVideoInputRef.current.value = "";
     }
   }, []);
 
@@ -123,7 +124,7 @@ export default function NewPollPage() {
     if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
       const imageUrl = URL.createObjectURL(file);
-      setOptions(prevOptions => prevOptions.map(opt => 
+      setOptions(prevOptions => prevOptions.map(opt =>
         opt.id === optionId ? { ...opt, imageUrl, imageFile: file, videoUrl: undefined, videoFile: undefined } : opt
       ));
     }
@@ -138,7 +139,7 @@ export default function NewPollPage() {
   const setOptionVideo = useCallback((optionId: string, event: React.ChangeEvent<HTMLInputElement>) => {
      if (event.target.files && event.target.files[0]) {
       const file = event.target.files[0];
-       if (file.size > 10 * 1024 * 1024) { // Example 10MB limit for option video thumbnail
+       if (file.size > 10 * 1024 * 1024) {
          toast({ title: "Video Too Large", description: "Option video file should be less than 10MB.", variant: "destructive" });
          return;
       }
@@ -174,19 +175,23 @@ export default function NewPollPage() {
       toast({ title: "Error", description: "Please set a deadline.", variant: "destructive" });
       return;
     }
+    if (pledgeAmount !== undefined && pledgeAmount <= 0) {
+      toast({ title: "Error", description: "Pledge amount must be greater than zero if set.", variant: "destructive" });
+      return;
+    }
 
-    // In a real app, you would upload files (pollImageFiles, pollVideoFile, option.imageFile, option.videoFile)
-    // and get back URLs to store in pollData. For this mock, we'll use local preview URLs or placeholders.
     const pollData = {
       question,
       options: options.map(({id, imageFile, videoFile, ...rest}) => ({
-        ...rest, 
-        imageUrl: rest.imageUrl || (imageFile ? 'mockUploadedImageUrl' : undefined), // Use local URL or placeholder after upload
+        ...rest,
+        imageUrl: rest.imageUrl || (imageFile ? 'mockUploadedImageUrl' : undefined),
         videoUrl: rest.videoUrl || (videoFile ? 'mockUploadedVideoUrl' : undefined)
       })),
       deadline: deadline.toISOString(),
-      pollImageUrls: pollImageUrls.length > 0 ? pollImageUrls : undefined, // In real app, these would be uploaded URLs
-      pollVideoUrl: pollVideoUrl, // In real app, this would be an uploaded URL
+      pollImageUrls: pollImageUrls.length > 0 ? pollImageUrls : undefined,
+      pollVideoUrl: pollVideoUrl,
+      pledgeAmount: pledgeAmount && pledgeAmount > 0 ? pledgeAmount : undefined,
+      pledgeOutcome: pledgeAmount && pledgeAmount > 0 ? 'pending' : undefined,
     };
     console.log('Submitting poll:', pollData);
     console.log('Poll Image Files:', pollImageFiles);
@@ -197,8 +202,7 @@ export default function NewPollPage() {
       title: 'Poll Created! (Simulated)',
       description: 'Your poll has been successfully submitted to the console.',
     });
-    
-    // Reset form
+
     setQuestion('');
     setOptions([{ id: `option-${Date.now()}`, text: '' }, { id: `option-${Date.now() + 1}`, text: '' }]);
     setDeadline(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
@@ -206,6 +210,7 @@ export default function NewPollPage() {
     setPollImageFiles([]);
     setPollVideoUrl(undefined);
     setPollVideoFile(undefined);
+    setPledgeAmount(undefined);
     if (pollImageInputRef.current) pollImageInputRef.current.value = "";
     if (pollVideoInputRef.current) pollVideoInputRef.current.value = "";
   };
@@ -242,7 +247,7 @@ export default function NewPollPage() {
                   <ImagePlus className="mr-2 h-4 w-4" /> Add Image ({pollImageUrls.length}/{MAX_POLL_IMAGES})
                 </Button>
                 <input type="file" accept="image/*" multiple onChange={handlePollImageFileChange} ref={pollImageInputRef} className="hidden" />
-                
+
                 <Button type="button" variant="outline" onClick={() => pollVideoInputRef.current?.click()} disabled={!!pollVideoUrl}>
                   <VideoIcon className="mr-2 h-4 w-4" /> Add Video {pollVideoUrl ? '(1/1)' : '(0/1)'}
                 </Button>
@@ -339,7 +344,7 @@ export default function NewPollPage() {
                       )}
                        <input type="file" accept="image/*" onChange={(e) => setOptionImage(option.id, e)} ref={optionImageInputRef} className="hidden" />
 
-                      {!option.imageFile && !option.imageUrl && ( 
+                      {!option.imageFile && !option.imageUrl && (
                         option.videoFile || option.videoUrl ? (
                            <div className="flex items-center space-x-1">
                             <VideoIcon className="h-4 w-4 text-primary" />
@@ -384,7 +389,7 @@ export default function NewPollPage() {
                     selected={deadline}
                     onSelect={setDeadline}
                     initialFocus
-                    fromDate={new Date()} 
+                    fromDate={new Date()}
                   />
                   <div className="p-2 border-t">
                      <Label htmlFor="time" className="text-xs text-muted-foreground">Time (24h format)</Label>
@@ -394,7 +399,7 @@ export default function NewPollPage() {
                          const newDeadline = new Date(deadline);
                          newDeadline.setHours(parseInt(hours,10));
                          newDeadline.setMinutes(parseInt(minutes,10));
-                         newDeadline.setSeconds(0); // Explicitly set seconds to 0
+                         newDeadline.setSeconds(0);
                          setDeadline(newDeadline);
                        }
                      }} />
@@ -414,7 +419,7 @@ export default function NewPollPage() {
                     case '31d': newDeadline = new Date(now.getTime() + 31 * 24 * 60 * 60 * 1000); break;
                     default: newDeadline = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
                   }
-                  newDeadline.setSeconds(0); // Ensure quick selects also have 0 seconds
+                  newDeadline.setSeconds(0);
                   setDeadline(newDeadline);
                }}>
                 <SelectTrigger className="w-full mt-2 rounded-md">
@@ -431,6 +436,33 @@ export default function NewPollPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="space-y-3 pt-4 border-t">
+              <Label htmlFor="pledgeAmount" className="text-base font-semibold flex items-center">
+                <DollarSign className="mr-2 h-5 w-5 text-primary" /> Pre-Commitment Pledge (Optional)
+              </Label>
+              <Alert variant="default" className="bg-primary/10 border-primary/30 text-primary-foreground">
+                <AlertCircle className="h-4 w-4 !text-primary" />
+                <AlertTitle className="text-sm font-semibold !text-primary">Pledge to the Crowd!</AlertTitle>
+                <AlertDescription className="text-xs !text-primary/80">
+                  By setting a pledge, you commit to accepting the majority vote. If you choose to go against the crowd's decision after the poll ends, your pledged amount will be distributed as "Tip the Crowd" (50% to the platform, 50% to majority voters as PollitPoints).
+                </AlertDescription>
+              </Alert>
+              <Input
+                id="pledgeAmount"
+                type="number"
+                value={pledgeAmount === undefined ? '' : pledgeAmount}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setPledgeAmount(val === '' ? undefined : parseFloat(val));
+                }}
+                placeholder="Enter pledge amount (e.g., 10 for $10)"
+                min="0"
+                step="0.01"
+                className="text-base rounded-md"
+              />
+            </div>
+
           </CardContent>
           <CardFooter className="border-t pt-6">
             <Button type="submit" className="w-full text-lg py-6 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md font-semibold">

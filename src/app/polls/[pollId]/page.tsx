@@ -1,5 +1,5 @@
 
-'use client'; 
+'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -9,20 +9,20 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { mockPolls, mockUsers } from "@/lib/mockData";
 import type { Poll, PollOption as PollOptionType, Comment as CommentType, User } from "@/types";
-import { formatDistanceToNowStrict, parseISO } from "date-fns";
-import { Clock, Heart, MessageSquare, Share2, Gift, Send, Image as ImageIconLucideShadcn, Video as VideoIconLucide, ThumbsUp, Film, Info, CheckCircle2, Loader2 } from "lucide-react";
+import { formatDistanceToNowStrict, parseISO, isPast } from "date-fns";
+import { Clock, Heart, MessageSquare, Share2, Gift, Send, Image as ImageIconLucideShadcn, Video as VideoIconLucide, ThumbsUp, Film, Info, CheckCircle2, Loader2, Check, Users } from "lucide-react";
 import Image from "next/image";
-import NextLink from "next/link"; 
+import NextLink from "next/link";
 import { cn } from "@/lib/utils";
-import React, { useState, useEffect } from 'react'; 
-import OptionDetailsDialog from "@/components/polls/OptionDetailsDialog"; 
+import React, { useState, useEffect } from 'react';
+import OptionDetailsDialog from "@/components/polls/OptionDetailsDialog";
 import { useToast } from "@/hooks/use-toast";
 
 async function getPollDetails(pollId: string): Promise<{ poll: Poll | null; comments: CommentType[] }> {
   const poll = mockPolls.find(p => p.id === pollId) || null;
   const commentUser1 = mockUsers.find(u => u.id === 'user2') || mockUsers[1] || getRandomUser();
   const commentUser2 = mockUsers.find(u => u.id === 'user3') || mockUsers[2] || getRandomUser();
-  
+
   const comments: CommentType[] = poll ? [
     { id: 'comment1', user: commentUser1, text: "Great question! I'm leaning towards Summer.", createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString() },
     { id: 'comment2', user: commentUser2, text: "Definitely Autumn for me, the colors are amazing.", createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString() },
@@ -34,13 +34,13 @@ const getRandomUser = (): User => mockUsers[Math.floor(Math.random() * mockUsers
 
 const OPTION_TEXT_TRUNCATE_LENGTH = 100;
 
-const PollOptionDisplay: React.FC<{ 
-  option: PollOptionType; 
-  totalVotes: number; 
-  isVoted: boolean; 
-  isSelectedOption: boolean; 
-  deadlinePassed: boolean; 
-  onVote: () => Promise<void>; 
+const PollOptionDisplay: React.FC<{
+  option: PollOptionType;
+  totalVotes: number;
+  isVoted: boolean;
+  isSelectedOption: boolean;
+  deadlinePassed: boolean;
+  onVote: () => Promise<void>;
   pollHasTwoOptions: boolean;
   onShowDetails: () => void;
 }> = ({ option, totalVotes, isVoted, isSelectedOption, deadlinePassed, onVote, pollHasTwoOptions, onShowDetails }) => {
@@ -53,20 +53,20 @@ const PollOptionDisplay: React.FC<{
 
   const handleOptionClick = async () => {
     if (!isVoted && !deadlinePassed) {
-      await onVote(); 
+      await onVote();
     } else {
-      onShowDetails(); 
+      onShowDetails();
     }
   };
 
   const handleDetailsIconClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); 
+    e.stopPropagation();
     onShowDetails();
   };
 
   return (
     <div className={cn("relative group", pollHasTwoOptions ? "flex-1" : "mb-3 w-full")}>
-      <Button 
+      <Button
         variant={isSelectedOption && showResults ? "default" : "outline"}
         className={cn(
           "w-full justify-between h-auto p-3 text-left relative disabled:opacity-100 disabled:cursor-default",
@@ -74,31 +74,31 @@ const PollOptionDisplay: React.FC<{
            (isVoted || deadlinePassed || isTruncated || option.affiliateLink) && "cursor-pointer hover:bg-accent/60"
         )}
         onClick={handleOptionClick}
-        disabled={(isVoted || deadlinePassed) && !pollHasTwoOptions && !(isTruncated || option.affiliateLink) } 
+        disabled={(isVoted || deadlinePassed) && !pollHasTwoOptions && !(isTruncated || option.affiliateLink) }
         aria-pressed={isSelectedOption}
       >
         <div className={cn("flex w-full", pollHasTwoOptions ? "flex-col items-center" : "items-center")}>
           {option.imageUrl && <Image src={option.imageUrl} alt={option.text} width={pollHasTwoOptions ? 60 : 30} height={pollHasTwoOptions ? 60 : 30} className={cn("rounded-md object-cover shadow-sm", pollHasTwoOptions ? "mb-2" : "mr-2")} data-ai-hint="poll option" />}
           {option.videoUrl && !option.imageUrl && <VideoIconLucide className={cn("text-muted-foreground", pollHasTwoOptions ? "mb-2 h-10 w-10" : "w-5 h-5 mr-2")} />}
           <span className={cn("flex-grow", pollHasTwoOptions ? "text-sm mt-1 leading-tight" : "text-sm")}>{truncatedText}</span>
-        
+
           {showResults && <span className={cn("font-semibold text-sm", pollHasTwoOptions ? "mt-2" : "ml-auto pl-1")}>{percentage.toFixed(0)}%</span>}
-          
+
           {isSelectedOption && showResults && <CheckCircle2 className={cn("w-4 h-4", pollHasTwoOptions ? "mt-1 text-primary-foreground" : "ml-1 text-primary")} />}
 
           {(isTruncated || option.affiliateLink) && (
-             <div 
+             <div
               onClick={handleDetailsIconClick}
-              className={cn(
-                "h-6 w-6 opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
-                pollHasTwoOptions ? "absolute top-1 right-1" : "ml-2 shrink-0",
-                "flex items-center justify-center rounded-full cursor-pointer p-1", 
-                "hover:bg-accent/70 hover:text-accent-foreground" 
-              )}
               role="button"
               tabIndex={0}
               onKeyDown={(e) => e.key === 'Enter' && handleDetailsIconClick(e as any)}
               aria-label="View option details"
+              className={cn(
+                "h-6 w-6 opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+                pollHasTwoOptions ? "absolute top-1 right-1" : "ml-2 shrink-0",
+                "flex items-center justify-center rounded-full cursor-pointer p-1",
+                "hover:bg-accent/70 hover:text-accent-foreground"
+              )}
             >
               <Info className="h-4 w-4 text-muted-foreground group-hover:text-accent-foreground" />
             </div>
@@ -113,7 +113,7 @@ const PollOptionDisplay: React.FC<{
 export default function PollDetailsPage({ params }: { params: { pollId: string } }) {
   const [pollData, setPollData] = useState<{ poll: Poll | null; comments: CommentType[] }>({ poll: null, comments: [] });
   const [loading, setLoading] = useState(true);
-  const [deadlinePassed, setDeadlinePassed] = useState(false);
+  const [deadlinePassedState, setDeadlinePassedState] = useState(false); // Renamed to avoid conflict
   const [timeRemaining, setTimeRemaining] = useState('');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const { toast } = useToast();
@@ -125,14 +125,14 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
     const fetchData = async () => {
       setLoading(true);
       const data = await getPollDetails(params.pollId);
-      setPollData(data);
+      setPollData(prev => ({ ...prev, ...data, poll: data.poll ? {...data.poll} : null })); // Ensure poll is new object for state updates
       const user1 = mockUsers.find(u => u.id === 'user1') || mockUsers[0] || getRandomUser();
       setCurrentUser(user1);
       setLoading(false);
     };
     fetchData();
   }, [params.pollId]);
-  
+
   const poll = pollData.poll;
   const comments = pollData.comments;
 
@@ -143,15 +143,15 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
         const now = new Date();
         const remaining = deadlineDate.getTime() - now.getTime();
         if (remaining <= 0) {
-          setDeadlinePassed(true);
+          setDeadlinePassedState(true);
           setTimeRemaining("Ended");
         } else {
-          setDeadlinePassed(false);
+          setDeadlinePassedState(false);
           setTimeRemaining(formatDistanceToNowStrict(deadlineDate, { addSuffix: true }));
         }
       };
       checkDeadline();
-      const interval = setInterval(checkDeadline, 60000); 
+      const interval = setInterval(checkDeadline, 60000);
       return () => clearInterval(interval);
     }
   }, [poll]);
@@ -211,10 +211,9 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
         sharedNatively = true;
       } catch (error) {
         console.error('Error sharing poll via native share:', error);
-        // Fall through to clipboard copy if native share fails
       }
     }
-    
+
     if (!sharedNatively) {
       try {
         await navigator.clipboard.writeText(shareUrl);
@@ -237,7 +236,16 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
     setSelectedOptionForModal(option);
     setIsModalOpen(true);
   };
-  
+
+  const handlePledgeOutcome = (outcome: 'accepted' | 'tipped_crowd') => {
+    if (poll) {
+        setPollData(prev => prev.poll ? ({...prev, poll: {...prev.poll, pledgeOutcome: outcome }}) : prev);
+        console.log(`Pledge outcome for poll ${poll.id}: ${outcome} (simulated)`);
+        toast({ title: `Pledge Outcome: ${outcome.replace('_', ' ')}`, description: "Action simulated on client."});
+    }
+  };
+
+
   if (loading) {
     return <div className="container mx-auto px-4 py-8 text-center text-muted-foreground"><Loader2 className="h-8 w-8 animate-spin mx-auto" /> Loading poll details...</div>;
   }
@@ -245,8 +253,10 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
   if (!poll) {
     return <div className="container mx-auto px-4 py-8 text-center text-destructive">Poll not found.</div>;
   }
-  
+
   const pollHasTwoOptions = poll.options.length === 2;
+  const isCreator = currentUser?.id === poll.creator.id;
+  const showPledgeOutcomeButtons = isCreator && deadlinePassedState && poll.pledgeAmount && poll.pledgeAmount > 0 && (poll.pledgeOutcome === 'pending' || poll.pledgeOutcome === undefined);
 
   return (
     <>
@@ -268,7 +278,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
               </div>
             </div>
             <CardTitle className="text-xl sm:text-2xl font-headline text-foreground">{poll.question}</CardTitle>
-            
+
             {poll.imageUrls && poll.imageUrls.length > 0 && (
               <div className="mt-4 space-y-3">
                 <p className="text-sm font-medium text-muted-foreground">Images ({poll.imageUrls.length}):</p>
@@ -293,7 +303,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
             )}
           </CardHeader>
 
-          <CardContent className="p-4 sm:p-6 pt-4"> 
+          <CardContent className="p-4 sm:p-6 pt-4">
             <div className={cn("space-y-3", pollHasTwoOptions && "flex gap-2 space-y-0")}>
               {poll.options.map((option) => (
                 <PollOptionDisplay
@@ -302,8 +312,8 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
                   totalVotes={poll.totalVotes}
                   isVoted={!!poll.isVoted}
                   isSelectedOption={poll.votedOptionId === option.id}
-                  deadlinePassed={deadlinePassed}
-                  onVote={handleVote.bind(null, option.id)}
+                  deadlinePassed={deadlinePassedState}
+                  onVote={() => handleVote(option.id)}
                   pollHasTwoOptions={pollHasTwoOptions}
                   onShowDetails={() => handleShowOptionDetails(option)}
                 />
@@ -311,11 +321,30 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
             </div>
             <div className="mt-4 flex items-center text-sm text-muted-foreground">
               <Clock className="w-4 h-4 mr-1.5" />
-              <span>{deadlinePassed ? `Ended ${formatDistanceToNowStrict(parseISO(poll.deadline), { addSuffix: true })}` : `Ends ${timeRemaining}`} &middot; {poll.totalVotes.toLocaleString()} votes</span>
+              <span>{deadlinePassedState ? `Ended ${formatDistanceToNowStrict(parseISO(poll.deadline), { addSuffix: true })}` : `Ends ${timeRemaining}`} &middot; {poll.totalVotes.toLocaleString()} votes</span>
                {poll.pledgeAmount && poll.pledgeAmount > 0 && (
-                 <span className="ml-1 text-green-600 font-semibold">&middot; ${poll.pledgeAmount.toLocaleString()} Pledged</span>
+                 <span className="ml-1 text-green-600 font-semibold">&middot; Creator Pledged: ${poll.pledgeAmount.toLocaleString()}</span>
               )}
             </div>
+
+            {showPledgeOutcomeButtons && (
+              <div className="mt-4 pt-4 border-t space-y-2 sm:space-y-0 sm:flex sm:space-x-2">
+                <p className="text-xs text-center sm:text-left text-muted-foreground mb-2 sm:mb-0 sm:w-full">Creator: Decide the pledge outcome.</p>
+                <Button onClick={() => handlePledgeOutcome('accepted')} variant="outline" size="sm" className="w-full sm:w-auto">
+                  <Check className="mr-2 h-4 w-4" /> Accept the Vote
+                </Button>
+                <Button onClick={() => handlePledgeOutcome('tipped_crowd')} variant="destructive" size="sm" className="w-full sm:w-auto">
+                  <Users className="mr-2 h-4 w-4" /> Tip the Crowd
+                </Button>
+              </div>
+            )}
+            {poll.pledgeOutcome === 'accepted' && isCreator && deadlinePassedState && (
+                <p className="mt-2 text-xs text-green-600">You accepted the crowd's vote for this pledge.</p>
+            )}
+            {poll.pledgeOutcome === 'tipped_crowd' && isCreator && deadlinePassedState && (
+                <p className="mt-2 text-xs text-orange-600">You tipped the crowd for this pledge.</p>
+            )}
+
           </CardContent>
 
           <CardFooter className="p-4 sm:p-6 border-t pt-4 flex flex-col items-stretch">
@@ -330,7 +359,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
                 <Share2 className="w-5 h-5 mr-1.5" /> Share
               </Button>
             </div>
-          
+
             <Separator className="my-4"/>
 
             <div>
@@ -338,7 +367,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
               <form action={handleCommentSubmit} id="comment-form" className="flex items-start space-x-2 mb-6">
                 {currentUser && (
                   <Avatar className="h-10 w-10 border">
-                    <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} data-ai-hint="profile avatar" /> 
+                    <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} data-ai-hint="profile avatar" />
                     <AvatarFallback>{currentUser.name.substring(0,1)}</AvatarFallback>
                   </Avatar>
                 )}

@@ -2,9 +2,9 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import type { Poll } from '@/types';
+import type { Poll, User } from '@/types';
 import PollCard from './PollCard';
-import { mockPolls, fetchMorePolls } from '@/lib/mockData';
+import { mockPolls, fetchMorePolls, mockUsers } from '@/lib/mockData';
 import { Loader2, Zap } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -18,7 +18,7 @@ const pollCardVariants = {
     if (custom === 'right') {
       return { x: 300, opacity: 0, rotate: 10, transition: { duration: 0.3 } };
     }
-    return { opacity: 0, scale: 0.8, transition: { duration: 0.3 } }; // Default exit for non-swipe removals if any
+    return { opacity: 0, scale: 0.8, transition: { duration: 0.3 } };
   }
 };
 
@@ -29,15 +29,21 @@ export default function PollFeed() {
   const [hasMore, setHasMore] = useState(true);
   const [initialLoad, setInitialLoad] = useState(true);
   const observer = useRef<IntersectionObserver | null>(null);
-  
-  // To store the exit direction for AnimatePresence
+  const [currentUser, setCurrentUser] = useState<User | null>(null); // For pledge creator check
+
   const [exitDirectionMap, setExitDirectionMap] = useState<Record<string, 'left' | 'right' | 'default'>>({});
+
+  useEffect(() => {
+    // Simulate fetching current user
+    const user1 = mockUsers.find(u => u.id === 'user1') || mockUsers[0];
+    setCurrentUser(user1);
+  }, []);
 
 
   const loadInitialPolls = useCallback(async () => {
     setLoading(true);
     const initialPollsData = await fetchMorePolls(0, 5);
-    setPolls(initialPollsData);
+    setPolls(initialPollsData.map(p => ({...p}))); // Create new objects for state updates
     setHasMore(initialPollsData.length > 0);
     setLoading(false);
     setInitialLoad(false);
@@ -52,7 +58,7 @@ export default function PollFeed() {
     setLoading(true);
     const newPolls = await fetchMorePolls(polls.length, 5);
     if (newPolls.length > 0) {
-      setPolls((prevPolls) => [...prevPolls, ...newPolls]);
+      setPolls((prevPolls) => [...prevPolls, ...newPolls.map(p => ({...p}))]);
     } else {
       setHasMore(false);
     }
@@ -102,6 +108,16 @@ export default function PollFeed() {
     }
   };
 
+  const handlePledgeOutcome = (pollId: string, outcome: 'accepted' | 'tipped_crowd') => {
+    setPolls(prevPolls =>
+      prevPolls.map(p =>
+        p.id === pollId ? { ...p, pledgeOutcome: outcome } : p
+      )
+    );
+    console.log(`Pledge outcome for poll ${pollId} set to ${outcome} in feed.`);
+  };
+
+
   if (initialLoad && loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
@@ -122,26 +138,28 @@ export default function PollFeed() {
   }
 
   return (
-    <div className="w-full space-y-0 relative"> {/* Added relative for stacking context if needed */}
+    <div className="w-full space-y-0 relative">
       <AnimatePresence initial={false} custom={exitDirectionMap}>
         {polls.map((poll, index) => {
           const isLastElement = polls.length === index + 1;
           return (
             <motion.div
               key={poll.id}
-              layout // Enables smooth re-ordering
+              layout
               custom={exitDirectionMap[poll.id] || 'default'}
               variants={pollCardVariants}
               initial="initial"
               animate="animate"
               exit="exit"
-              className="min-h-[1px]" // Ensures div takes up space for layout animation
+              className="min-h-[1px]"
               ref={isLastElement ? lastPollElementRef : null}
             >
               <PollCard
                 poll={poll}
                 onVote={handleVote}
                 onPollActionComplete={handlePollActionComplete}
+                currentUser={currentUser}
+                onPledgeOutcome={handlePledgeOutcome}
               />
             </motion.div>
           );

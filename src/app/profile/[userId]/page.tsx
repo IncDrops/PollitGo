@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { mockUsers, mockPolls } from "@/lib/mockData";
 import PollCard from "@/components/polls/PollCard";
-import { UserPlus, MessageSquare, Edit3, Settings2, Users, Check, Award } from "lucide-react";
+import { UserPlus, MessageSquare, Edit3, Settings2, Users, Check, Award, Star } from "lucide-react";
 import type { User, Poll } from "@/types";
 import Image from "next/image";
 
@@ -22,19 +22,22 @@ export default async function UserProfilePage({ params }: { params: { userId: st
   if (!user) {
     return <div className="container mx-auto px-4 py-8 text-center text-destructive">User not found.</div>;
   }
-  
+
   // Dummy handler for voting, as PollCard requires it
   const handleVote = async (pollId: string, optionId: string) => {
     "use server"; // This would be a server action
     console.log(`Vote action: poll ${pollId}, option ${optionId}`);
-    // Here you would update the database and revalidate paths if needed
+  };
+
+  const handlePledgeOutcomeSimulated = (pollId: string, outcome: 'accepted' | 'tipped_crowd') => {
+    console.log(`Simulated pledge outcome for poll ${pollId} on profile: ${outcome}`);
+    // In a real app, you might re-fetch or update state here
   };
 
 
   return (
     <div className="bg-background min-h-screen">
       <div className="relative h-48 md:h-64 bg-gradient-to-r from-primary to-accent">
-        {/* Cover Image Placeholder */}
         <Image src="https://placehold.co/1200x400.png" alt="Cover image" layout="fill" objectFit="cover" data-ai-hint="profile cover abstract" />
         <div className="absolute inset-0 bg-black/30"></div>
       </div>
@@ -49,19 +52,20 @@ export default async function UserProfilePage({ params }: { params: { userId: st
             <h1 className="text-2xl md:text-3xl font-headline font-bold text-foreground">{user.name}</h1>
             <p className="text-muted-foreground">@{user.username}</p>
             <p className="text-sm text-foreground mt-1 max-w-md">Loves creating insightful polls and engaging with the community. Passionate about tech and travel!</p>
+            {user.pollitPointsBalance !== undefined && (
+              <div className="mt-2 flex items-center justify-center md:justify-start text-yellow-500">
+                <Star className="h-5 w-5 mr-1.5 fill-yellow-500" />
+                <span className="font-semibold">{user.pollitPointsBalance.toLocaleString()} PollitPoints</span>
+              </div>
+            )}
           </div>
           <div className="md:ml-auto mt-4 md:mt-0 flex space-x-2">
-            {/* Assuming this is not the current user's profile */}
             <Button variant="default" className="bg-primary hover:bg-primary/90 text-primary-foreground">
               <UserPlus className="mr-2 h-4 w-4" /> Follow
             </Button>
             <Button variant="outline">
               <MessageSquare className="mr-2 h-4 w-4" /> Message
             </Button>
-            {/* If it IS the current user's profile:
-            <Button variant="outline"><Edit3 className="mr-2 h-4 w-4" /> Edit Profile</Button>
-            <Button variant="ghost" size="icon"><Settings2 className="h-5 w-5" /></Button> 
-            */}
           </div>
         </div>
 
@@ -92,8 +96,16 @@ export default async function UserProfilePage({ params }: { params: { userId: st
           </TabsList>
           <TabsContent value="polls" className="mt-6">
             {polls.length > 0 ? (
-              <div className="space-y-0"> {/* Removed space-y-4 */}
-                {polls.map(poll => <PollCard key={poll.id} poll={poll} onVote={handleVote} />)}
+              <div className="space-y-0">
+                {polls.map(poll => (
+                  <PollCard
+                    key={poll.id}
+                    poll={poll}
+                    onVote={handleVote}
+                    currentUser={user} 
+                    onPledgeOutcome={handlePledgeOutcomeSimulated}
+                  />
+                ))}
               </div>
             ) : (
               <p className="text-center text-muted-foreground py-10">This user hasn't created any polls yet.</p>
@@ -101,7 +113,6 @@ export default async function UserProfilePage({ params }: { params: { userId: st
           </TabsContent>
           <TabsContent value="voted" className="mt-6">
             <p className="text-center text-muted-foreground py-10">Polls voted on by {user.name} will appear here.</p>
-            {/* Example of a voted poll card if data was available */}
           </TabsContent>
           <TabsContent value="activity" className="mt-6">
              <p className="text-center text-muted-foreground py-10">Activity feed for {user.name} (likes, comments) will appear here.</p>
