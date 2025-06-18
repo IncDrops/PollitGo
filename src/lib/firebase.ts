@@ -9,16 +9,25 @@ import { getStorage, type FirebaseStorage } from "firebase/storage";
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-// IMPORTANT: Replace these with your actual Firebase project configuration!
-const  firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY, // Note the NEXT_PUBLIC prefix
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN, // Note the NEXT_PUBLIC prefix
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID, // Note the NEXT_PUBLIC prefix
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET, // Note the NEXT_PUBLIC prefix
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID, // Note the NEXT_PUBLIC prefix
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID, // Note the NEXT_PUBLIC prefix
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID // Optional, Note the NEXT_PUBLIC prefix
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID // Optional
 };
+
+// Check if the API key is provided. This is crucial for Firebase services to work.
+if (!firebaseConfig.apiKey) {
+  console.error(
+    "Firebase API Key is missing. " +
+    "Please ensure that NEXT_PUBLIC_FIREBASE_API_KEY is set in your environment variables. " +
+    "If deploying, check your hosting provider's environment variable settings. " +
+    "For local development, this is typically set in a .env.local file."
+  );
+}
 
 // Initialize Firebase
 let app: FirebaseApp;
