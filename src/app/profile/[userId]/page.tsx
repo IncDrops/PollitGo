@@ -34,14 +34,14 @@ export default async function UserProfilePage({ params }: { params: { userId: st
   return (
     <div className="bg-background min-h-screen">
       <div className="relative h-48 md:h-64 bg-gradient-to-r from-primary to-accent">
-        <Image src="https://placehold.co/1200x400.png" alt="Cover image" layout="fill" objectFit="cover" data-ai-hint="profile cover abstract" />
-        <div className="absolute inset-0 bg-black/30"></div>
+        {/* <Image src="https://placehold.co/1200x400.png" alt="Cover image" layout="fill" objectFit="cover" data-ai-hint="profile cover abstract" /> */}
+        <div className="absolute inset-0 bg-black/30"></div> {/* This provides a colored background if image is removed */}
       </div>
 
       <div className="container mx-auto px-4 -mt-16 md:-mt-24 relative z-10">
         <div className="flex flex-col md:flex-row items-center md:items-end bg-card p-4 md:p-6 rounded-xl shadow-lg">
           <Avatar className="h-24 w-24 md:h-32 md:w-32 border-4 border-card ring-2 ring-primary">
-            <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="profile avatar" />
+            {/* <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="profile avatar" /> */}
             <AvatarFallback className="text-4xl">{user.name.substring(0, 1)}</AvatarFallback>
           </Avatar>
           <div className="md:ml-6 mt-4 md:mt-0 text-center md:text-left">
@@ -98,10 +98,9 @@ export default async function UserProfilePage({ params }: { params: { userId: st
                     key={poll.id}
                     poll={poll}
                     onVote={handleVoteOnProfilePage}
-                    currentUser={user} // Pass the profile owner as currentUser for context
+                    currentUser={user} 
                     onPledgeOutcome={(pollId, outcome) => {
                        console.log(`Pledge outcome for ${pollId} on profile page: ${outcome} (stub)`);
-                       // In a real app, you might revalidate the path or update state
                     }}
                   />
                 ))}
