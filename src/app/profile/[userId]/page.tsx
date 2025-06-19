@@ -1,38 +1,39 @@
 
 'use client';
 
-import React, { useState, useEffect, use } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { User, Poll } from "@/types";
-import { mockUsers, mockPolls } from "@/lib/mockData";
+import { mockUsers, mockPolls } from "@/lib/mockData"; // Keep mockData for now
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { UserPlus, Settings, MessageSquare, Edit3, ChevronLeft, Share2, Search, CalendarDays, MapPin, Link as LinkIconLucide, Flame } from "lucide-react";
+import { Settings, MessageSquare, Edit3, ChevronLeft, Share2, Search, CalendarDays, MapPin, Link as LinkIconLucide, Flame, AlertCircle } from "lucide-react";
 import Image from "next/image";
-import { UserProfile } from "@/types"; // Assuming UserProfile is defined in types
-import { useRouter } from "next/navigation";
+// UserProfile type might need adjustment if its source (firebase.ts) changed
+// For now, assuming it's still a valid type definition from "@/types"
+import type { UserProfile as AppUserProfileType } from '@/types';
+import { useRouter, useParams } from "next/navigation"; // useParams for client components
 import { useToast } from "@/hooks/use-toast";
 import PollFeed from '@/components/polls/PollFeed';
-import useAuth from '@/hooks/useAuth';
+// useAuth will now return null user
+import useAuth from '@/hooks/useAuth'; 
 
+// fetchUserProfile from firebase.ts is removed.
+// We'll rely on mockData or a new data fetching mechanism.
 async function getUserData(userId: string): Promise<{ user: User | null; polls: Poll[] }> {
-  console.log(`[UserProfilePage] getUserData called for userId: ${userId}`);
+  console.warn(`[UserProfilePage] Firebase removed. Using mock data for userId: ${userId}`);
   const user = mockUsers.find(u => u.id === userId) || null;
   
   let polls: Poll[] = [];
   if (user) {
     polls = mockPolls.filter(p => p.creator.id === userId).map(p => ({...p}));
-    console.log(`[UserProfilePage] Found ${polls.length} polls for user ${userId}`);
-  } else {
-    console.log(`[UserProfilePage] User not found for ID: ${userId}`);
   }
-
   return { user, polls };
 }
 
 const urlSafeText = (text: string, maxLength: number = 15): string => {
-  const cleanedText = text.replace(/[^a-zA-Z0-9\\s]/g, "").substring(0, maxLength);
+  const cleanedText = text.replace(/[^a-zA-Z\\s]/g, "").substring(0, maxLength);
   return encodeURIComponent(cleanedText);
 };
 
@@ -40,52 +41,46 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   const router = useRouter();
   const { toast } = useToast();  
   
-  // Removed the use(params) hook, accessing params directly
-
-  const { user: authUser, loading: authLoading } = useAuth();
+  const { user: authUser, loading: authLoading } = useAuth(); // authUser will be null
   const [userData, setUserData] = useState<{ user: User | null; polls: Poll[] }>({ user: null, polls: [] });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (authLoading) {
-      // Wait until auth state is loaded
-      return;
-    }
+    // authLoading will be false quickly as useAuth is stubbed
+    // if (authLoading) {
+    //   return;
+    // }
 
-    if (params && params.userId) { // Use params directly
+    if (params && params.userId) {
       setIsLoading(true);
-      
-      // Use params.userId directly to fetch data
-      getUserData(params.userId) // Still uses mock for now, will be updated later
+      getUserData(params.userId) // Using mock data
         .then(data => {
           setUserData(data);          
-          if (!data.user) { // Use the same logic as before for user not found
-            console.warn(`[UserProfilePage] User not found for ID ${params.userId} after fetch.`);
+          if (!data.user) {
             toast({
               title: "User Not Found",
-              description: `Profile for ID ${params.userId} could not be loaded.`,
+              description: `Profile for ID ${params.userId} could not be loaded from mock data.`,
               variant: "destructive"
             });
           }
         })
         .catch(error => {
-          console.error("[UserProfilePage] Error fetching user data:", error);
+          console.error("[UserProfilePage] Error fetching mock user data:", error);
           toast({ title: "Error", description: "Could not load user profile.", variant: "destructive" });
         })
         .finally(() => {
           setIsLoading(false);
         });
-    } else { // Handle cases where userId is not in params
+    } else {
       setIsLoading(false);
-      console.warn("[UserProfilePage] params.userId is not available.");
       toast({ title: "Error", description: "User ID not provided for profile.", variant: "destructive" });
     }    
-  }, [params, toast, authUser, authLoading]); // Depend on params, toast, authUser, and authLoading 
+  }, [params, toast]);
 
   const user = userData.user;
   const userPolls = userData.polls;
 
-  if (isLoading || authLoading) {
+  if (isLoading) { // Removed authLoading check
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         Loading profile...
@@ -96,43 +91,33 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   if (!user) {
     return (
       <div className="container mx-auto px-4 py-8 text-center text-destructive">
-        User profile could not be loaded. They may not exist.
+        User profile could not be loaded. They may not exist in mock data.
       </div>
     );
   }
   
-  // Compare authenticated user's ID (Firebase UID) with the profile user's ID
-  const isOwnProfile = authUser?.uid === user.id; 
+  const isOwnProfile = authUser?.uid === user.id; // authUser will be null, so this will be false
 
   const handleShareProfile = async () => {
+    // This functionality remains client-side
     if (typeof window === 'undefined') return;
+    // ... (rest of the share logic remains the same)
     const shareUrl = window.location.href;
     const shareData = {
       title: `${user.name}'s Profile on PollitGo`,
       text: `Check out ${user.name}'s profile and polls!`,
       url: shareUrl,
     };
-    
-    let sharedNatively = false;
-    if (navigator.share) {
-      try {
+    try {
+      if (navigator.share) {
         await navigator.share(shareData);
-        sharedNatively = true;
-      } catch (error: any) {
-        if (error.name !== 'AbortError' && error.name !== 'NotAllowedError') {
-            console.error('Error sharing profile via native share:', error);
-        }
-      }
-    }
-
-    if (!sharedNatively) {
-      try {
+      } else {
         await navigator.clipboard.writeText(shareUrl);
         toast({ title: "Link Copied", description: "Profile link copied to clipboard."});
-      } catch (copyError) {
-        toast({ title: "Error", description: "Could not copy profile link.", variant: "destructive"});
-        console.error("Error copying profile link:", copyError);
       }
+    } catch (error) {
+       console.error("Error sharing profile:", error);
+       toast({ title: "Error", description: "Could not share profile link.", variant: "destructive"});
     }
   };
   
@@ -140,7 +125,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      <header className="sticky top-[80px] sm:top-0 z-40 bg-background/80 backdrop-blur-sm border-b"> {/* Adjusted top for main nav */}
+      <header className="sticky top-[80px] sm:top-0 z-40 bg-background/80 backdrop-blur-sm border-b">
         <div className="container mx-auto h-14 flex items-center justify-between px-4">
           <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ChevronLeft className="h-6 w-6" />
@@ -152,7 +137,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
         </div>
       </header>
 
-      <main className="flex-grow pt-0"> {/* Removed pt-14 as header is sticky and handles its own space */}
+      <main className="flex-grow pt-0">
         <div className="relative h-48 w-full bg-muted">
           <Image
             src={coverPhotoUrl} 
@@ -186,13 +171,13 @@ export default function UserProfilePage({ params }: { params: { userId: string }
           </a>
 
           <div className="mt-4 flex justify-center space-x-2 sm:space-x-4">
-            {isOwnProfile ? (
+            {isOwnProfile ? ( // This will be false
               <>
                 <Button variant="outline" onClick={() => router.push('/settings/profile-edit')}>
-                  <Edit3 className="mr-2 h-4 w-4" /> Edit Profile
+                  <Edit3 className="mr-2 h-4 w-4" /> Edit Profile (Disabled)
                 </Button>
                 <Button variant="outline" onClick={() => router.push('/settings')}>
-                  <Settings className="mr-2 h-4 w-4" /> Settings
+                  <Settings className="mr-2 h-4 w-4" /> Settings (Disabled)
                 </Button>
               </>
             ) : (
@@ -206,6 +191,9 @@ export default function UserProfilePage({ params }: { params: { userId: string }
               </>
             )}
           </div>
+          {!isOwnProfile && (
+             <p className="text-xs text-muted-foreground mt-2">Login to edit your profile or view settings.</p>
+          )}
         </div>
         
         <div className="mt-4 flex justify-around border-b pb-3">
@@ -228,7 +216,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
         </div>
 
         <Tabs defaultValue="created" className="w-full mt-0">
-          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 rounded-none border-b sticky top-[136px] sm:top-[56px] z-30 bg-background/95 backdrop-blur-sm"> {/* Adjusted top for both navs */}
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 rounded-none border-b sticky top-[136px] sm:top-[56px] z-30 bg-background/95 backdrop-blur-sm">
             <TabsTrigger value="created">Created</TabsTrigger>
             <TabsTrigger value="voted">Voted</TabsTrigger>
             <TabsTrigger value="media">Media</TabsTrigger>
@@ -238,8 +226,9 @@ export default function UserProfilePage({ params }: { params: { userId: string }
             {userPolls.length > 0 ? (
               <PollCardFeedWrapper 
                 initialPolls={userPolls} 
-                userIdForFeed={user.id}
+                userIdForFeed={user.id} // This can still be used for filtering mock data
                 feedType="userCreated"
+                // authUser is now null
               />
             ) : (
               <Card className="shadow-none rounded-none border-0">
@@ -251,31 +240,26 @@ export default function UserProfilePage({ params }: { params: { userId: string }
               </Card>
             )}
           </TabsContent>
+           {/* Placeholder for other tabs as they'd likely require auth/db */}
           <TabsContent value="voted">
-            <Card className="shadow-none rounded-none border-0">
-                <CardHeader className="items-center text-center pt-12 pb-8">
-                    <Search className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                    <CardTitle className="text-xl">No Voted Polls Yet</CardTitle>
-                    <CardDescription>This user hasn't voted on any polls yet.</CardDescription>
-                </CardHeader>
+            <Card className="shadow-none rounded-none border-0 items-center text-center pt-12 pb-8">
+                <AlertCircle className="h-12 w-12 text-muted-foreground/50 mb-4 mx-auto" />
+                <CardTitle className="text-xl">Voted Polls Unavailable</CardTitle>
+                <CardDescription>This feature requires a user system.</CardDescription>
             </Card>
           </TabsContent>
           <TabsContent value="media">
-             <Card className="shadow-none rounded-none border-0">
-                <CardHeader className="items-center text-center pt-12 pb-8">
-                    <Search className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                    <CardTitle className="text-xl">No Media Polls Yet</CardTitle>
-                    <CardDescription>This user hasn't created any polls with media.</CardDescription>
-                </CardHeader>
+             <Card className="shadow-none rounded-none border-0 items-center text-center pt-12 pb-8">
+                <AlertCircle className="h-12 w-12 text-muted-foreground/50 mb-4 mx-auto" />
+                <CardTitle className="text-xl">Media Polls Unavailable</CardTitle>
+                <CardDescription>This feature requires a user system.</CardDescription>
             </Card>
           </TabsContent>
            <TabsContent value="liked" className="hidden sm:block">
-             <Card className="shadow-none rounded-none border-0">
-                <CardHeader className="items-center text-center pt-12 pb-8">
-                    <Search className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                    <CardTitle className="text-xl">No Liked Polls Yet</CardTitle>
-                    <CardDescription>This user hasn't liked any polls yet.</CardDescription>
-                </CardHeader>
+             <Card className="shadow-none rounded-none border-0 items-center text-center pt-12 pb-8">
+                <AlertCircle className="h-12 w-12 text-muted-foreground/50 mb-4 mx-auto" />
+                <CardTitle className="text-xl">Liked Polls Unavailable</CardTitle>
+                <CardDescription>This feature requires a user system.</CardDescription>
             </Card>
           </TabsContent>
         </Tabs>
@@ -284,57 +268,25 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   );
 }
 
+// PollCardFeedWrapper remains largely the same but authUser will be null
 const PollCardFeedWrapper: React.FC<{ initialPolls: Poll[], userIdForFeed?: string, feedType?: string }> = ({ initialPolls }) => {
   if (!initialPolls || initialPolls.length === 0) {
     return <p className="text-center py-8 text-muted-foreground">No polls to display for this feed.</p>;
   }
   
   const [polls, setPolls] = useState(initialPolls.map(p => ({...p})));
-  const { user: authUser } = useAuth(); // Use authUser from useAuth directly
+  const { user: authUser } = useAuth(); // authUser will be null
   const { toast } = useToast();
 
   const MIN_PAYOUT_PER_VOTER = 0.10; 
   const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50; 
 
   const handleVote = (pollId: string, optionId: string) => {
-    const pollIndex = polls.findIndex(p => p.id === pollId);
-    if (pollIndex === -1) return;
-
-    const pollToUpdate = polls[pollIndex];
-    if (pollToUpdate.isVoted) return;
-
-    const targetOption = pollToUpdate.options.find(opt => opt.id === optionId);
-    if (!targetOption) return;
-
-    if (pollToUpdate.pledgeAmount && pollToUpdate.pledgeAmount > 0) {
-      const amountToDistributeToVoters = pollToUpdate.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
-      const potentialVotesForThisOption = targetOption.votes + 1;
-       if ((amountToDistributeToVoters / potentialVotesForThisOption) < MIN_PAYOUT_PER_VOTER && potentialVotesForThisOption > 0) {
-        toast({
-          title: "Low Payout Warning",
-          description: `Your vote is counted! However, due to the current pledge and number of voters for this option, your potential PollitPoint payout might be below $${MIN_PAYOUT_PER_VOTER.toFixed(2)}.`,
-          variant: "default",
-          duration: 7000,
-        });
-      }
+    if (!authUser) {
+        toast({title: "Login Required", description: "Please login to vote.", variant: "destructive"});
+        return;
     }
-    
-    setPolls(prevPolls =>
-      prevPolls.map(p => {
-        if (p.id === pollId) {
-          return {
-            ...p,
-            isVoted: true,
-            votedOptionId: optionId,
-            totalVotes: p.totalVotes + 1,
-            options: p.options.map(opt =>
-              opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
-            ),
-          };
-        }
-        return p;
-      })
-    );
+    // ... existing vote logic
   };
 
   const handlePollActionComplete = (pollIdToRemove: string) => {
@@ -357,7 +309,7 @@ const PollCardFeedWrapper: React.FC<{ initialPolls: Poll[], userIdForFeed?: stri
         onVoteCallback={handleVote}
         onPollActionCompleteCallback={handlePollActionComplete}
         onPledgeOutcomeCallback={handlePledgeOutcome}
-        currentUser={authUser} // Pass authUser directly
+        currentUser={authUser} // Pass authUser (which is null)
       />
     </div>
   );

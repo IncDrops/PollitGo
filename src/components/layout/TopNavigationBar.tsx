@@ -2,11 +2,12 @@
 'use client';
 
 import Link from 'next/link';
-import { Settings2, UserCircle2, LogIn, UserPlus, LogOut, Loader2 } from 'lucide-react';
+import { Settings2, UserCircle2, LogIn, UserPlus, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import useAuth from '@/hooks/useAuth';
-import { auth } from '@/lib/firebase';
-import { signOut } from 'firebase/auth';
+// Firebase auth and signOut are removed
+// import { auth } from '@/lib/firebase';
+// import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -17,14 +18,10 @@ export default function TopNavigationBar() {
   const { toast } = useToast();
 
   const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      toast({ title: 'Logged Out', description: 'You have been successfully logged out.' });
-      router.push('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-      toast({ title: 'Logout Failed', description: 'Could not log you out. Please try again.', variant: 'destructive' });
-    }
+    // Firebase signOut logic removed
+    toast({ title: 'Logout Functionality Disabled', description: 'Firebase Auth removed. Implement new logout logic.' });
+    // router.push('/login'); // Or homepage, as login is also disabled
+    router.push('/');
   };
 
   return (
@@ -67,20 +64,21 @@ export default function TopNavigationBar() {
                   )}
                 </Button>
               </Link>
-              <Button variant="ghost" size="icon" aria-label="Logout" onClick={handleLogout}>
-                <LogOut className="h-5 w-5 sm:h-6 sm:w-6 text-nav-foreground" />
+              {/* Logout button behavior changed as Firebase auth is removed */}
+              <Button variant="ghost" size="icon" aria-label="Logout (Disabled)" onClick={() => toast({ title: 'Logout Disabled', description: 'Firebase Auth removed.'})}>
+                 <UserCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-nav-foreground opacity-50" />
               </Button>
             </>
           ) : (
             <>
               <Link href="/login" passHref>
-                <Button variant="ghost" aria-label="Login">
-                  <LogIn className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                <Button variant="ghost" aria-label="Login (Disabled)">
+                  <LogIn className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5 opacity-50" />
                   Login
                 </Button>
               </Link>
               <Link href="/signup" passHref>
-                <Button variant="default" aria-label="Sign Up" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                <Button variant="default" aria-label="Sign Up (Disabled)" className="bg-primary hover:bg-primary/90 text-primary-foreground opacity-50 cursor-not-allowed">
                   <UserPlus className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
                   Sign Up
                 </Button>
