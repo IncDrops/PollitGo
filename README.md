@@ -30,6 +30,9 @@ If you received a warning about an unrestricted API key, ensure you have followe
 If using OAuth 2.0 providers like Google Sign-In with Firebase Authentication:
 
 1.  **Google Cloud Console (Credentials -> OAuth 2.0 Client IDs -> Your Client ID):**
-    *   **Authorized JavaScript origins:** Add your development URLs (e.g., `http://localhost:9003`) and your deployed URLs including your custom domain (e.g., `https://your-project-id.web.app`, `https://yourcustomdomain.com`).
+    *   **Authorized JavaScript origins:** Add your development URLs (e.g., `http://localhost:9003`) and your deployed URLs including your custom domain (e.g., `https://your-project-id.web.app`, `https://yourcustomdomain.com`). If your custom domain is hosted externally (not on Firebase Hosting), ensure it's listed here.
+    *   **Authorized redirect URIs:** For Firebase Authentication, the primary redirect URI is typically `https://YOUR_PROJECT_ID.firebaseapp.com/__/auth/handler`. Add this URI.
+
 2.  **Firebase Console (Authentication -> Settings -> Authorized domains):**
-    *   Ensure your custom domain (e.g., `yourcustomdomain.com`) is listed here. Firebase uses this to correctly handle auth flows with your custom domain. The specific redirect URI (`https://your-project-id.firebaseapp.com/__/auth/handler`) is typically managed by Firebase.
+    *   Ensure your custom domain (e.g., `yourcustomdomain.com`) is listed here, regardless of where it's hosted. Firebase uses this to correctly handle auth flows originating from your custom domain. The specific redirect URI (`https://your-project-id.firebaseapp.com/__/auth/handler`) is typically managed by Firebase through this authorized domain list.
+
