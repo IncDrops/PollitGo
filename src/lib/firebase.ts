@@ -10,13 +10,12 @@ import { getStorage, type FirebaseStorage } from "firebase/storage";
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID // Optional
+  apiKey: "AIzaSyCw3asW3W4__cYzWG6DBxUyaWtgCUhIbVs",
+  authDomain: "pollitgo.firebaseapp.com",
+  projectId: "pollitgo",
+  storageBucket: "pollitgo.firebasestorage.app",
+  messagingSenderId: "1078455480838",
+  appId: "1:1078455480838:web:bb4f5f16e70a3ccf3c0987"
 };
 
 // Check if the API key is provided. This is crucial for Firebase services to work.
