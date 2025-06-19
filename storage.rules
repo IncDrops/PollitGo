@@ -1,0 +1,42 @@
+
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Default: Disallow all reads and writes if no other rule matches
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // User Profile Pictures
+    // Path: users/{userId}/profile/{fileName}
+    // Example client-side upload path: `users/${auth.currentUser.uid}/profile/profilePicture.jpg`
+    match /users/{userId}/profile/{fileName} {
+      allow read: if true; // Profile pictures are generally public
+      allow write: if request.auth != null && request.auth.uid == userId
+                   && request.resource.size < 1 * 1024 * 1024 // Max 1MB
+                   && request.resource.contentType.matches('image/.*');
+    }
+
+    // Poll Question Media (Images or Video for the poll itself)
+    // Example client-side upload path: `polls/${pollId}/question/image_1.jpg` or `polls/${pollId}/question/poll_video.mp4`
+    match /polls/{pollId}/question/{fileName} {
+      allow read: if true; // Poll media is generally public
+      allow write: if request.auth != null // Only authenticated users (presumably the creator)
+                   // Accommodate constraints from NewPollPage.tsx
+                   && ((request.resource.contentType.matches('image/.*') && request.resource.size < 5 * 1024 * 1024) || // Max 5MB for images
+                       (request.resource.contentType.matches('video/.*') && request.resource.size < 60 * 1024 * 1024));   // Max 60MB for videos
+    }
+
+    // Poll Option Media (Image or Video for a specific option)
+    // Example client-side upload path: `polls/${pollId}/options/${option.id}/option_image.jpg`
+    match /polls/{pollId}/options/{optionId}/{fileName} {
+      allow read: if true; // Option media is generally public
+      allow write: if request.auth != null // Only authenticated users (presumably the creator)
+                   // Accommodate constraints from NewPollPage.tsx
+                   && ((request.resource.contentType.matches('image/.*') && request.resource.size < 2 * 1024 * 1024) || // Max 2MB for images
+                       (request.resource.contentType.matches('video/.*') && request.resource.size < 10 * 1024 * 1024));  // Max 10MB for videos
+    }
+  }
+}
