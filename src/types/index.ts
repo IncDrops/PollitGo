@@ -7,6 +7,13 @@ export interface User {
   pollitPointsBalance?: number;
 }
 
+export interface UserProfile {
+  id: string;
+  username: string;
+  email: string;
+  avatarUrl?: string; // Add other profile properties here
+}
+
 export interface PollOption {
   id: string;
   text: string;

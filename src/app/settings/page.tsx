@@ -10,27 +10,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { UserCircle2, Bell, ShieldCheck, Palette, LogOut, HelpCircle, Info, Camera } from "lucide-react";
+import { UserCircle2, Bell, ShieldCheck, Palette, LogOut, HelpCircle, Info, Camera, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "next-themes";
-import useAuth from '@/hooks/useAuth'; // Import useAuth hook
-import { fetchUserProfile } from '@/lib/firebase'; // Import fetchUserProfile function
-import type { UserProfile } from '@/types'; // Assuming you have a UserProfile type
+import useAuth from '@/hooks/useAuth';
+import { fetchUserProfile, auth } from '@/lib/firebase'; // Import auth
+import { signOut } from 'firebase/auth'; // Import signOut
+import type { UserProfile as AppUserProfileType } from '@/types'; // Renamed to avoid conflict
+import { useRouter } from 'next/navigation'; // Import useRouter
 
 export default function SettingsPage() {
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
+  const router = useRouter(); // Initialize router
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
-  const { user: authUser, loading: authLoading } = useAuth(); // Use the auth hook
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null); // State for real user profile
-  const [isProfileLoading, setIsProfileLoading] = useState(true); // Loading state for profile fetch
+  const { user: authUser, loading: authLoading } = useAuth();
+  const [userProfile, setUserProfile] = useState<AppUserProfileType | null>(null);
+  const [isProfileLoading, setIsProfileLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
-
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -55,7 +58,7 @@ export default function SettingsPage() {
 
     if (authUser) {
       setIsProfileLoading(true);
-      fetchUserProfile(authUser.id)
+      fetchUserProfile(authUser.uid) // Use authUser.uid
         .then(profileData => {
           setUserProfile(profileData);
         })
@@ -66,7 +69,7 @@ export default function SettingsPage() {
             description: "Could not load your profile information.",
             variant: "destructive",
           });
-          setUserProfile(null); 
+          setUserProfile(null);
         })
         .finally(() => {
           setIsProfileLoading(false);
@@ -74,24 +77,55 @@ export default function SettingsPage() {
     } else {
       setUserProfile(null);
       setIsProfileLoading(false);
+      // If not authenticated, redirect to login
+      if (mounted && !authLoading) { // Ensure redirect only happens client-side and after auth check
+          router.push('/login');
+      }
     }
-  }, [authUser, authLoading, toast]);
+  }, [authUser, authLoading, toast, router, mounted]);
 
-  const handleSaveChanges = () => {
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
     console.log("Saving settings. Avatar file to upload:", avatarFile);
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500));
     toast({
       title: "Settings Saved",
       description: "Your preferences have been updated.",
     });
+    setIsSaving(false);
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast({ title: 'Logged Out', description: 'You have been successfully logged out.' });
+      router.push('/login'); // Redirect to login page after logout
+    } catch (error) {
+      console.error('Logout error:', error);
+      toast({ title: 'Logout Failed', description: 'Could not log you out. Please try again.', variant: 'destructive' });
+    }
   };
   
   if (!mounted || authLoading || isProfileLoading) {
-    return <div className="container mx-auto px-4 py-8 text-center">Loading settings...</div>;
+    return (
+      <div className="container mx-auto flex min-h-[calc(100vh-150px)] items-center justify-center px-4 py-8 text-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="ml-2">Loading settings...</p>
+      </div>
+    );
   }
 
   if (!authUser || !userProfile) {
-    return <div className="container mx-auto px-4 py-8 text-center text-destructive">Please log in to view settings.</div>;
+    // This case should ideally be handled by the redirect in useEffect,
+    // but as a fallback:
+    return (
+      <div className="container mx-auto px-4 py-8 text-center text-destructive">
+        Please <Link href="/login" className="underline">log in</Link> to view settings.
+      </div>
+    );
   }
+  
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
@@ -107,8 +141,8 @@ export default function SettingsPage() {
             <div className="flex flex-col items-center space-y-4 sm:flex-row sm:space-y-0 sm:space-x-6">
               <div className="relative group">
                 <Avatar className="h-24 w-24 ring-2 ring-primary ring-offset-2 ring-offset-background">
-                  <AvatarImage src={avatarPreview || userProfile.avatarUrl || 'https://placehold.co/100x100.png'} alt={userProfile.name || "User avatar"} data-ai-hint="profile avatar" />
-                  <AvatarFallback>{userProfile.name ? userProfile.name.substring(0,1).toUpperCase() : 'U'}</AvatarFallback>
+                  <AvatarImage src={avatarPreview || userProfile.avatarUrl || authUser.photoURL || 'https://placehold.co/100x100.png'} alt={userProfile.username || authUser.displayName || "User avatar"} data-ai-hint="profile avatar" />
+                  <AvatarFallback>{userProfile.username ? userProfile.username.substring(0,1).toUpperCase() : (authUser.displayName ? authUser.displayName.substring(0,1).toUpperCase() : 'U')}</AvatarFallback>
                 </Avatar>
                 <Button
                   variant="outline"
@@ -130,11 +164,11 @@ export default function SettingsPage() {
               <div className="flex-grow w-full space-y-4">
                 <div>
                   <Label htmlFor="username">Username</Label>
-                  <Input id="username" defaultValue={userProfile.username} />
+                  <Input id="username" defaultValue={userProfile.username || authUser.displayName || ''} />
                 </div>
                 <div>
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" defaultValue={userProfile.email} /> 
+                  <Input id="email" type="email" defaultValue={userProfile.email || authUser.email || ''} readOnly /> 
                 </div>
               </div>
             </div>
@@ -225,12 +259,15 @@ export default function SettingsPage() {
           </Button>
         </div>
 
-        <Button variant="destructive" className="w-full" onClick={() => toast({ title: "Logged Out", description: "You have been successfully logged out.", variant: "default"})}>
+        <Button variant="destructive" className="w-full" onClick={handleLogout}>
           <LogOut className="mr-2 h-5 w-5" /> Log Out
         </Button>
 
         <div className="mt-8 flex justify-end">
-          <Button onClick={handleSaveChanges} className="bg-primary hover:bg-primary/90 text-primary-foreground">Save Changes</Button>
+          <Button onClick={handleSaveChanges} className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSaving}>
+            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Save Changes
+          </Button>
         </div>
       </div>
     </div>

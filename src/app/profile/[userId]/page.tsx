@@ -10,7 +10,7 @@ import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/ca
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserPlus, Settings, MessageSquare, Edit3, ChevronLeft, Share2, Search, CalendarDays, MapPin, Link as LinkIconLucide, Flame } from "lucide-react";
 import Image from "next/image";
-import NextLink from "next/link";
+import { UserProfile } from "@/types"; // Assuming UserProfile is defined in types
 import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import PollFeed from '@/components/polls/PollFeed';
@@ -38,26 +38,33 @@ const urlSafeText = (text: string, maxLength: number = 15): string => {
 
 export default function UserProfilePage({ params }: { params: { userId: string } }) {
   const router = useRouter();
-  const { toast } = useToast();
+  const { toast } = useToast();  
   
-  const resolvedPageParams = use(params); 
+  // Removed the use(params) hook, accessing params directly
 
   const { user: authUser, loading: authLoading } = useAuth();
   const [userData, setUserData] = useState<{ user: User | null; polls: Poll[] }>({ user: null, polls: [] });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (resolvedPageParams && resolvedPageParams.userId) {
+    if (authLoading) {
+      // Wait until auth state is loaded
+      return;
+    }
+
+    if (params && params.userId) { // Use params directly
       setIsLoading(true);
-      getUserData(resolvedPageParams.userId)
+      
+      // Use params.userId directly to fetch data
+      getUserData(params.userId) // Still uses mock for now, will be updated later
         .then(data => {
-          setUserData(data);
-          if (!data.user) {
-            console.warn(`[UserProfilePage] User not found for ID ${resolvedPageParams.userId} after fetch.`);
-            toast({ 
-              title: "User Not Found", 
-              description: `Profile for ID ${resolvedPageParams.userId} could not be loaded.`, 
-              variant: "destructive" 
+          setUserData(data);          
+          if (!data.user) { // Use the same logic as before for user not found
+            console.warn(`[UserProfilePage] User not found for ID ${params.userId} after fetch.`);
+            toast({
+              title: "User Not Found",
+              description: `Profile for ID ${params.userId} could not be loaded.`,
+              variant: "destructive"
             });
           }
         })
@@ -68,12 +75,12 @@ export default function UserProfilePage({ params }: { params: { userId: string }
         .finally(() => {
           setIsLoading(false);
         });
-    } else {
-      setIsLoading(false); 
-      console.warn("[UserProfilePage] resolvedPageParams.userId is not available.");
+    } else { // Handle cases where userId is not in params
+      setIsLoading(false);
+      console.warn("[UserProfilePage] params.userId is not available.");
       toast({ title: "Error", description: "User ID not provided for profile.", variant: "destructive" });
     }    
-  }, [resolvedPageParams, toast]);
+  }, [params, toast, authUser, authLoading]); // Depend on params, toast, authUser, and authLoading 
 
   const user = userData.user;
   const userPolls = userData.polls;
@@ -94,7 +101,8 @@ export default function UserProfilePage({ params }: { params: { userId: string }
     );
   }
   
-  const isOwnProfile = authUser?.uid === user.id;
+  // Compare authenticated user's ID (Firebase UID) with the profile user's ID
+  const isOwnProfile = authUser?.uid === user.id; 
 
   const handleShareProfile = async () => {
     if (typeof window === 'undefined') return;
@@ -349,7 +357,7 @@ const PollCardFeedWrapper: React.FC<{ initialPolls: Poll[], userIdForFeed?: stri
         onVoteCallback={handleVote}
         onPollActionCompleteCallback={handlePollActionComplete}
         onPledgeOutcomeCallback={handlePledgeOutcome}
-        currentUser={authUser} // Pass authUser as currentUser
+        currentUser={authUser} // Pass authUser directly
       />
     </div>
   );
