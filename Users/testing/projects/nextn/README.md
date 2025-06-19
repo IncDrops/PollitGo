@@ -10,7 +10,7 @@ To get started, take a look at src/app/page.tsx.
 
 This project uses environment variables for configuration, especially for sensitive keys. You need to create a `.env.local` file in the root of your project. This file is included in `.gitignore` and should never be committed to version control.
 
-**Content for your `.env.local` file:**
+**Content for your `.env.local` file (for LOCAL DEVELOPMENT ONLY):**
 
 ```env
 # Stripe Keys
@@ -20,14 +20,11 @@ STRIPE_SECRET_KEY=YOUR_ACTUAL_STRIPE_SECRET_KEY_GOES_HERE
 NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=YOUR_ACTUAL_STRIPE_PUBLISHABLE_KEY_GOES_HERE
 
 # NextAuth.js Variables
-# This should be the base URL of your application.
-# - For local development with `npm run dev -p 9003`, this is http://localhost:9003
-# - If your app runs on a different port locally, update it.
-# - For deployed environments (Vercel, Netlify, Firebase Studio Prototypes etc.),
-#   this MUST be set to the publicly accessible URL of THAT deployed environment.
-#   e.g., https://your-app-name.vercel.app OR https://your-studio-prototype-url.cloudworkstations.dev
-# THIS IS CRITICAL FOR NEXTAUTH.JS TO WORK. A "FAILED TO FETCH" ERROR OFTEN MEANS THIS IS MISCONFIGURED
-# FOR THE ENVIRONMENT YOU ARE TESTING IN, OR THE SERVER WASN'T RESTARTED (LOCALLY).
+# This should be the base URL of your application FOR LOCAL DEVELOPMENT.
+# If `npm run dev` runs on port 9003, this is http://localhost:9003
+# If your app runs on a different port locally, update it.
+# FOR DEPLOYED ENVIRONMENTS (Vercel, Netlify, Google Cloud Build/Run etc.), THIS MUST BE SET TO
+# THE PUBLICLY ACCESSIBLE URL OF THAT DEPLOYED ENVIRONMENT in the hosting provider's settings.
 NEXTAUTH_URL=http://localhost:9003
 
 # Generate a strong secret for NextAuth.js. This is CRITICAL for security.
@@ -43,11 +40,10 @@ NEXTAUTH_SECRET=REPLACE_THIS_WITH_A_STRONG_RANDOM_SECRET_YOU_GENERATE
 1.  Replace ALL placeholder values (e.g., `YOUR_ACTUAL_STRIPE_SECRET_KEY_GOES_HERE` and `REPLACE_THIS_WITH_A_STRONG_RANDOM_SECRET_YOU_GENERATE`) with your **actual keys and generated secret**.
 2.  To generate `NEXTAUTH_SECRET`, you can run `openssl rand -base64 32` in your terminal.
 3.  **After creating or modifying `.env.local` (for local development), you MUST restart your Next.js development server** (stop `npm run dev` with `Ctrl+C` and run `npm run dev` again) for the changes to take effect. Next.js only loads environment variables on startup.
-4.  **For Deployed/Prototype Environments (like Firebase Studio):**
-    *   `NEXTAUTH_URL` and `NEXTAUTH_SECRET` **must** be set as environment variables through your hosting provider's settings dashboard or environment configuration.
-    *   **The `.env.local` file is NOT used in deployed/prototype environments.**
-    *   **`NEXTAUTH_URL` in deployed/prototype environments MUST be the full public URL of that specific deployment** (e.g., `https://your-dynamic-studio-url.cloudworkstations.dev`). If it's not set correctly, NextAuth.js API routes (like login/signup) will likely fail with "Failed to fetch" errors because the backend doesn't know its own public address.
-    *   Firebase Studio, in particular, might not have an straightforward way to set *backend* environment variables for Next.js API routes that it hosts. This can lead to the "Failed to fetch" error for NextAuth.js when running on the prototype URL, even if it works perfectly locally. This is often a limitation of the specific prototyping environment's configuration options for Next.js backends.
+4.  **For Deployed/Prototype Environments (like Vercel, Netlify, Google Cloud Build/Run, Firebase Studio Prototypes):**
+    *   `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `STRIPE_SECRET_KEY`, and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` **must** be set as environment variables through your hosting provider's settings dashboard or environment configuration. **These are NOT read from `.env.local` in deployed environments.**
+    *   **`STRIPE_SECRET_KEY` is especially critical for the `/api/stripe/create-checkout-session` route to function. If it's missing in the build/deployment environment, your build might fail (e.g., with "Failed to collect page data") or the route will not work at runtime.**
+    *   **`NEXTAUTH_URL` in deployed/prototype environments MUST be the full public URL of that specific deployment** (e.g., `https://your-app-name.vercel.app` or `https://your-dynamic-studio-url.cloudworkstations.dev`). If it's not set correctly, NextAuth.js API routes (like login/signup) will likely fail with "Failed to fetch" errors because the backend doesn't know its own public address.
 
 ## Authentication with NextAuth.js
 
@@ -55,81 +51,57 @@ This application has been configured to use NextAuth.js for authentication.
 
 *   **Credentials Provider:** A basic email/password login is set up.
     *   **Test User:** You can log in with `test@example.com` and password `password`.
-    *   **Simulated Signup:** The current setup will also allow any new email/password combination to "sign up" and log in for demonstration purposes. This is because the `authorize` function in `src/app/api/auth/[...nextauth]/route.ts` is a placeholder.
+    *   **Simulated Signup:** The current setup in `src/app/api/auth/[...nextauth]/route.ts` has a placeholder `authorize` function. This function will currently allow any new email/password combination to "sign up" and log in for demonstration purposes.
 *   **Database Integration Needed:** For a real application, you would need to:
-    1.  Integrate a database (e.g., Supabase, PostgreSQL with Prisma, MongoDB).
-    2.  Modify the `authorize` function in `src/app/api/auth/[...nextauth]/route.ts` to:
-        *   Validate login credentials against your user database.
-        *   Handle user registration by creating new user records in your database (likely via a separate API endpoint).
+    1.  Integrate a database.
+    2.  Modify the `authorize` function in `src/app/api/auth/[...nextauth]/route.ts`.
 
 ### Troubleshooting NextAuth.js "Failed to fetch" errors:
-If you encounter "Failed to fetch" errors during login/signup:
-1.  **Verify `NEXTAUTH_URL` in `.env.local` (for local dev) OR your hosting environment settings (for deployed/prototype):**
-    *   **Local:** Ensure it's `http://localhost:9003` (or your correct local port).
-    *   **Deployed/Prototype (e.g., Firebase Studio):** This is the **most common cause** of "Failed to fetch" in these environments. `NEXTAUTH_URL` **must** be set to the publicly accessible URL of *that specific environment* (e.g., `https://your-studio-url.cloudworkstations.dev`). If the environment doesn't allow setting backend environment variables for Next.js API routes, NextAuth.js may not function correctly.
-2.  **Verify `NEXTAUTH_SECRET` in `.env.local` (local) OR hosting environment settings (deployed):** Ensure it's set to a strong, randomly generated string. The API route `src/app/api/auth/[...nextauth]/route.ts` includes an explicit check and will log an error to your **server terminal** if it's missing.
-3.  **Restart Server (Local Development):** **You MUST restart your Next.js development server** (`npm run dev`) after any changes to `.env.local`.
-4.  **Check Server Terminal Logs:** Look at the terminal where `npm run dev` is running (or your deployed environment's server logs). Errors in the NextAuth.js API route will appear here, especially regarding missing `NEXTAUTH_SECRET` or misconfiguration.
-5.  **Check Browser Developer Console:** Look for more detailed error messages logged by the login page itself. The login page was updated to show more specific error messages for "Failed to fetch".
+This error during login/signup usually means `NEXTAUTH_URL` is misconfigured for the environment you're testing in, or `NEXTAUTH_SECRET` is missing.
+1.  **Verify `NEXTAUTH_URL`:**
+    *   **Local Development:** In `.env.local`, ensure it's `http://localhost:9003` (or your correct local port). **Restart your dev server after any change.**
+    *   **Deployed/Prototype (e.g., Vercel, Firebase Studio):** `NEXTAUTH_URL` **must** be set to the publicly accessible URL of *that specific environment* (e.g., `https://your-app-name.vercel.app` or `https://your-studio-url.cloudworkstations.dev`) in your hosting provider's environment variable settings.
+2.  **Verify `NEXTAUTH_SECRET`:** Ensure it's set (locally in `.env.local`, and in your hosting provider's settings for deployed environments) to the same strong, random secret.
+3.  **Check Server/Deployment Logs:** These logs will often show errors related to misconfigured NextAuth.js variables.
 
 ## Stripe Integration
 
-This application uses Stripe for payments.
-
 ### Stripe API Route Configuration (`/api/stripe/create-checkout-session`)
 
-Your Next.js application includes an API route at `src/app/api/stripe/create-checkout-session/route.ts`. This route is responsible for creating Stripe Checkout Sessions.
-
-*   **Environment Variable for Stripe Secret Key:** Ensure `STRIPE_SECRET_KEY` is set in your `.env.local` file (for local) or hosting environment (for deployed).
+*   **Environment Variable for Stripe Secret Key:** Ensure `STRIPE_SECRET_KEY` is set in `.env.local` (for local) or your hosting environment settings (for deployed). **If this key is missing in the build/deployment environment, the build may fail (e.g., "Failed to collect page data") or the API route will not function correctly.**
 *   **Environment Variable for Stripe Publishable Key:** Ensure `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is set.
-*   **Restart Dev Server (Local):** After editing `.env.local`, restart your Next.js development server.
 
-## Testing the Payment Flow
-1.  **Set Environment Variables:** Ensure `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `NEXTAUTH_URL`, and `NEXTAUTH_SECRET` are correctly set.
-2.  **Restart Dev Server (Local).**
-3.  **Log In / Sign Up (Simulated):**
-    *   Open your app (e.g., `http://localhost:9003`).
-    *   Use the Login/Sign Up buttons. Test with `test@example.com` / `password` or create a new "user".
-4.  **Initiate a Payment (e.g., on "New Poll" page with a pledge).**
-5.  **Stripe Checkout:** You should be redirected to Stripe's Checkout page.
-    *   Use Stripe's test card numbers:
-        *   **Card Number:** `4242 4242 4242 4242`
-        *   **Expiration Date:** Any future date (e.g., `12/30`)
-        *   **CVC/CVV:** Any 3 digits (e.g., `123`)
-        *   **Name on Card:** Any name
-        *   **ZIP/Postal Code:** Any ZIP/Postal code
-    *   Complete the payment.
-6.  **Verify Redirection:** Success to `/payment-success`, cancel to `/payment-cancelled`.
-7.  **Check Stripe Dashboard (Test Mode).**
-8.  **Troubleshooting:** Check browser console and Next.js terminal/server logs.
+## Google Cloud Build / Firebase Studio Prototype Environments
 
-## Deploying for Testing on Mobile Devices
+When using Firebase Studio prototypes or deploying directly via Google Cloud Build, your local `.env.local` file is **NOT** used. The build environment (where `npm run build` happens) and the runtime environment (where your deployed app runs, e.g., on Cloud Run) **must** have necessary environment variables configured directly within the Google Cloud settings.
 
-If you need to test on actual mobile devices and the prototype environment login isn't working (due to `NEXTAUTH_URL` issues):
+*   **Required Variables:** `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`.
+*   **Configuration:**
+    *   These are typically set via the Google Cloud Build trigger configuration (e.g., substitution variables) or by linking secrets from Google Secret Manager to the build steps and/or the target deployment service (like Cloud Run).
+    *   For Cloud Run, environment variables are set in the service's revision settings.
+*   **Error `[Error: Failed to collect page data for /api/stripe/create-checkout-session]`:**
+    *   This build error often means that `STRIPE_SECRET_KEY` (or another critical variable) is not available to the build process or the runtime environment.
+    *   Ensure secrets are securely provided to your Google Cloud deployment. While moving Stripe client initialization inside the API route handler helps, the runtime still needs the key.
 
-*   **Vercel or Netlify:** These platforms are excellent for deploying Next.js applications and have free tiers.
-    1.  Push your code to a Git repository (GitHub, GitLab, Bitbucket).
-    2.  Sign up for Vercel/Netlify and connect your Git repository.
-    3.  **Crucially, configure the environment variables** in your Vercel/Netlify project settings:
-        *   `STRIPE_SECRET_KEY`
-        *   `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
-        *   `NEXTAUTH_URL` (This MUST be the public URL Vercel/Netlify gives your deployment, e.g., `https://your-app-name.vercel.app`)
-        *   `NEXTAUTH_SECRET` (Use the same strong secret you generated for local)
-    4.  The platform will build and deploy your app. You'll get a public URL to test on any device.
-*   **Local Network Testing (More Technical):**
-    1.  Ensure your computer and mobile phone are on the same Wi-Fi network.
-    2.  When you run `npm run dev`, Next.js often shows a "Network" URL (e.g., `http://192.168.X.X:9003`).
-    3.  Update `NEXTAUTH_URL` in your `.env.local` to this network URL.
-    4.  Restart your dev server.
-    5.  You might need to adjust firewall settings on your computer. This method can be less reliable.
+## Deploying to Vercel (or similar platforms) for Testing
+
+If you encounter persistent issues with prototype environments (like Firebase Studio) regarding environment variables for backend services like NextAuth.js or Stripe, deploying to a platform like Vercel or Netlify is highly recommended. These platforms offer more straightforward ways to manage environment variables.
+
+**Steps for Vercel:**
+
+1.  **Ensure your code is in a Git Repository** (GitHub, GitLab, Bitbucket).
+2.  **Import Project on Vercel:** Log in to Vercel, "Add New..." > "Project", connect your Git provider, and select your project.
+3.  **Configure Environment Variables in Vercel Project Settings:**
+    *   This is the **most critical step**. In your Vercel project settings, find "Environment Variables".
+    *   Add:
+        *   `NEXTAUTH_URL`: **The public URL Vercel assigns to your deployment** (e.g., `https://your-project-name.vercel.app`).
+        *   `NEXTAUTH_SECRET`: Your strong, random secret (same as in `.env.local`).
+        *   `STRIPE_SECRET_KEY`: Your actual Stripe Secret Key (`sk_...`).
+        *   `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`: Your actual Stripe Publishable Key (`pk_...`).
+    *   Ensure these are set for the "Production" environment (and "Preview" if you use preview deployments).
+4.  **Deploy:** Click "Deploy" in Vercel.
+5.  **Test:** Use the Vercel-provided URL on desktop and mobile. Login and Stripe functionality should work if environment variables are correct.
 
 ## Deprecated: Firebase Usage Notes
-Firebase services have been removed from this project. Related sections in this README are for historical reference only.
-
-## Custom Webhook Handler (`functions/src/index.ts` - Deprecated)
-The `functions` directory is no longer used for Firebase Functions. Custom backend logic (e.g., for Stripe webhooks) should be implemented using Next.js API routes.
-
-## Deploying (General Guidance - Adapt for your chosen platform)
-*   **Next.js Application:** Deployment will depend on your chosen hosting platform (Vercel, Netlify, etc.).
-*   **Environment Variables:** Ensure ALL necessary environment variables from your `.env.local` are set in your hosting provider's settings for the deployed application. `NEXTAUTH_URL` must be your production URL. Use **LIVE** Stripe keys for production.
+Firebase services have been removed from this project.
 ```

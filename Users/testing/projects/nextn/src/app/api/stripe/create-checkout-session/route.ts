@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Initialize Stripe client inside the handler
+  // This is crucial for build processes that might analyze routes without full runtime env vars
   const stripe = new Stripe(stripeSecretKey, {
     apiVersion: STRIPE_API_VERSION,
     typescript: true, // Recommended for type safety
