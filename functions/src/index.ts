@@ -134,5 +134,3 @@ export const stripeWebhookHandler = functions.https.onRequest(
     response.status(200).json({ received: true });
   }
 );
-
-    
