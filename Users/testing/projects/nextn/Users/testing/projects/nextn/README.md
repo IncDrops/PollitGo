@@ -74,7 +74,7 @@ By correctly configuring these settings, you ensure that your API key is not mis
 When configuring the "Run Payments with Stripe" Firebase Extension:
 
 *   **Cloud Functions deployment location:** Choose a region close to your users/database (e.g., `us-central1`). Cannot be changed later.
-*   **Products and pricing plans collection:** Default `products` is usually fine if you intend to sync predefined products from Stripe. If mainly using dynamic pricing (like for tips and pledges), this sync is less critical. You can leave the associated product/price sync events unchecked.
+*   **Products and pricing plans collection:** Default `products` is usually fine if you intend to sync predefined products from Stripe. If mainly using dynamic pricing (like for tips), this sync is less critical.
 *   **Customer details and subscriptions collection:** Default `customers` is usually fine. This is where Stripe customer IDs and subscription data linked to your Firebase users will be stored.
 *   **Sync new users to Stripe customers and Cloud Firestore:** Recommended: **Sync new users to Stripe and Firestore**. This automatically creates Stripe customer objects for new Firebase Auth users.
 *   **Automatically delete Stripe customer objects:** Recommended: **Do not delete**. Retain Stripe data for history and reporting.
@@ -86,9 +86,9 @@ When configuring the "Run Payments with Stripe" Firebase Extension:
         *   **If the UI shows a pop-up after clicking "Create secret":** In the pop-up, provide a "Secret name" (e.g., `STRIPE_POLLITGO_EXTENSION_API_KEY`) and paste your `rk_test_...` key into the "Secret value" field. Create the secret. Then, back on the extension page, select this newly created secret name from the dropdown.
     4.  **Verification (Important):** After starting the extension install/update, go to Google Cloud Console -> Security -> Secret Manager. Find the secret by the name that the extension configuration is now referencing. View its latest version and **confirm the stored value is your correct `rk_test_...` Stripe API key.** If it's incorrect, add a new version to that secret with the correct key value.
 *   **Events to listen for (during extension configuration):**
-    *   **Essential for payments/pledges/tips:** `checkout.session.completed` (Under "Checkout") - **Ensure this is CHECKED.**
-    *   **Recommended for customer sync:** `customer.created`, `customer.updated` (Under "Customer") - **Ensure these are CHECKED.**
-    *   **Optional product/price sync events:** `product.created`, `product.updated`, `product.deleted`, `price.created`, `price.updated`, `price.deleted`. If your tips/pledges are always dynamically priced, these can be left **UNCHECKED**.
+    *   **Essential for payments/pledges/tips:** `checkout.session.completed`
+    *   **Recommended for customer sync:** `customer.created`, `customer.updated`
+    *   **Optional (if managing predefined products/prices in Stripe that your app uses):** `product.created`, `product.updated`, `product.deleted`, `price.created`, `price.updated`, `price.deleted`. If your tips/pledges are always dynamically priced, these product/price sync events are less critical for payment processing by the extension.
 *   **Stripe webhook secret:** This secret is used by the *extension's own webhook endpoint* to verify events from Stripe.
     1.  **Install/Update the Extension First:** You typically complete the initial installation or update of the extension.
     2.  **Get the Extension's Webhook URL:**
@@ -98,7 +98,7 @@ When configuring the "Run Payments with Stripe" Firebase Extension:
         *   In your Stripe Dashboard (Developers > Webhooks), click **"+ Add endpoint"**.
         *   **Endpoint URL field:** Paste the Webhook URL you copied from the Firebase extension details page here.
         *   **Description (Optional):** Add a description like "PollitGo Firebase Extension".
-        *   **Listen to events:** Click "Select events" and choose the events the extension is configured to handle (e.g., `checkout.session.completed`, `customer.created`, `customer.updated`).
+        *   **Listen to events:** Click "Select events" and choose the events the extension is configured to handle (e.g., `checkout.session.completed`, `customer.created`, `customer.updated`). You chose these during the extension's event configuration step.
         *   Click "Add endpoint".
     4.  **Get the Signing Secret from Stripe:**
         *   After adding the endpoint, Stripe will display its details. Find and copy the **"Signing secret"** (starts with `whsec_...`). Click to reveal it if needed.
@@ -162,8 +162,8 @@ The `functions/src/index.ts` file in your project is for any *custom* webhook ha
     (Note: The Stripe Firebase Extension deploys its *own* functions automatically. This command is for *your* custom functions in the `functions` directory).
 
 ## Testing the Payment Flow
-1.  **Set Environment Variables:** Ensure `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` are correctly set with your **actual key values** in `.env.local` in your project root.
-2.  **Restart Dev Server:** If your Next.js development server (`npm run dev`) was running, stop it (Ctrl+C in the terminal) and restart it (`npm run dev`) to load the new environment variables.
+1.  **Set Environment Variables:** Ensure `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` are correctly set with your **actual key values** in `.env.local`.
+2.  **Restart your Next.js development server if you just added/modified `.env.local` (`npm run dev`).**
 3.  **Initiate a Payment:**
     *   Open your app in the browser (e.g., `http://localhost:9003` or your Firebase Studio URL).
     *   Navigate to the "New Poll" page.
