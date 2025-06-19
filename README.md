@@ -106,6 +106,44 @@ When configuring the "Run Payments with Stripe" Firebase Extension:
 
 This ensures your Stripe keys are handled securely via Google Cloud Secret Manager.
 The Stripe extension will deploy its own Cloud Functions for its operations.
-The `functions/src/index.ts` file in your project is for any *custom* webhook handler you might implement for logic *not* covered by the extension (e.g., awarding PollitPoints, sending custom emails). If you create a custom webhook handler, it will need its own separate endpoint in Stripe and its own webhook signing secret configured via Firebase Functions environment configuration (e.g., `firebase functions:config:set stripe.webhook_secret="whsec_YOUR_CUSTOM_SECRET"`).
 
+## Stripe API Route Configuration (`/api/stripe/create-checkout-session`)
+
+Your Next.js application includes an API route at `src/app/api/stripe/create-checkout-session/route.ts`. This route is responsible for creating Stripe Checkout Sessions when a user initiates a pledge or a tip.
+
+*   **Environment Variable for Stripe Secret Key:** This API route requires your full Stripe **Secret Key** (e.g., `sk_test_...` or `sk_live_...`) to communicate with the Stripe API.
+    *   Set this key as an environment variable in a `.env.local` file in your project root:
+        ```
+        STRIPE_SECRET_KEY=sk_test_YOUR_STRIPE_SECRET_KEY_HERE
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_YOUR_STRIPE_PUBLISHABLE_KEY_HERE
+        ```
+    *   Replace placeholders with your actual Stripe keys. The `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is used on the client-side.
+    *   **Important:** The `STRIPE_SECRET_KEY` used by this API route is *different* from the *restricted API key* (`rk_test_...`) used by the Stripe Firebase Extension. The extension's key has limited permissions for its specific tasks, while your API route needs broader permissions to create checkout sessions.
+    *   Ensure `.env.local` is listed in your `.gitignore` file.
+
+## Custom Webhook Handler (`functions/src/index.ts`)
+
+The `functions/src/index.ts` file in your project is for any *custom* webhook handler you might implement for business logic *not* covered by the Stripe extension (e.g., awarding PollitPoints, sending custom emails after a payment).
+
+*   If you use this custom handler, it will need its own separate endpoint configured in Stripe (different from the extension's webhook URL).
+*   The signing secret for this custom handler should be configured via Firebase Functions environment configuration (e.g., `firebase functions:config:set stripe.webhook_secret="whsec_YOUR_CUSTOM_HANDLER_SECRET"`). The `stripe.secret_key` in the Functions config would be your main Stripe secret key.
+
+## Deploying Firebase Configurations
+
+*   **Firestore Rules:**
+    ```bash
+    firebase deploy --only firestore
+    ```
+*   **Custom Cloud Functions (from `functions/src/index.ts`):**
+    ```bash
+    firebase deploy --only functions
+    ```
+
+**Testing the Payment Flow:**
+1.  Ensure `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` are set in `.env.local`.
+2.  Restart your Next.js development server if you just added/modified `.env.local`.
+3.  Attempt a pledge or tip in your application.
+4.  Verify redirection to Stripe Checkout and back to your success/cancel pages.
+5.  Check Stripe Dashboard for payment and customer records.
+6.  Check Firebase Extension logs and Stripe webhook logs for `checkout.session.completed` events.
     
