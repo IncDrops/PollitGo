@@ -18,9 +18,9 @@ import React, { useState, useEffect } from 'react';
 import OptionDetailsDialog from "@/components/polls/OptionDetailsDialog";
 import { useToast } from '@/hooks/use-toast';
 import { useStripe } from "@stripe/react-stripe-js";
-import useAuth from '@/hooks/useAuth'; 
+import useAuth from '@/hooks/useAuth';
 import { signIn } from 'next-auth/react';
-
+import { useParams } from 'next/navigation'; // Import useParams
 
 async function getPollDetails(pollId: string): Promise<{ poll: Poll | null; comments: CommentType[] }> {
   const poll = mockPolls.find(p => p.id === pollId) || null;
@@ -48,16 +48,16 @@ const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50;
 const PollOptionDisplay: React.FC<{
   option: PollOptionType;
   totalVotes: number;
-  isVotedByCurrentUser: boolean; 
-  isSelectedOptionByCurrentUser: boolean; 
+  isVotedByCurrentUser: boolean;
+  isSelectedOptionByCurrentUser: boolean;
   deadlinePassed: boolean;
   onVote: () => Promise<void>;
   pollHasTwoOptions: boolean;
   onShowDetails: () => void;
   pollPledgeAmount?: number;
-  canCurrentUserVote: boolean; 
+  canCurrentUserVote: boolean;
 }> = ({ option, totalVotes, isVotedByCurrentUser, isSelectedOptionByCurrentUser, deadlinePassed, onVote, pollHasTwoOptions, onShowDetails, pollPledgeAmount, canCurrentUserVote }) => {
-  const { toast } = useToast(); 
+  const { toast } = useToast();
   const percentage = totalVotes > 0 ? (option.votes / totalVotes) * 100 : 0;
   const showResults = isVotedByCurrentUser || deadlinePassed;
   const isTruncated = option.text.length > OPTION_TEXT_TRUNCATE_LENGTH;
@@ -69,7 +69,7 @@ const PollOptionDisplay: React.FC<{
     if (canCurrentUserVote && !isVotedByCurrentUser && !deadlinePassed) {
       await onVote();
     } else {
-      onShowDetails(); 
+      onShowDetails();
     }
   };
 
@@ -136,9 +136,12 @@ const PollOptionDisplay: React.FC<{
   );
 };
 
-export default function PollDetailsPage({ params }: { params: { pollId: string } }) {
+export default function PollDetailsPage() {
+  const routeParams = useParams<{ pollId: string }>(); // Use hook to get params
+  const pollId = routeParams.pollId;
+
   const [pollData, setPollData] = useState<{ poll: Poll | null; comments: CommentType[] }>({ poll: null, comments: [] });
-  const [pageLoading, setPageLoading] = useState(true); 
+  const [pageLoading, setPageLoading] = useState(true);
   const [isTipping, setIsTipping] = useState(false);
   const [isLiking, setIsLiking] = useState(false);
   const [deadlinePassedState, setDeadlinePassedState] = useState(false);
@@ -152,15 +155,16 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
   const [newCommentText, setNewCommentText] = useState('');
 
   useEffect(() => {
+    if (!pollId) return; // Guard if pollId is not yet available
+
     const fetchData = async () => {
       setPageLoading(true);
-      const data = await getPollDetails(params.pollId);
-      // Ensure the poll object is a new instance for state updates
+      const data = await getPollDetails(pollId);
       setPollData(prev => ({ ...prev, ...data, poll: data.poll ? {...data.poll} : null }));
       setPageLoading(false);
     };
     fetchData();
-  }, [params.pollId]);
+  }, [pollId]); // Depend on pollId from useParams
 
   const poll = pollData.poll;
   const comments = pollData.comments;
@@ -195,8 +199,8 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
       if (!prevData.poll) return prevData;
       const newPoll = {
         ...prevData.poll,
-        isVoted: true, 
-        votedOptionId: optionId, 
+        isVoted: true,
+        votedOptionId: optionId,
         totalVotes: prevData.poll.totalVotes + 1,
         options: prevData.poll.options.map(opt =>
           opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
@@ -225,14 +229,14 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
 
   const handleCommentSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!isAuthenticated || !currentUser) { 
+    if (!isAuthenticated || !currentUser) {
         toast({title: "Login Required", description: "Please login to comment.", variant: "destructive"});
         return;
     }
     if (newCommentText.trim() !== "" && poll) {
       const newComment: CommentType = {
         id: `comment${Date.now()}`,
-        user: { 
+        user: {
             id: currentUser.id,
             name: currentUser.name || "PollitUser",
             avatarUrl: currentUser.image || `https://placehold.co/100x100.png?text=${currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}`,
@@ -243,9 +247,9 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
       };
       setPollData(prevData => ({
         ...prevData,
-        comments: [newComment, ...prevData.comments], // Add to the beginning of the list
+        comments: [newComment, ...prevData.comments],
       }));
-      setNewCommentText(''); // Clear the textarea
+      setNewCommentText('');
       toast({title: "Comment Added", description: "Your comment has been posted."});
     }
   };
@@ -259,8 +263,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
     if (!poll) return;
 
     setIsLiking(true);
-    // Simulate API call for like
-    await new Promise(resolve => setTimeout(resolve, 300)); 
+    await new Promise(resolve => setTimeout(resolve, 300));
     setPollData(prevData => {
         if (!prevData.poll) return prevData;
         const newIsLiked = !prevData.poll.isLiked;
@@ -311,7 +314,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: 500, 
+          amount: 500,
           currency: 'usd',
           itemName: `Tip for ${poll.creator.name} (Poll: ${poll.question.substring(0,30)}...)`,
           metadata: { pollId: poll.id, pollCreatorId: poll.creator.id, tipperUserId: currentUser.id }
@@ -417,7 +420,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
                   key={option.id}
                   option={option}
                   totalVotes={poll.totalVotes}
-                  isVotedByCurrentUser={!!poll.isVoted} 
+                  isVotedByCurrentUser={!!poll.isVoted}
                   isSelectedOptionByCurrentUser={poll.votedOptionId === option.id}
                   deadlinePassed={deadlinePassedState}
                   onVote={() => handleVote(option.id)}
@@ -431,10 +434,10 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
              {!isAuthenticated && (
                 <div className="mt-3 text-sm text-destructive flex items-center justify-center bg-destructive/10 p-2 rounded-md">
                     <AlertCircle className="w-4 h-4 mr-1.5" />
-                    Please 
-                    <Button variant="link" className="p-0 h-auto text-destructive hover:text-destructive/80 mx-1 text-sm" onClick={() => signIn()}>login</Button> 
-                    or 
-                    <NextLink href="/signup" className="underline hover:text-destructive/80 mx-1">sign up</NextLink> 
+                    Please
+                    <Button variant="link" className="p-0 h-auto text-destructive hover:text-destructive/80 mx-1 text-sm" onClick={() => signIn()}>login</Button>
+                    or
+                    <NextLink href="/signup" className="underline hover:text-destructive/80 mx-1">sign up</NextLink>
                     to vote.
                 </div>
             )}
@@ -468,7 +471,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
           <CardFooter className="p-4 sm:p-6 border-t pt-4 flex flex-col items-stretch">
             <div className="flex justify-around mb-4">
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" onClick={handleLikeToggle} disabled={isLiking}>
-                {isLiking ? <Loader2 className="h-5 w-5 animate-spin" /> : <Heart className={cn("w-5 h-5 mr-1.5", poll.isLiked ? "fill-red-500 text-red-500" : "")} />} 
+                {isLiking ? <Loader2 className="h-5 w-5 animate-spin" /> : <Heart className={cn("w-5 h-5 mr-1.5", poll.isLiked ? "fill-red-500 text-red-500" : "")} />}
                 {poll.likes.toLocaleString()} Likes
               </Button>
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" onClick={handleTipCreator} disabled={isTipping || !isAuthenticated}>
@@ -495,11 +498,11 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
                       <UserCircle2 className="h-full w-full text-muted-foreground p-1.5"/>
                    </Avatar>
                 )}
-                <Textarea 
-                    name="comment" 
-                    placeholder={isAuthenticated ? "Add a comment..." : "Login to add a comment..."} 
-                    className="flex-grow min-h-[40px] max-h-[120px]" 
-                    rows={1} 
+                <Textarea
+                    name="comment"
+                    placeholder={isAuthenticated ? "Add a comment..." : "Login to add a comment..."}
+                    className="flex-grow min-h-[40px] max-h-[120px]"
+                    rows={1}
                     value={newCommentText}
                     onChange={(e) => setNewCommentText(e.target.value)}
                     disabled={!isAuthenticated}
@@ -528,7 +531,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
                  {!isAuthenticated && comments.length > 0 && (
                      <div className="mt-3 text-sm text-center text-destructive flex items-center justify-center bg-destructive/10 p-2 rounded-md">
                         <AlertCircle className="w-4 h-4 mr-1.5" />
-                        <Button variant="link" className="p-0 h-auto text-destructive hover:text-destructive/80 mx-1 text-sm" onClick={() => signIn()}>Login</Button> 
+                        <Button variant="link" className="p-0 h-auto text-destructive hover:text-destructive/80 mx-1 text-sm" onClick={() => signIn()}>Login</Button>
                         to see more comments or add your own.
                     </div>
                  )}
@@ -550,5 +553,4 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
     </>
   );
 }
-
     

@@ -11,10 +11,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Settings, MessageSquare, Edit3, ChevronLeft, Share2, Search, CalendarDays, MapPin, Link as LinkIconLucide, Flame, AlertCircle, Loader2, UserPlus, LogIn, UserCheck, UserX } from "lucide-react";
 import Image from "next/image";
 import type { UserProfile as AppUserProfileType } from '@/types';
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation"; // Import useParams
 import { useToast } from "@/hooks/use-toast";
 import PollFeed from '@/components/polls/PollFeed';
-import useAuth from '@/hooks/useAuth'; 
+import useAuth from '@/hooks/useAuth';
 import NextLink from 'next/link';
 import { signIn } from 'next-auth/react';
 
@@ -22,7 +22,7 @@ import { signIn } from 'next-auth/react';
 async function getUserData(userId: string): Promise<{ user: User | null; polls: Poll[] }> {
   console.warn(`[UserProfilePage] Using mock data for userId: ${userId}`);
   const user = mockUsers.find(u => u.id === userId) || null;
-  const freshUser = user ? {...user} : null; // Create a fresh copy
+  const freshUser = user ? {...user} : null;
   
   let polls: Poll[] = [];
   if (freshUser) {
@@ -36,30 +36,31 @@ const urlSafeText = (text: string, maxLength: number = 15): string => {
   return encodeURIComponent(cleanedText);
 };
 
-export default function UserProfilePage({ params }: { params: { userId: string } }) {
+export default function UserProfilePage() {
   const router = useRouter();
-  const { toast } = useToast();  
+  const routeParams = useParams<{ userId: string }>(); // Use hook to get params
+  const userId = routeParams.userId;
+  const { toast } = useToast();
   
   const { user: authUser, loading: authLoading, isAuthenticated } = useAuth();
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [userPolls, setUserPolls] = useState<Poll[]>([]);
   const [pageLoading, setPageLoading] = useState(true);
-  const [isFollowing, setIsFollowing] = useState(false); // Simulated follow state
+  const [isFollowing, setIsFollowing] = useState(false);
 
   useEffect(() => {
-    if (params && params.userId) {
+    if (userId) {
       setPageLoading(true);
-      getUserData(params.userId)
+      getUserData(userId)
         .then(data => {
           setProfileUser(data.user);
-          setUserPolls(data.polls);        
+          setUserPolls(data.polls);
           if (data.user) {
-            // Simulate initial follow state (e.g., from mock data or a future API call)
             setIsFollowing(data.user.isFollowedByCurrentUser || false);
           } else {
             toast({
               title: "User Not Found",
-              description: `Profile for ID ${params.userId} could not be loaded.`,
+              description: `Profile for ID ${userId} could not be loaded.`,
               variant: "destructive"
             });
           }
@@ -73,9 +74,10 @@ export default function UserProfilePage({ params }: { params: { userId: string }
         });
     } else {
       setPageLoading(false);
-      toast({ title: "Error", description: "User ID not provided for profile.", variant: "destructive" });
-    }    
-  }, [params, toast]);
+      // toast({ title: "Error", description: "User ID not provided for profile.", variant: "destructive" });
+      // No toast here as userId might be undefined briefly during initial render
+    }
+  }, [userId, toast]);
 
 
   const handleFollowToggle = () => {
@@ -90,7 +92,6 @@ export default function UserProfilePage({ params }: { params: { userId: string }
     }
     setIsFollowing(prev => !prev);
     toast({ title: isFollowing ? `Unfollowed ${profileUser?.name}` : `Followed ${profileUser?.name}`, description: "This action is simulated." });
-    // In a real app, you would make an API call here to update follow status in the database.
   };
 
   if (pageLoading || authLoading) {
@@ -110,7 +111,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
             <AlertCircle className="mx-auto h-16 w-16 text-destructive mb-4" />
             <CardTitle className="text-2xl">User Not Found</CardTitle>
             <CardDescription>
-                The profile for user ID <span className="font-mono bg-muted px-1 rounded">{params.userId}</span> could not be loaded.
+                The profile for user ID <span className="font-mono bg-muted px-1 rounded">{userId}</span> could not be loaded.
             </CardDescription>
           </CardHeader>
           <CardFooter>
@@ -165,11 +166,11 @@ export default function UserProfilePage({ params }: { params: { userId: string }
       <main className="flex-grow pt-0">
         <div className="relative h-48 w-full bg-muted">
           <Image
-            src={coverPhotoUrl} 
+            src={coverPhotoUrl}
             alt={`${profileUser.name}'s cover photo`}
             fill
             style={{objectFit: 'cover'}}
-            priority 
+            priority
             data-ai-hint="profile cover"
           />
           <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 transform">
@@ -207,7 +208,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
               </>
             ) : (
               <>
-                <Button 
+                <Button
                   onClick={handleFollowToggle}
                   disabled={!isAuthenticated && !authLoading}
                   variant={isFollowing ? "outline" : "default"}
@@ -253,9 +254,9 @@ export default function UserProfilePage({ params }: { params: { userId: string }
           </TabsList>
           <TabsContent value="created" className="mt-0">
             {userPolls.length > 0 ? (
-              <PollCardFeedWrapper 
-                initialPolls={userPolls} 
-                currentUser={authUser} // Pass the authenticated user to the wrapper
+              <PollCardFeedWrapper
+                initialPolls={userPolls}
+                currentUser={authUser} 
               />
             ) : (
               <Card className="shadow-none rounded-none border-0">
@@ -309,19 +310,18 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   );
 }
 
-// Wrapper component to manage state for the PollFeed on the profile page
 interface PollCardFeedWrapperProps {
   initialPolls: Poll[];
-  currentUser: User | null; // Authenticated user viewing the page
+  currentUser: User | null;
 }
 
 const PollCardFeedWrapper: React.FC<PollCardFeedWrapperProps> = ({ initialPolls, currentUser }) => {
   const [polls, setPolls] = useState(() => initialPolls.map(p => ({...p})));
   const { toast } = useToast();
-  const { isAuthenticated } = useAuth(); // Use this for auth checks
+  const { isAuthenticated } = useAuth();
 
-  const MIN_PAYOUT_PER_VOTER = 0.10; 
-  const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50; 
+  const MIN_PAYOUT_PER_VOTER = 0.10;
+  const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50;
 
   const handleVote = (pollId: string, optionId: string) => {
     if (!isAuthenticated) {
@@ -370,7 +370,7 @@ const PollCardFeedWrapper: React.FC<PollCardFeedWrapperProps> = ({ initialPolls,
             if (p.id === pollId) {
                 const newIsLiked = !p.isLiked;
                 const newLikesCount = newIsLiked ? p.likes + 1 : Math.max(0, p.likes - 1);
-                 if (!p.isLiked) { 
+                 if (!p.isLiked) {
                     toast({ title: "Poll Liked!" });
                 } else {
                     toast({ title: "Poll Unliked" });
@@ -402,13 +402,13 @@ const PollCardFeedWrapper: React.FC<PollCardFeedWrapperProps> = ({ initialPolls,
 
   return (
     <div className="space-y-0 divide-y divide-border">
-       <PollFeed 
-        staticPolls={polls} 
+       <PollFeed
+        staticPolls={polls}
         onVoteCallback={handleVote}
-        onToggleLikeCallback={handleToggleLike} // Pass the specific like handler for profile page
+        onToggleLikeCallback={handleToggleLike} 
         onPollActionCompleteCallback={handlePollActionComplete}
         onPledgeOutcomeCallback={handlePledgeOutcome}
-        currentUser={currentUser} 
+        currentUser={currentUser}
       />
     </div>
   );
