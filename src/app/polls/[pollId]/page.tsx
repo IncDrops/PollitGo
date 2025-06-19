@@ -16,7 +16,8 @@ import NextLink from "next/link";
 import { cn } from "@/lib/utils";
 import React, { useState, useEffect } from 'react';
 import OptionDetailsDialog from "@/components/polls/OptionDetailsDialog";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from '@/hooks/use-toast';
+import { useStripe } from "@stripe/react-stripe-js";
 
 async function getPollDetails(pollId: string): Promise<{ poll: Poll | null; comments: CommentType[] }> {
   const poll = mockPolls.find(p => p.id === pollId) || null;
@@ -134,10 +135,12 @@ const PollOptionDisplay: React.FC<{
 export default function PollDetailsPage({ params }: { params: { pollId: string } }) {
   const [pollData, setPollData] = useState<{ poll: Poll | null; comments: CommentType[] }>({ poll: null, comments: [] });
   const [loading, setLoading] = useState(true);
+  const [isTipping, setIsTipping] = useState(false);
   const [deadlinePassedState, setDeadlinePassedState] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState('');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const { toast } = useToast();
+  const stripe = useStripe();
 
   const [selectedOptionForModal, setSelectedOptionForModal] = useState<PollOptionType | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -182,8 +185,6 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
 
     const targetOption = poll.options.find(opt => opt.id === optionId);
     if (!targetOption) return;
-
-    console.log(`Vote action for poll ${poll.id}, option ${optionId}`);
     
     setPollData(prevData => {
       if (!prevData.poll) return prevData;
@@ -196,7 +197,6 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
           opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
         ),
       };
-       // Check for low payout warning *after* optimistic update for UI consistency
       if (newPoll.pledgeAmount && newPoll.pledgeAmount > 0) {
         const updatedTargetOption = newPoll.options.find(opt => opt.id === optionId);
         if (updatedTargetOption) {
@@ -218,7 +218,6 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
   const handleCommentSubmit = async (formData: FormData) => {
     const commentText = formData.get('comment') as string;
     if (commentText && commentText.trim() !== "" && poll && currentUser) {
-      console.log(`New comment for poll ${poll.id}: ${commentText}`);
       const newComment: CommentType = {
         id: `comment${Date.now()}`,
         user: currentUser,
@@ -248,7 +247,6 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
     if (navigator.share) {
       try {
         await navigator.share(shareData);
-        console.log('Poll shared successfully via native share.');
         sharedNatively = true;
       } catch (error: any) {
         if (error.name !== 'AbortError' && error.name !== 'NotAllowedError') {
@@ -265,7 +263,6 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
           description: 'Poll link copied to your clipboard.',
         });
       } catch (error) {
-        console.error('Failed to copy poll link:', error);
         toast({
           title: 'Error Copying Link',
           description: 'Could not copy link to clipboard.',
@@ -275,24 +272,43 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
     }
   };
 
-  const handleTipCreator = (e: React.MouseEvent) => {
+  const handleTipCreator = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!poll) return;
-    console.log(`Tip Creator button clicked for poll ${poll.id}. Stripe integration would be initiated here.`);
-    toast({
-      title: "Tip Creator",
-      description: `Thank you for supporting ${poll.creator.name}! (Stripe integration placeholder).`,
-    });
-    setPollData(prev => {
-        if (!prev.poll) return prev;
-        return {
-            ...prev,
-            poll: {
-                ...prev.poll,
-                tipCount: (prev.poll.tipCount || 0) + 1
-            }
-        };
-    });
+    if (!stripe || !poll || !currentUser) {
+      toast({ title: "Stripe not loaded, poll data missing, or user not identified.", variant: "destructive" });
+      return;
+    }
+    setIsTipping(true);
+    try {
+      // This is a hypothetical API route. You need to create this.
+      const response = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: 500, // Example: 500 cents = $5.00. Make this dynamic.
+          currency: 'usd',
+          itemName: `Tip for ${poll.creator.name} (Poll: ${poll.question.substring(0,30)}...)`,
+          metadata: { pollId: poll.id, pollCreatorId: poll.creator.id, tipperUserId: currentUser.id }
+        }),
+      });
+
+      const session = await response.json();
+
+      if (session.id) {
+        const { error } = await stripe.redirectToCheckout({ sessionId: session.id });
+        if (error) {
+          console.error("Stripe redirect error:", error);
+          toast({ title: "Stripe Error", description: error.message, variant: "destructive" });
+        }
+      } else {
+        toast({ title: "Failed to create payment session", description: session.error || "Unknown error from backend.", variant: "destructive" });
+      }
+    } catch (error: any) {
+      console.error("Error during tip process:", error);
+      toast({ title: "Tipping Error", description: error.message || "Could not initiate tipping process.", variant: "destructive" });
+    } finally {
+      setIsTipping(false);
+    }
   };
 
   const handleShowOptionDetails = (option: PollOptionType) => {
@@ -303,7 +319,6 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
   const handlePledgeOutcome = (outcome: 'accepted' | 'tipped_crowd') => {
     if (poll) {
         setPollData(prev => prev.poll ? ({...prev, poll: {...prev.poll, pledgeOutcome: outcome }}) : prev);
-        console.log(`Pledge outcome for poll ${poll.id}: ${outcome} (simulated)`);
         toast({ title: `Pledge Outcome: ${outcome.replace('_', ' ')}`, description: "Action simulated on client."});
     }
   };
@@ -419,8 +434,9 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
                 <Heart className="w-5 h-5 mr-1.5" /> {poll.likes.toLocaleString()} Likes
               </Button>
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" onClick={handleTipCreator}>
-                <Gift className="w-5 h-5 mr-1.5" /> Tip Creator {poll.tipCount && poll.tipCount > 0 ? `(${poll.tipCount.toLocaleString()})` : ''}
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" onClick={handleTipCreator} disabled={isTipping}>
+                {isTipping ? <Loader2 className="mr-1.5 h-5 w-5 animate-spin" /> : <Gift className="w-5 h-5 mr-1.5" />}
+                 Tip Creator {poll.tipCount && poll.tipCount > 0 ? `(${poll.tipCount.toLocaleString()})` : ''}
               </Button>
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" onClick={handleShare}>
                 <Share2 className="w-5 h-5 mr-1.5" /> Share

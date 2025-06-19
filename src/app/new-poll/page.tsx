@@ -11,17 +11,20 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch";
-import { CalendarIcon, ImagePlus, VideoIcon, X, PlusCircle, ImageIcon as ImageIconLucide, Film, LinkIcon, AlertCircle, DollarSign, Info, Flame } from 'lucide-react';
+import { CalendarIcon, ImagePlus, VideoIcon, X, PlusCircle, ImageIcon as ImageIconLucide, Film, LinkIcon, AlertCircle, DollarSign, Info, Flame, Loader2 } from 'lucide-react';
 import { format } from "date-fns"
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useStripe } from '@stripe/react-stripe-js';
+import useAuth from '@/hooks/useAuth';
+
 
 const MAX_OPTIONS = 4;
 const MAX_POLL_IMAGES = 4;
 const MAX_OPTION_TEXT_LENGTH = 365;
 const MIN_PAYOUT_PER_MAJORITY_VOTER = 0.10;
-const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50;
+
 
 interface PollOptionState {
   id: string;
@@ -35,6 +38,8 @@ interface PollOptionState {
 
 export default function NewPollPage() {
   const { toast } = useToast();
+  const stripe = useStripe();
+  const { user: currentUser } = useAuth();
   const [question, setQuestion] = useState('');
   const [options, setOptions] = useState<PollOptionState[]>([
     { id: `option-${Date.now()}`, text: '' },
@@ -43,6 +48,7 @@ export default function NewPollPage() {
   const [deadline, setDeadline] = useState<Date | undefined>(undefined);
   const [pledgeAmount, setPledgeAmount] = useState<number | undefined>(undefined);
   const [isSpicy, setIsSpicy] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [pollImageUrls, setPollImageUrls] = useState<string[]>([]);
   const [pollImageFiles, setPollImageFiles] = useState<File[]>([]);
@@ -167,29 +173,91 @@ export default function NewPollPage() {
   }, []);
 
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+
     if (!question.trim()) {
       toast({ title: "Error", description: "Poll question cannot be empty.", variant: "destructive" });
+      setIsSubmitting(false);
       return;
     }
     if (options.some(opt => !opt.text.trim())) {
        toast({ title: "Error", description: "All poll options must have text.", variant: "destructive" });
+       setIsSubmitting(false);
       return;
     }
     if (options.some(opt => opt.text.length > MAX_OPTION_TEXT_LENGTH)) {
       toast({ title: "Error", description: `One or more options exceed the ${MAX_OPTION_TEXT_LENGTH} character limit for text.`, variant: "destructive" });
+      setIsSubmitting(false);
       return;
     }
     if (!deadline) {
       toast({ title: "Error", description: "Please set a deadline.", variant: "destructive" });
+      setIsSubmitting(false);
       return;
     }
     if (pledgeAmount !== undefined && pledgeAmount <= 0) {
       toast({ title: "Error", description: "Pledge amount must be greater than zero if set.", variant: "destructive" });
+      setIsSubmitting(false);
+      return;
+    }
+    if (pledgeAmount && pledgeAmount > 0 && (!stripe || !currentUser)) {
+      toast({ title: "Error", description: "Stripe or user information is not available for pledge.", variant: "destructive" });
+      setIsSubmitting(false);
       return;
     }
 
+    // Handle Pledge with Stripe Checkout
+    if (pledgeAmount && pledgeAmount > 0 && stripe && currentUser) {
+      try {
+        toast({
+          title: 'Processing Pledge...',
+          description: `Your pledge of $${pledgeAmount.toFixed(2)} is being prepared. You'll be redirected to Stripe.`,
+        });
+
+        const response = await fetch('/api/stripe/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: Math.round(pledgeAmount * 100), // Stripe expects amount in cents
+            currency: 'usd',
+            itemName: `Pledge for Poll: ${question.substring(0, 50)}...`,
+            // In a real app, you'd pass a success_url and cancel_url to handle post-payment poll creation.
+            // e.g., success_url: `${window.location.origin}/new-poll/success?session_id={CHECKOUT_SESSION_ID}`
+            // For now, this is a simplified flow.
+            metadata: { 
+              userId: currentUser.uid, 
+              action: 'poll_pledge',
+              question: question.substring(0,100) // Example metadata
+            } 
+          }),
+        });
+        
+        const session = await response.json();
+
+        if (session.id) {
+          const { error: stripeError } = await stripe.redirectToCheckout({ sessionId: session.id });
+          if (stripeError) {
+            throw new Error(stripeError.message);
+          }
+          // If redirectToCheckout is called, this part of the code might not be reached immediately
+          // as the user is redirected. The actual poll creation would happen after Stripe redirects back.
+          // For now, we'll let the toast below indicate simulation.
+          setIsSubmitting(false); // User is redirected, so further processing here is halted
+          return; 
+        } else {
+          throw new Error(session.error || "Failed to create Stripe session.");
+        }
+      } catch (error: any) {
+        console.error("Stripe pledge error:", error);
+        toast({ title: "Pledge Failed", description: error.message || "Could not process pledge via Stripe.", variant: "destructive", duration: 7000 });
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
+    // If no pledge or Stripe flow was skipped/failed before redirect
     const pollData = {
       question,
       options: options.map(({id, imageFile, videoFile, ...rest}) => ({
@@ -204,23 +272,14 @@ export default function NewPollPage() {
       pledgeOutcome: pledgeAmount && pledgeAmount > 0 ? 'pending' : undefined,
       isSpicy,
     };
-    console.log('Submitting poll:', pollData);
+    console.log('Submitting poll (simulated):', pollData);
     console.log('Poll Image Files:', pollImageFiles);
     console.log('Poll Video File:', pollVideoFile);
     console.log('Option Files:', options.map(o => ({image: o.imageFile, video: o.videoFile})));
 
-    if (pollData.pledgeAmount && pollData.pledgeAmount > 0) {
-        console.log(`Pledge amount $${pollData.pledgeAmount} submitted. Stripe integration placeholder: This would trigger Stripe payment processing.`);
-        toast({
-            title: 'Pledge Submitted (Simulated)',
-            description: `Your pledge of $${pollData.pledgeAmount.toFixed(2)} would be processed via Stripe now.`,
-            duration: 5000,
-        });
-    }
-
     toast({
       title: 'Poll Created! (Simulated)',
-      description: 'Your poll has been successfully submitted to the console.',
+      description: 'Your poll has been successfully submitted to the console. If you made a pledge, it would be finalized after payment.',
     });
 
     // Reset form
@@ -237,6 +296,7 @@ export default function NewPollPage() {
     setIsSpicy(false);
     if (pollImageInputRef.current) pollImageInputRef.current.value = "";
     if (pollVideoInputRef.current) pollVideoInputRef.current.value = "";
+    setIsSubmitting(false);
   };
 
   return (
@@ -267,12 +327,12 @@ export default function NewPollPage() {
                 </AlertDescription>
               </Alert>
               <div className="grid grid-cols-2 gap-2">
-                <Button type="button" variant="outline" onClick={() => pollImageInputRef.current?.click()} disabled={pollImageUrls.length >= MAX_POLL_IMAGES}>
+                <Button type="button" variant="outline" onClick={() => pollImageInputRef.current?.click()} disabled={pollImageUrls.length >= MAX_POLL_IMAGES || isSubmitting}>
                   <ImagePlus className="mr-2 h-4 w-4" /> Add Image ({pollImageUrls.length}/{MAX_POLL_IMAGES})
                 </Button>
                 <input type="file" accept="image/*" multiple onChange={handlePollImageFileChange} ref={pollImageInputRef} className="hidden" />
 
-                <Button type="button" variant="outline" onClick={() => pollVideoInputRef.current?.click()} disabled={!!pollVideoUrl}>
+                <Button type="button" variant="outline" onClick={() => pollVideoInputRef.current?.click()} disabled={!!pollVideoUrl || isSubmitting}>
                   <VideoIcon className="mr-2 h-4 w-4" /> Add Video {pollVideoUrl ? '(1/1)' : '(0/1)'}
                 </Button>
                 <input type="file" accept="video/*" onChange={handlePollVideoFileChange} ref={pollVideoInputRef} className="hidden" />
@@ -283,7 +343,7 @@ export default function NewPollPage() {
                     <Film className="h-5 w-5 mr-2 text-primary" />
                     <span>Poll Video Added (Preview)</span>
                   </div>
-                  <Button type="button" variant="ghost" size="icon" onClick={handleRemovePollVideo} aria-label="Remove poll video">
+                  <Button type="button" variant="ghost" size="icon" onClick={handleRemovePollVideo} aria-label="Remove poll video" disabled={isSubmitting}>
                     <X className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
@@ -302,6 +362,7 @@ export default function NewPollPage() {
                           className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={() => handleRemovePollImage(index)}
                           aria-label={`Remove image ${index + 1}`}
+                          disabled={isSubmitting}
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -329,9 +390,10 @@ export default function NewPollPage() {
                         maxLength={MAX_OPTION_TEXT_LENGTH}
                         className="flex-grow bg-background rounded-md min-h-[60px]"
                         rows={2}
+                        disabled={isSubmitting}
                       />
                       {options.length > 2 && (
-                        <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveOption(option.id)} aria-label="Remove option" className="mt-1">
+                        <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveOption(option.id)} aria-label="Remove option" className="mt-1" disabled={isSubmitting}>
                           <X className="h-5 w-5 text-destructive" />
                         </Button>
                       )}
@@ -347,6 +409,7 @@ export default function NewPollPage() {
                           onChange={(e) => handleOptionChange(option.id, 'affiliateLink', e.target.value)}
                           placeholder="Optional: Affiliate Link (e.g., https://amzn.to/xyz)"
                           className="pl-10 bg-background text-sm rounded-md"
+                          disabled={isSubmitting}
                         />
                     </div>
                     <div className="flex items-center space-x-2 pt-2 border-t mt-3">
@@ -356,12 +419,12 @@ export default function NewPollPage() {
                           <div className="flex items-center space-x-1">
                             <ImageIconLucide className="h-4 w-4 text-primary" />
                             <span className="text-xs text-muted-foreground truncate max-w-[100px]">{option.imageFile?.name || "Image Added"}</span>
-                            <Button type="button" variant="ghost" size="icon" onClick={() => removeOptionImage(option.id)} aria-label="Remove option image" className="h-6 w-6">
+                            <Button type="button" variant="ghost" size="icon" onClick={() => removeOptionImage(option.id)} aria-label="Remove option image" className="h-6 w-6" disabled={isSubmitting}>
                               <X className="h-3 w-3 text-destructive" />
                             </Button>
                           </div>
                         ) : (
-                          <Button type="button" variant="ghost" size="icon" onClick={() => optionImageInputRef.current?.click()} aria-label="Add image to option" disabled={!!option.videoUrl || !!option.videoFile} className="h-7 w-7">
+                          <Button type="button" variant="ghost" size="icon" onClick={() => optionImageInputRef.current?.click()} aria-label="Add image to option" disabled={!!option.videoUrl || !!option.videoFile || isSubmitting} className="h-7 w-7">
                             <ImagePlus className="h-4 w-4 text-muted-foreground" />
                           </Button>
                         )
@@ -373,12 +436,12 @@ export default function NewPollPage() {
                            <div className="flex items-center space-x-1">
                             <VideoIcon className="h-4 w-4 text-primary" />
                              <span className="text-xs text-muted-foreground truncate max-w-[100px]">{option.videoFile?.name || "Video Added"}</span>
-                            <Button type="button" variant="ghost" size="icon" onClick={() => removeOptionVideo(option.id)} aria-label="Remove option video" className="h-6 w-6">
+                            <Button type="button" variant="ghost" size="icon" onClick={() => removeOptionVideo(option.id)} aria-label="Remove option video" className="h-6 w-6" disabled={isSubmitting}>
                                <X className="h-3 w-3 text-destructive" />
                             </Button>
                           </div>
                         ) : (
-                          <Button type="button" variant="ghost" size="icon" onClick={() => optionVideoInputRef.current?.click()} aria-label="Add video to option" disabled={!!option.imageUrl || !!option.imageFile} className="h-7 w-7">
+                          <Button type="button" variant="ghost" size="icon" onClick={() => optionVideoInputRef.current?.click()} aria-label="Add video to option" disabled={!!option.imageUrl || !!option.imageFile || isSubmitting} className="h-7 w-7">
                             <VideoIcon className="h-4 w-4 text-muted-foreground" />
                           </Button>
                         )
@@ -389,7 +452,7 @@ export default function NewPollPage() {
                 );
               })}
               {options.length < MAX_OPTIONS && (
-                <Button type="button" variant="outline" onClick={handleAddOption} className="w-full rounded-md">
+                <Button type="button" variant="outline" onClick={handleAddOption} className="w-full rounded-md" disabled={isSubmitting}>
                   <PlusCircle className="mr-2 h-4 w-4" /> Add Option
                 </Button>
               )}
@@ -402,6 +465,7 @@ export default function NewPollPage() {
                   <Button
                     variant={"outline"}
                     className="w-full justify-start text-left font-normal rounded-md"
+                    disabled={isSubmitting}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {deadline ? format(deadline, "PPP HH:mm") : <span>Pick a date and time</span>}
@@ -414,6 +478,7 @@ export default function NewPollPage() {
                     onSelect={setDeadline}
                     initialFocus
                     fromDate={new Date()}
+                    disabled={isSubmitting}
                   />
                   <div className="p-2 border-t">
                      <Label htmlFor="time" className="text-xs text-muted-foreground">Time (24h format)</Label>
@@ -426,7 +491,7 @@ export default function NewPollPage() {
                          newDeadline.setSeconds(0);
                          setDeadline(newDeadline);
                        }
-                     }} />
+                     }} disabled={isSubmitting} />
                   </div>
                 </PopoverContent>
               </Popover>
@@ -445,8 +510,8 @@ export default function NewPollPage() {
                   }
                   newDeadline.setSeconds(0);
                   setDeadline(newDeadline);
-               }}>
-                <SelectTrigger className="w-full mt-2 rounded-md">
+               }} disabled={isSubmitting}>
+                <SelectTrigger className="w-full mt-2 rounded-md" disabled={isSubmitting}>
                   <SelectValue placeholder="Or quick select duration" />
                 </SelectTrigger>
                 <SelectContent className="bg-card rounded-lg shadow-xl">
@@ -463,7 +528,7 @@ export default function NewPollPage() {
             
             <div className="space-y-3 pt-4 border-t">
               <div className="flex items-center space-x-2">
-                <Switch id="spicy-content-toggle" checked={isSpicy} onCheckedChange={setIsSpicy} />
+                <Switch id="spicy-content-toggle" checked={isSpicy} onCheckedChange={setIsSpicy} disabled={isSubmitting}/>
                 <Label htmlFor="spicy-content-toggle" className="flex items-center text-base font-semibold">
                   <Flame className="mr-2 h-5 w-5 text-orange-500" /> Mark as Spicy Content (18+)
                 </Label>
@@ -486,7 +551,7 @@ export default function NewPollPage() {
                 <AlertCircle className="h-4 w-4 !text-primary" />
                 <AlertTitle className="text-sm font-semibold !text-primary">Pledge to the Crowd!</AlertTitle>
                 <AlertDescription className="text-xs !text-primary/80">
-                  By setting a pledge, you commit to accepting the majority vote. If you choose to go against the crowd's decision after the poll ends, your pledged amount will be distributed as "Tip the Crowd" (50% to the platform, 50% to majority voters as PollitPoints).
+                  By setting a pledge, you commit to accepting the majority vote. If you choose to go against the crowd's decision after the poll ends, your pledged amount will be distributed as "Tip the Crowd" (50% to the platform, 50% to majority voters as PollitPoints). Payment via Stripe.
                 </AlertDescription>
               </Alert>
               <Input
@@ -498,9 +563,10 @@ export default function NewPollPage() {
                   setPledgeAmount(val === '' ? undefined : parseFloat(val));
                 }}
                 placeholder="Enter pledge amount (e.g., 10 for $10)"
-                min="0"
+                min="0.50"
                 step="0.01"
                 className="text-base rounded-md"
+                disabled={isSubmitting}
               />
               {pledgeAmount && pledgeAmount > 0 && (
                 <div className="text-xs text-muted-foreground flex items-start mt-1">
@@ -512,7 +578,8 @@ export default function NewPollPage() {
 
           </CardContent>
           <CardFooter className="border-t pt-6">
-            <Button type="submit" className="w-full text-lg py-6 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md font-semibold">
+            <Button type="submit" className="w-full text-lg py-6 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md font-semibold" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
               Poll it &amp; Go
             </Button>
           </CardFooter>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Poll, PollOption as PollOptionType, User } from '@/types';
@@ -6,7 +7,7 @@ import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Clock, MessageSquare, Heart, Share2, Gift, CheckCircle2, Film, Video as VideoIconLucide, Info, Zap, Check, Users, Flame } from 'lucide-react';
+import { Clock, MessageSquare, Heart, Share2, Gift, CheckCircle2, Film, Video as VideoIconLucide, Info, Zap, Check, Users, Flame, Loader2 } from 'lucide-react';
 import { parseISO, isPast } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
@@ -15,7 +16,8 @@ import { useSwipeable } from 'react-swipeable';
 import OptionDetailsDialog from './OptionDetailsDialog';
 import { motion, useAnimationControls } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
-import { mockUsers } from '@/lib/mockData'; // Assuming currentUser might be mocked for now
+import { mockUsers } from '@/lib/mockData'; 
+import { useStripe } from '@stripe/react-stripe-js';
 
 interface PollCardProps {
   poll: Poll;
@@ -122,10 +124,12 @@ const PollOption: React.FC<{
 export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeOutcome, currentUser }: PollCardProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const stripe = useStripe();
   const [deadlinePassed, setDeadlinePassed] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [createdAtFormatted, setCreatedAtFormatted] = useState<string | null>(null);
   const [currentPoll, setCurrentPoll] = useState<Poll>(poll);
+  const [isTipping, setIsTipping] = useState(false);
 
   useEffect(() => {
     setCurrentPoll(poll);
@@ -135,11 +139,8 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const controls = useAnimationControls();
-
-  // Removed onPollActionComplete from canSwipe as we are handling animation internally
   const canSwipe = currentPoll.options.length === 2 && !currentPoll.isVoted && !deadlinePassed && !!onVote;
 
-  // **MOVED handleInternalVote FUNCTION DEFINITION HERE**
   const handleInternalVote = (optionId: string) => {
     if (!onVote) return;
 
@@ -158,10 +159,7 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
         });
       }
     }
-    // Still call onVote to inform parent, but local state updates control visual feedback
     onVote(currentPoll.id, optionId);
-
-    // Local state update logic - now correctly inside handleInternalVote
     setCurrentPoll(prevPoll => {
         const updatedOptions = prevPoll.options.map(opt =>
             opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
@@ -175,12 +173,10 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
         };
     });
   };
-  // **END OF MOVED FUNCTION DEFINITION**
-
 
   const handlers = useSwipeable({
     onSwiped: async (eventData) => {
-      if (!canSwipe || typeof onVote === 'undefined') return; // Used typeof check here
+      if (!canSwipe || typeof onVote === 'undefined') return;
 
       const threshold = 80;
       let swipedOptionId: string | undefined = undefined;
@@ -196,31 +192,25 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
         }
 
         if (swipedOptionId) {
-           // 1. Trigger animation out
           await controls.start({
-            x: swipeDirection === 'right' ? 300 : -300, // Animate out based on swipe direction
-            rotate: swipeDirection === 'right' ? 5 : -5, // Add slight rotation
+            x: swipeDirection === 'right' ? 300 : -300,
+            rotate: swipeDirection === 'right' ? 5 : -5,
             opacity: 0,
-            transition: { duration: 0.4, ease: "easeOut" } // Faster ease-out
+            transition: { duration: 0.4, ease: "easeOut" }
           });
-
-          // 2. Call handleInternalVote - this now includes local state update
           handleInternalVote(swipedOptionId);
-
-          // 3. Animate back in
           await controls.start({
-            x: 0, // Animate back to original position
-            rotate: 0, // Reset rotation
+            x: 0,
+            rotate: 0,
             opacity: 1,
-            transition: { duration: 0.4, ease: "easeOut" } // Match ease-out
+            transition: { duration: 0.4, ease: "easeOut" }
           });
         }
-         // Removed onPollActionComplete call
       }
     },
     preventScrollOnSwipe: true,
     trackMouse: true,
-    delta: 20 // Lower delta threshold for easier swiping
+    delta: 20
   });
 
   const formatTimeDifference = useCallback((targetDate: Date): string => {
@@ -281,7 +271,6 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
   };
 
   const onCardClick = (e: React.MouseEvent) => {
-    // Prevent navigation if an interactive element within the card was clicked
     const targetElement = e.target as HTMLElement;
     if (targetElement.closest('button, a, [data-swipe-handler], [role="button"][aria-label="View option details"]')) {
       return;
@@ -290,12 +279,12 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
   };
 
   const onCreatorClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click when creator info is clicked
+    e.stopPropagation(); 
     router.push(`/profile/${currentPoll.creator.id}`);
   };
 
   const handleShare = async (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click
+    e.stopPropagation(); 
     if (typeof window === 'undefined') return;
     const shareUrl = `${window.location.origin}/polls/${currentPoll.id}`;
     const shareData = {
@@ -308,10 +297,8 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
     if (navigator.share) {
       try {
         await navigator.share(shareData);
-        console.log('Poll shared successfully via native share.');
         sharedNatively = true;
       } catch (error: any) {
-        // Don't log permission denied or cancellation as errors to the user.
         if (error.name !== 'AbortError' && error.name !== 'NotAllowedError') {
             console.error('Error sharing poll via native share:', error);
         }
@@ -326,7 +313,6 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
           description: 'Poll link copied to your clipboard.',
         });
       } catch (error) {
-        console.error('Failed to copy poll link:', error);
         toast({
           title: 'Error Copying Link',
           description: 'Could not copy link to clipboard.',
@@ -336,26 +322,51 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
     }
   };
 
-  const handleTipCreator = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click
-    console.log(`Tip Creator button clicked for poll ${currentPoll.id}. Stripe integration would be initiated here.`);
-    toast({
-      title: "Tip Creator",
-      description: `Thank you for supporting ${currentPoll.creator.name}! (Stripe integration placeholder).`,
-    });
-    // Simulate tip count update for immediate feedback
-    setCurrentPoll(prev => ({
-        ...prev,
-        tipCount: (prev.tipCount || 0) + 1
-    }));
+  const handleTipCreator = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!stripe || !currentUser) {
+      toast({ title: "Stripe not loaded or user not logged in.", variant: "destructive" });
+      return;
+    }
+    setIsTipping(true);
+    try {
+      // This is a hypothetical API route. You need to create this.
+      const response = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: 500, // Example: 500 cents = $5.00. Make this dynamic.
+          currency: 'usd',
+          itemName: `Tip for ${currentPoll.creator.name}`,
+          metadata: { pollId: currentPoll.id, tipperUserId: currentUser.id }
+        }),
+      });
+
+      const session = await response.json();
+
+      if (session.id) {
+        const { error } = await stripe.redirectToCheckout({ sessionId: session.id });
+        if (error) {
+          console.error("Stripe redirect error:", error);
+          toast({ title: "Stripe Error", description: error.message, variant: "destructive" });
+        }
+      } else {
+        toast({ title: "Failed to create payment session", variant: "destructive" });
+      }
+    } catch (error) {
+      console.error("Error during tip process:", error);
+      toast({ title: "Tipping Error", description: "Could not initiate tipping process.", variant: "destructive" });
+    } finally {
+      setIsTipping(false);
+    }
   };
+
 
   const handlePledgeOutcome = (outcome: 'accepted' | 'tipped_crowd') => {
     setCurrentPoll(prev => ({ ...prev, pledgeOutcome: outcome }));
     if (onPledgeOutcome) {
       onPledgeOutcome(currentPoll.id, outcome);
     } else {
-      console.log(`Pledge outcome for poll ${currentPoll.id}: ${outcome} (simulated)`);
       toast({ title: `Pledge Outcome: ${outcome.replace('_', ' ')}`, description: "Action simulated on client."});
     }
   };
@@ -430,12 +441,10 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
                   key={option.id}
                   option={option}
                   totalVotes={currentPoll.totalVotes}
- onVoteOptionClick={() => {
+                  onVoteOptionClick={() => {
                     if (canVoteOnPoll && !pollHasTwoOptions) {
-                        // For multi-option polls (not swipeable), call handleInternalVote on click
                          handleInternalVote(option.id);
                     } else {
-                       // For swipeable or already voted/deadline passed, show details
                        handleShowOptionDetails(option);
                     }
                   }}
@@ -483,8 +492,9 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" onClick={onCardClick}>
               <MessageSquare className="w-5 h-5 mr-1.5" /> {currentPoll.commentsCount.toLocaleString()}
             </Button>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" onClick={handleTipCreator}>
-              <Gift className="w-5 h-5 mr-1.5" /> Tip Creator {currentPoll.tipCount && currentPoll.tipCount > 0 ? `(${currentPoll.tipCount.toLocaleString()})` : ''}
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" onClick={handleTipCreator} disabled={isTipping}>
+              {isTipping ? <Loader2 className="mr-1.5 h-5 w-5 animate-spin" /> : <Gift className="w-5 h-5 mr-1.5" />}
+               Tip Creator {currentPoll.tipCount && currentPoll.tipCount > 0 ? `(${currentPoll.tipCount.toLocaleString()})` : ''}
             </Button>
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" onClick={handleShare}>
               <Share2 className="w-5 h-5" />

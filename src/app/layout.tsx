@@ -5,6 +5,11 @@ import { Toaster } from '@/components/ui/toaster';
 import BottomNavigationBar from '@/components/layout/BottomNavigationBar';
 import TopNavigationBar from '@/components/layout/TopNavigationBar';
 import { ThemeProvider } from 'next-themes';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
+
+// Make sure to replace this with your actual Stripe publishable key
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
 export const metadata: Metadata = {
   title: 'PollitAGo',
@@ -38,13 +43,15 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <div className="flex flex-col flex-grow min-h-0">
-            <TopNavigationBar />
-            <main className="flex-grow overflow-y-auto pb-[70px] pt-[80px]"> {/* Adjusted pt for taller TopNav */}
-              {children}
-            </main>
-            <BottomNavigationBar />
-          </div>
+          <Elements stripe={stripePromise}>
+            <div className="flex flex-col flex-grow min-h-0">
+              <TopNavigationBar />
+              <main className="flex-grow overflow-y-auto pb-[70px] pt-[80px]"> {/* Adjusted pt for taller TopNav */}
+                {children}
+              </main>
+              <BottomNavigationBar />
+            </div>
+          </Elements>
           <Toaster />
         </ThemeProvider>
       </body>
