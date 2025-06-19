@@ -4,214 +4,128 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
-    function isAuthenticated() {
-      return request.auth != null;
+    // Deny all reads and writes by default
+    match /{document=**} {
+      allow read, write: if false;
     }
 
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
-
-    function getIncomingData() {
-      return request.resource.data;
-    }
-
-    function getExistingData() {
-      return resource.data;
-    }
-
-    // Users Collection: User documents are keyed by user.uid
+    // Users collection
+    // - Anyone can read public user profiles
+    // - Authenticated users can create their own profile document (e.g., on signup)
+    // - Authenticated users can only update or delete their own profile
     match /users/{userId} {
-      // Anyone can read user profiles
       allow read: if true;
-
-      // An authenticated user can create their own profile document if it doesn't exist.
-      // - The document ID {userId} must match their auth uid.
-      // - The 'id' field in the document must also match their auth uid.
-      // - Required fields (username, email, avatarUrl, createdAt, pollitPointsBalance) must be present and valid.
-      allow create: if isAuthenticated() && isOwner(userId)
-                    && getIncomingData().id == userId
-                    && getIncomingData().username is string && getIncomingData().username.size() >= 3 && getIncomingData().username.size() <= 20
-                    && getIncomingData().email == request.auth.token.email
-                    && getIncomingData().avatarUrl is string // Validate URL format if possible, or trust client for now
-                    && getIncomingData().createdAt is timestamp && getIncomingData().createdAt == request.time
-                    && getIncomingData().pollitPointsBalance == 0;
-
-      // An authenticated user can update their own profile.
-      // - Cannot change 'id', 'email', 'createdAt'.
-      // - Can update 'username', 'avatarUrl'.
-      // - 'pollitPointsBalance' should ideally be updated by server functions, not directly by client.
-      allow update: if isAuthenticated() && isOwner(userId)
-                    && getIncomingData().id == getExistingData().id
-                    && getIncomingData().email == getExistingData().email
-                    && getIncomingData().createdAt == getExistingData().createdAt
-                    && getIncomingData().username is string && getIncomingData().username.size() >= 3 && getIncomingData().username.size() <= 20
-                    && getIncomingData().avatarUrl is string
-                    && (getIncomingData().pollitPointsBalance == getExistingData().pollitPointsBalance || 지속적인_서버_업데이트_필요); // Placeholder to remind server update is better for points
-
-      // Users cannot delete their own accounts via client (usually handled by backend/admin)
-      allow delete: if false;
+      allow create: if request.auth != null && request.auth.uid == userId
+                      && request.resource.data.id == userId // Ensure they are setting their own ID
+                      && request.resource.data.username is string
+                      && request.resource.data.username.size() >= 3 && request.resource.data.username.size() <= 20
+                      && request.resource.data.email == request.auth.token.email
+                      && request.resource.data.createdAt is timestamp
+                      && request.resource.data.pollitPointsBalance == 0;
+      allow update: if request.auth != null && request.auth.uid == userId
+                      // Allow updating specific fields like username, avatarUrl, but not email or createdAt directly by user
+                      && !(request.resource.data.email != resource.data.email)
+                      && !(request.resource.data.createdAt != resource.data.createdAt)
+                      && !(request.resource.data.pollitPointsBalance != resource.data.pollitPointsBalance); // Points managed by server
+      allow delete: if false; // Generally, users should not delete their own profiles directly, handle via admin/server
     }
 
-    // Polls Collection: Polls documents are keyed by a unique poll ID
+    // Polls collection
+    // - Anyone can read polls
+    // - Authenticated users can create polls with validation
+    // - Poll creators can update their own polls (e.g., pledgeOutcome, or non-critical fields before votes)
+    // - Poll creators can delete their own polls (if allowed by app logic, e.g., before votes or if archived)
     match /polls/{pollId} {
-      // Anyone can read polls
       allow read: if true;
+      allow create: if request.auth != null
+                      && request.resource.data.creator.id == request.auth.uid
+                      && request.resource.data.question is string && request.resource.data.question.size() > 0 && request.resource.data.question.size() <= 500
+                      && request.resource.data.options is list && request.resource.data.options.size() >= 2 && request.resource.data.options.size() <= 4
+                      && request.resource.data.options[0].text is string // Basic check, deeper validation needed for all options
+                      && request.resource.data.deadline is timestamp && request.resource.data.deadline > request.time
+                      && request.resource.data.createdAt == request.time
+                      && request.resource.data.totalVotes == 0
+                      && request.resource.data.likes == 0
+                      && request.resource.data.commentsCount == 0
+                      && (request.resource.data.pledgeAmount == null || (request.resource.data.pledgeAmount is number && request.resource.data.pledgeAmount >= 0.50))
+                      && (request.resource.data.pledgeOutcome == null || request.resource.data.pledgeOutcome == 'pending')
+                      && request.resource.data.isSpicy is bool;
 
-      // Authenticated users can create polls
-      // - Creator ID in the document must match the authenticated user's UID.
-      // - Validate required fields (question, options, deadline, etc.) and their types.
-      // - Initial votes, likes, commentsCount should be 0.
-      allow create: if isAuthenticated()
-                    && isOwner(getIncomingData().creator.id)
-                    && getIncomingData().creator.name is string
-                    && getIncomingData().creator.avatarUrl is string
-                    && getIncomingData().creator.username is string
-                    && getIncomingData().question is string && getIncomingData().question.size() > 0 && getIncomingData().question.size() <= 500
-                    && getIncomingData().options is list && getIncomingData().options.size() >= 2 && getIncomingData().options.size() <= 4
-                    && (forall o in getIncomingData().options :
-                        o.id is string && o.text is string && o.text.size() > 0 && o.text.size() <= 365 && o.votes == 0
-                        && (o.imageUrl == null || (o.imageUrl is string && o.imageUrl.matches('^https?://.*')))
-                        && (o.videoUrl == null || (o.videoUrl is string && o.videoUrl.matches('^https?://.*')))
-                        && (o.affiliateLink == null || (o.affiliateLink is string && o.affiliateLink.matches('^https?://.*')))
-                    )
-                    && getIncomingData().deadline is timestamp && getIncomingData().deadline > request.time
-                    && getIncomingData().createdAt is timestamp && getIncomingData().createdAt == request.time
-                    && getIncomingData().likes == 0
-                    && getIncomingData().totalVotes == 0
-                    && getIncomingData().commentsCount == 0
-                    && (getIncomingData().isVoted == false || getIncomingData().isVoted == null) // Explicitly false or null
-                    && getIncomingData().votedOptionId == null
-                    && (getIncomingData().pledgeAmount == null || (getIncomingData().pledgeAmount is number && getIncomingData().pledgeAmount > 0))
-                    && (getIncomingData().pledgeOutcome == null || getIncomingData().pledgeOutcome == 'pending')
-                    && (getIncomingData().tipCount == null || getIncomingData().tipCount == 0)
-                    && getIncomingData().isSpicy is bool
-                    && (getIncomingData().imageUrls == null || (getIncomingData().imageUrls is list && getIncomingData().imageUrls.size() <= 4 && (forall url in getIncomingData().imageUrls : url is string && url.matches('^https?://.*'))))
-                    && (getIncomingData().imageKeywords == null || (getIncomingData().imageKeywords is list && (forall kw in getIncomingData().imageKeywords : kw is string && kw.size() <= 30)))
-                    && (getIncomingData().videoUrl == null || (getIncomingData().videoUrl is string && getIncomingData().videoUrl.matches('^https?://.*')));
-
-      // Rules for updating polls (voting, liking, creator updates)
-      allow update: if isAuthenticated() && (
-                      // Case 1: Voting on a poll
-                      (
-                        !isOwner(getExistingData().creator.id) // Voter is not the creator
-                        && getExistingData().deadline > request.time // Deadline not passed
-                        && getExistingData().isVoted == false // User has not voted before on this client instance (client manages this)
-                        && getIncomingData().isVoted == true
-                        && getIncomingData().votedOptionId is string
-                        && getIncomingData().options.size() == getExistingData().options.size() // Options list size cannot change
-                        // Total votes must increment by 1
-                        && getIncomingData().totalVotes == getExistingData().totalVotes + 1
-                        // Find the voted option and ensure its vote count increments by 1
-                        && (exists i in 0..(getIncomingData().options.size() - 1) :
-                            getIncomingData().options[i].id == getIncomingData().votedOptionId &&
-                            getIncomingData().options[i].votes == getExistingData().options[i].votes + 1 &&
-                            // Ensure other options' vote counts and content remain unchanged
-                            (forall j in 0..(getIncomingData().options.size() - 1) :
-                                (i == j) || (
-                                  getIncomingData().options[j].votes == getExistingData().options[j].votes &&
-                                  getIncomingData().options[j].text == getExistingData().options[j].text &&
-                                  getIncomingData().options[j].imageUrl == getExistingData().options[j].imageUrl &&
-                                  getIncomingData().options[j].videoUrl == getExistingData().options[j].videoUrl &&
-                                  getIncomingData().options[j].affiliateLink == getExistingData().options[j].affiliateLink
-                                )
-                            )
-                        )
-                        // Ensure other critical poll fields are not changed by a voter
-                        && getIncomingData().question == getExistingData().question
-                        && getIncomingData().creator.id == getExistingData().creator.id
-                        && getIncomingData().deadline == getExistingData().deadline
-                        && getIncomingData().createdAt == getExistingData().createdAt
-                        && getIncomingData().likes == getExistingData().likes // Likes handled separately
-                        && getIncomingData().commentsCount == getExistingData().commentsCount // Comments handled separately
-                        && getIncomingData().pledgeAmount == getExistingData().pledgeAmount
-                        && getIncomingData().pledgeOutcome == getExistingData().pledgeOutcome
-                        && getIncomingData().tipCount == getExistingData().tipCount
-                        && getIncomingData().isSpicy == getExistingData().isSpicy
-                        && getIncomingData().imageUrls == getExistingData().imageUrls
-                        && getIncomingData().videoUrl == getExistingData().videoUrl
+      allow update: if request.auth != null && request.auth.uid == resource.data.creator.id
+                      // Allow creator to update pledgeOutcome after deadline
+                      && (
+                        (request.resource.data.pledgeOutcome != resource.data.pledgeOutcome && resource.data.deadline <= request.time)
+                        // Add other updatable fields here with appropriate conditions
+                        // e.g., if no votes yet, allow question edit: && resource.data.totalVotes == 0 && request.resource.data.question != resource.data.question
                       )
-                      // Case 2: Liking/unliking a poll (simple increment/decrement of likes)
-                      || (
-                        (getIncomingData().likes == getExistingData().likes + 1 || getIncomingData().likes == getExistingData().likes - 1) &&
-                        // Ensure only 'likes' and potentially 'isVoted' fields change, others remain same
-                        getIncomingData().question == getExistingData().question &&
-                        getIncomingData().creator.id == getExistingData().creator.id &&
-                        getIncomingData().options == getExistingData().options && // Options array content must not change
-                        getIncomingData().deadline == getExistingData().deadline &&
-                        getIncomingData().createdAt == getExistingData().createdAt &&
-                        getIncomingData().totalVotes == getExistingData().totalVotes &&
-                        getIncomingData().commentsCount == getExistingData().commentsCount &&
-                        // isVoted and votedOptionId might be set if user voted before liking
-                        getIncomingData().isVoted == getExistingData().isVoted &&
-                        getIncomingData().votedOptionId == getExistingData().votedOptionId &&
-                        getIncomingData().pledgeAmount == getExistingData().pledgeAmount &&
-                        getIncomingData().pledgeOutcome == getExistingData().pledgeOutcome &&
-                        getIncomingData().tipCount == getExistingData().tipCount &&
-                        getIncomingData().isSpicy == getExistingData().isSpicy &&
-                        getIncomingData().imageUrls == getExistingData().imageUrls &&
-                        getIncomingData().videoUrl == getExistingData().videoUrl
-                      )
-                      // Case 3: Poll creator updating pledge outcome
-                      || (
-                        isOwner(getExistingData().creator.id) // Only the creator
-                        && getExistingData().deadline <= request.time // Deadline must have passed
-                        && getIncomingData().pledgeOutcome in ['accepted', 'tipped_crowd'] // Valid outcomes
-                        && getIncomingData().pledgeOutcome != getExistingData().pledgeOutcome // Must be a change
-                        // Ensure other critical fields are not changed by this action
-                        && getIncomingData().question == getExistingData().question &&
-                        getIncomingData().creator.id == getExistingData().creator.id &&
-                        getIncomingData().options == getExistingData().options &&
-                        getIncomingData().deadline == getExistingData().deadline &&
-                        getIncomingData().createdAt == getExistingData().createdAt &&
-                        getIncomingData().likes == getExistingData().likes &&
-                        getIncomingData().totalVotes == getExistingData().totalVotes &&
-                        getIncomingData().commentsCount == getExistingData().commentsCount &&
-                        getIncomingData().isVoted == getExistingData().isVoted &&
-                        getIncomingData().votedOptionId == getExistingData().votedOptionId &&
-                        getIncomingData().pledgeAmount == getExistingData().pledgeAmount &&
-                        getIncomingData().tipCount == getExistingData().tipCount &&
-                        getIncomingData().isSpicy == getExistingData().isSpicy &&
-                        getIncomingData().imageUrls == getExistingData().imageUrls &&
-                        getIncomingData().videoUrl == getExistingData().videoUrl
-                      )
-                      // Add other specific update scenarios if needed (e.g., creator editing poll text before votes)
-                    );
+                      // Prevent changing critical immutable fields
+                      && request.resource.data.creator.id == resource.data.creator.id
+                      && request.resource.data.createdAt == resource.data.createdAt;
 
-      // Only the creator can delete their poll
-      allow delete: if isAuthenticated() && isOwner(getExistingData().creator.id);
 
-      // Comments subcollection for each poll
-      match /comments/{commentId} {
-        // Anyone can read comments
-        allow read: if true;
+      // Rules for voting (subcollection or part of poll document - this assumes votes are tallied in the poll document)
+      // This is a simplified representation for updating vote counts.
+      // A more robust system might use a subcollection for individual votes to prevent double voting.
+      // For this example, we'll assume client updates `isVoted`, `votedOptionId`, `totalVotes`, and option `votes`.
+      // This requires careful client-side logic and can be prone to race conditions if not handled well.
+      // A server-side function for voting is often more robust.
+      allow update: if request.auth != null
+                      // Check if the user is voting (isVoted field is changing from false to true)
+                      && request.resource.data.isVoted == true && resource.data.isVoted == false
+                      // Check if the poll is still active
+                      && resource.data.deadline > request.time
+                      // Check if totalVotes and option votes are being incremented correctly by 1
+                      && request.resource.data.totalVotes == resource.data.totalVotes + 1
+                      && request.resource.data.options.size() == resource.data.options.size()
+                      && ( // Ensure only the voted option's count increases by 1
+                           request.resource.data.options[request.resource.data.options.indexOf(
+                             request.resource.data.options.filter(opt => opt.id == request.resource.data.votedOptionId)[0]
+                           )].votes == resource.data.options[resource.data.options.indexOf(
+                             resource.data.options.filter(opt => opt.id == request.resource.data.votedOptionId)[0]
+                           )].votes + 1
+                         )
+                      // Ensure other option votes remain unchanged
+                      && request.resource.data.options.filter(opt => opt.id != request.resource.data.votedOptionId).every(
+                           updatedOpt => updatedOpt.votes == resource.data.options.filter(originalOpt => originalOpt.id == updatedOpt.id)[0].votes
+                         )
+                      // Check that likes, commentsCount, creator, question, createdAt are not being changed during a vote
+                      && request.resource.data.likes == resource.data.likes
+                      && request.resource.data.commentsCount == resource.data.commentsCount
+                      && request.resource.data.creator.id == resource.data.creator.id
+                      && request.resource.data.question == resource.data.question
+                      && request.resource.data.createdAt == resource.data.createdAt;
 
-        // Authenticated users can create comments
-        // - 'user.id' in the comment must match the authenticated user's UID.
-        // - The pollId of the comment (if stored in the comment doc) should match the parent {pollId}.
-        // - Validate text and createdAt.
-        allow create: if isAuthenticated()
-                      && isOwner(getIncomingData().user.id)
-                      // Validate that the user object being written is consistent with the authenticated user
-                      && getIncomingData().user.name is string
-                      && getIncomingData().user.avatarUrl is string
-                      && getIncomingData().user.username is string
-                      // Assuming the comment document also stores the pollId to link back
-                      // && getIncomingData().pollId == pollId // This check is implicit due to subcollection path
-                      && getIncomingData().text is string && getIncomingData().text.size() > 0 && getIncomingData().text.size() <= 1000
-                      && getIncomingData().createdAt is timestamp && getIncomingData().createdAt == request.time;
 
-        // Only the author can update their comment's text.
-        allow update: if isAuthenticated() && isOwner(getExistingData().user.id)
-                      && getIncomingData().user.id == getExistingData().user.id // User ID cannot change
-                      && getIncomingData().text is string && getIncomingData().text.size() > 0 && getIncomingData().text.size() <= 1000
-                      && getIncomingData().createdAt == getExistingData().createdAt; // Cannot change createdAt
-
-        // Only the author can delete their comment
-        allow delete: if isAuthenticated() && isOwner(getExistingData().user.id);
-      }
+      allow delete: if request.auth != null && request.auth.uid == resource.data.creator.id; // Or more restrictive logic
     }
+
+    // Comments subcollection for each poll
+    // - Authenticated users can create comments
+    // - Comment authors can update or delete their own comments
+    match /polls/{pollId}/comments/{commentId} {
+      allow read: if true;
+      allow create: if request.auth != null
+                      && request.resource.data.user.id == request.auth.uid
+                      && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 1000
+                      && request.resource.data.createdAt == request.time;
+      allow update: if request.auth != null && request.auth.uid == resource.data.user.id
+                      && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 1000
+                      // Prevent changing author or original creation time
+                      && request.resource.data.user.id == resource.data.user.id
+                      && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.user.id;
+    }
+
+    // Example for a 'votes' subcollection if you choose that pattern for more robust voting
+    // match /polls/{pollId}/votes/{userId} {
+    //   allow read: if request.auth != null && request.auth.uid == userId; // User can read their own vote
+    //   allow create: if request.auth != null && request.auth.uid == userId // User can cast their vote if poll active
+    //                   && exists(/databases/$(database)/documents/polls/$(pollId))
+    //                   && get(/databases/$(database)/documents/polls/$(pollId)).data.deadline > request.time;
+    //   // Generally, votes are not updated or deleted once cast.
+    //   allow update, delete: if false;
+    // }
+
   }
 }
 
