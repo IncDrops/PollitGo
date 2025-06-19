@@ -69,3 +69,4 @@ async function fetchUserProfile(userId: string): Promise<UserProfile | null> {
 // **END OF FUNCTION TO ADD**
 
 export { app, auth, db, storage, fetchUserProfile }; // Export the new function
+
