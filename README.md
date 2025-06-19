@@ -70,30 +70,41 @@ When configuring the "Run Payments with Stripe" Firebase Extension:
 *   **Customer details and subscriptions collection:** Default `customers` is usually fine. This is where Stripe customer IDs and subscription data linked to your Firebase users will be stored.
 *   **Sync new users to Stripe customers and Cloud Firestore:** Recommended: **Sync new users to Stripe and Firestore**. This automatically creates Stripe customer objects for new Firebase Auth users.
 *   **Automatically delete Stripe customer objects:** Recommended: **Do not delete**. Retain Stripe data for history and reporting.
-*   **Stripe API key with restricted access:** 
+*   **Stripe API key with restricted access:**
     1.  In your Stripe Dashboard (Developers > API keys), create a **new restricted API key**. Name it (e.g., "Firebase PollitGo Extension") and grant it only the permissions required by the extension (refer to the official Stripe Firebase extension documentation for the exact list of permissions).
     2.  Copy the generated restricted key (e.g., `rk_test_...`).
     3.  Back in the Firebase Extension configuration UI, for the "Stripe API key with restricted access" field:
         *   **If the UI is direct:** Clear any existing content in the input field. Paste your `rk_test_...` key directly into this field. Then, click the **"Create secret"** button next to it. The field should then update to show a *name* for the secret. Note this name.
         *   **If the UI shows a pop-up after clicking "Create secret":** In the pop-up, provide a "Secret name" (e.g., `STRIPE_EXTENSION_API_KEY`) and paste your `rk_test_...` key into the "Secret value" field. Create the secret. Then, back on the extension page, select this newly created secret name from the dropdown.
     4.  **Verification (Important):** After starting the extension install/update, go to Google Cloud Console -> Security -> Secret Manager. Find the secret by the name that the extension configuration is now referencing. View its latest version and **confirm the stored value is your correct `rk_test_...` Stripe API key.** If it's incorrect, add a new version to that secret with the correct key value.
-*   **Stripe webhook secret:** 
-    1.  For the *initial installation*, you can often leave this blank if allowed. The extension will provide a Webhook URL after it's installed.
-    2.  *After* the extension is installed, go to its configuration page in the Firebase Console. It will display a **Webhook URL**.
-    3.  In your Stripe dashboard (Developers > Webhooks), click "Add endpoint".
-    4.  Paste the Webhook URL from Firebase.
-    5.  Select the events the extension should listen for (see "Events to listen for" below or extension documentation).
-    6.  Stripe will then provide a **Signing secret** (`whsec_...`) for this endpoint.
-    7.  Go back to the Firebase Console and **reconfigure** the Stripe extension.
-    8.  For the "Stripe webhook secret" field, use the "Create secret" button. In the pop-up, give it a "Secret name" (e.g., `STRIPE_EXTENSION_WEBHOOK_SECRET`) and paste the `whsec_...` signing secret from Stripe as the "Secret value".
-    9.  Select the newly created secret name from the dropdown.
+*   **Stripe webhook secret:** This secret is used by the *extension's own webhook endpoint* to verify events from Stripe.
+    1.  **Install/Update the Extension First:** You typically complete the initial installation or update of the extension *without* this webhook secret if it's the very first setup.
+    2.  **Get the Extension's Webhook URL:**
+        *   After the extension is installed/updated, go to its configuration page in the Firebase Console (Firebase Console > Extensions > Manage your Stripe extension).
+        *   The extension will display its unique **Webhook URL** (e.g., `https://<region>-<project-id>.cloudfunctions.net/ext-stripe-payments-events`). Copy this URL.
+    3.  **Create Endpoint in Stripe:**
+        *   In your Stripe Dashboard (Developers > Webhooks), click **"+ Add endpoint"**.
+        *   Paste the Webhook URL from Firebase into the "Endpoint URL" field.
+        *   For "Listen to events", select the events the extension is configured to handle (e.g., `checkout.session.completed`, `customer.created`, `customer.updated`). If unsure, start with "Listen to all events" and refine later, or refer to the extension's documentation for recommended events.
+        *   Click "Add endpoint".
+    4.  **Get the Signing Secret from Stripe:**
+        *   After adding the endpoint, Stripe will display its details. Find and copy the **"Signing secret"** (starts with `whsec_...`).
+    5.  **Reconfigure the Extension in Firebase:**
+        *   Go back to the Firebase Console and **reconfigure** the Stripe extension.
+        *   For the "Stripe webhook secret" field, click the **"Create secret"** button.
+        *   In the pop-up:
+            *   **Secret name:** Give it a descriptive name (e.g., `STRIPE_EXTENSION_WEBHOOK_SECRET`).
+            *   **Secret value:** Paste the `whsec_...` signing secret you copied from Stripe.
+            *   Click "Create secret".
+        *   Select this newly created secret name from the dropdown.
+        *   Save/Update the extension configuration.
 *   **Events to listen for (during extension configuration):**
     *   **Essential for payments/pledges/tips:** `checkout.session.completed`
     *   **Recommended for customer sync:** `customer.created`, `customer.updated`
-    *   **Optional (if managing predefined products/prices in Stripe that your app uses):** `product.created`, `product.updated`, `product.deleted`, `price.created`, `price.updated`, `price.deleted`. If your tips/pledges are always dynamically priced, these product/price sync events are less critical for payment processing.
+    *   **Optional (if managing predefined products/prices in Stripe that your app uses):** `product.created`, `product.updated`, `product.deleted`, `price.created`, `price.updated`, `price.deleted`. If your tips/pledges are always dynamically priced, these product/price sync events are less critical for payment processing by the extension.
 
 This ensures your Stripe keys are handled securely via Google Cloud Secret Manager.
-The Stripe extension will deploy its own Cloud Functions for its operations. If you have custom Stripe-related Cloud Functions (like in `functions/src/index.ts`), they are separate and handle logic not covered by the extension.
-The `functions/src/index.ts` file is for a *custom* webhook handler you might implement for logic *not* covered by the extension. The webhook secret configured in the extension is for the *extension's own* webhook endpoints.
+The Stripe extension will deploy its own Cloud Functions for its operations.
+The `functions/src/index.ts` file in your project is for any *custom* webhook handler you might implement for logic *not* covered by the extension (e.g., awarding PollitPoints, sending custom emails). If you create a custom webhook handler, it will need its own separate endpoint in Stripe and its own webhook signing secret configured via Firebase Functions environment configuration (e.g., `firebase functions:config:set stripe.webhook_secret="whsec_YOUR_CUSTOM_SECRET"`).
 
     
