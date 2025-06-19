@@ -5,6 +5,61 @@ This is a NextJS starter in Firebase Studio.
 
 To get started, take a look at src/app/page.tsx.
 
+## Troubleshooting: `auth/requests-from-referer-...-are-blocked` Error in Firebase Studio
+
+This is a common error when developing with Firebase Studio due to its dynamic URLs. Here's a comprehensive checklist:
+
+1.  **Identify the EXACT URL from the Error Message:**
+    *   When the error appears (e.g., `Firebase: Error (auth/requests-from-referer-https://<YOUR_DYNAMIC_URL>-are-blocked.)`), **immediately copy the `<YOUR_DYNAMIC_URL>` part.**
+    *   For example, if the error is `auth/requests-from-referer-https://6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev-are-blocked`, the URL you need to work with is `6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev`.
+    *   **Firebase Studio URLs can change** if you close and reopen Studio, or if your session refreshes. If the error reappears with a *new* URL, you **must** add that new URL.
+
+2.  **Add to Firebase Authentication Authorized Domains (Most Crucial Step):**
+    *   Go to the **Firebase Console** ([console.firebase.google.com](https://console.firebase.google.com/)).
+    *   Select your project (e.g., `pollitgo`).
+    *   Navigate to **Authentication** (in the "Build" section of the left sidebar).
+    *   Click the **Settings** tab.
+    *   Find the **Authorized domains** section.
+    *   Click **"Add domain"**.
+    *   Carefully enter **ONLY the domain part** from the URL you copied (without `https://`).
+        *   Example: `6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev`
+    *   Click **"Add"**.
+    *   Ensure `localhost` is also listed here for local `npm run dev` testing.
+
+3.  **Add to Google Cloud API Key Restrictions (Recommended):**
+    *   Go to the **Google Cloud Console** ([console.cloud.google.com](https://console.cloud.google.com/)).
+    *   Select your project.
+    *   Navigate to **APIs & Services > Credentials**.
+    *   Find your API key (typically named "Browser key (auto created by Firebase)" or similar). Click on its name.
+    *   Under **Application restrictions**, select **"Websites"**.
+    *   Under **Website restrictions**, click **"ADD"**.
+    *   Enter the **full URL including `https://`**.
+        *   Example: `https://6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev`
+    *   Also add other necessary URLs like `http://localhost:9003`, your Firebase Hosting URLs (`pollitgo.web.app`, `pollitgo.firebaseapp.com`), and any custom domains.
+    *   Click **"Save"**.
+
+4.  **Add to Google Cloud OAuth 2.0 Client ID (If using Google Sign-In or other OAuth providers):**
+    *   In the **Google Cloud Console**, go to **APIs & Services > Credentials**.
+    *   Click on your **OAuth 2.0 Client ID** for Web application.
+    *   Under **Authorized JavaScript origins**, click **"ADD URI"**.
+    *   Enter the **full URL including `https://`**.
+        *   Example: `https://6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev`
+    *   Also add `http://localhost:9003` and other production origins.
+    *   Under **Authorized redirect URIs**, ensure your primary Firebase redirect URI is present: `https://YOUR_PROJECT_ID.firebaseapp.com/__/auth/handler` (e.g., `https://pollitgo.firebaseapp.com/__/auth/handler`).
+    *   Click **"Save"**.
+
+5.  **WAIT FOR PROPAGATION (VERY IMPORTANT):**
+    *   After making changes in the Firebase or Google Cloud consoles, it can take **5 to 15 minutes (sometimes longer)** for these settings to fully propagate across all of Google's servers.
+    *   **Be patient and wait at least 10-15 minutes** before re-testing your application. Testing too soon will likely show the same error.
+
+6.  **Hard Refresh & Clear Cache:**
+    *   After the waiting period, perform a **hard refresh** of your application page in the browser (e.g., `Ctrl+Shift+R` or `Cmd+Shift+R`).
+    *   Consider clearing your browser's cache for the site or testing in an **Incognito/Private window** to ensure you're not dealing with cached responses or configurations.
+
+7.  **Double-Check the Correct Project:**
+    *   Ensure you are making these changes in the Firebase and Google Cloud project settings that are **actually linked** to the `firebaseConfig` in your `src/lib/firebase.ts` file.
+
+By meticulously following these steps, especially paying attention to the exact URL from the error and the propagation delay, you should be able to resolve this error.
 
 ## API Key Security Reminder
 
@@ -190,5 +245,4 @@ The `functions/src/index.ts` file in your project is for any *custom* webhook ha
     *   Check your browser's developer console (F12) for client-side errors.
     *   Check your Next.js terminal (where `npm run dev` is running) for server-side API route errors.
     *   Double-check your `.env.local` keys and ensure the server was restarted.
-    *   Verify authorized domains in Firebase Authentication settings and API key/OAuth configurations in Google Cloud Console.
-    
+    *   Verify authorized domains in Firebase Authentication settings and API key/OAuth configurations in Google Cloud Console (see the "Troubleshooting: `auth/requests-from-referer-...-are-blocked`" section above).
