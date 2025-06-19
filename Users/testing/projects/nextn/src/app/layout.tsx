@@ -34,6 +34,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full" suppressHydrationWarning>
       <head>
+        <meta charSet="utf-8" />
         <title>PollitAGo</title>
         <meta name="description" content="THE 2nd OPINION APP - Universal Polling Platform" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
