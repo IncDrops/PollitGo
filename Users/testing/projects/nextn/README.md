@@ -103,6 +103,26 @@ Your Next.js application includes an API route at `src/app/api/stripe/create-che
 7.  **Check Stripe Dashboard (Test Mode).**
 8.  **Troubleshooting:** Check browser console and Next.js terminal/server logs.
 
+## Deploying for Testing on Mobile Devices
+
+If you need to test on actual mobile devices and the prototype environment login isn't working (due to `NEXTAUTH_URL` issues):
+
+*   **Vercel or Netlify:** These platforms are excellent for deploying Next.js applications and have free tiers.
+    1.  Push your code to a Git repository (GitHub, GitLab, Bitbucket).
+    2.  Sign up for Vercel/Netlify and connect your Git repository.
+    3.  **Crucially, configure the environment variables** in your Vercel/Netlify project settings:
+        *   `STRIPE_SECRET_KEY`
+        *   `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+        *   `NEXTAUTH_URL` (This MUST be the public URL Vercel/Netlify gives your deployment, e.g., `https://your-app-name.vercel.app`)
+        *   `NEXTAUTH_SECRET` (Use the same strong secret you generated for local)
+    4.  The platform will build and deploy your app. You'll get a public URL to test on any device.
+*   **Local Network Testing (More Technical):**
+    1.  Ensure your computer and mobile phone are on the same Wi-Fi network.
+    2.  When you run `npm run dev`, Next.js often shows a "Network" URL (e.g., `http://192.168.X.X:9003`).
+    3.  Update `NEXTAUTH_URL` in your `.env.local` to this network URL.
+    4.  Restart your dev server.
+    5.  You might need to adjust firewall settings on your computer. This method can be less reliable.
+
 ## Deprecated: Firebase Usage Notes
 Firebase services have been removed from this project. Related sections in this README are for historical reference only.
 
@@ -112,3 +132,4 @@ The `functions` directory is no longer used for Firebase Functions. Custom backe
 ## Deploying (General Guidance - Adapt for your chosen platform)
 *   **Next.js Application:** Deployment will depend on your chosen hosting platform (Vercel, Netlify, etc.).
 *   **Environment Variables:** Ensure ALL necessary environment variables from your `.env.local` are set in your hosting provider's settings for the deployed application. `NEXTAUTH_URL` must be your production URL. Use **LIVE** Stripe keys for production.
+```

@@ -17,15 +17,15 @@ import OptionDetailsDialog from './OptionDetailsDialog';
 import { motion, useAnimationControls } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { useStripe } from '@stripe/react-stripe-js';
-import { signIn } from 'next-auth/react'; // For prompting login
+import { signIn } from 'next-auth/react';
 
 interface PollCardProps {
   poll: Poll;
   onVote?: (pollId: string, optionId: string) => void;
-  onToggleLike?: (pollId: string) => void; // New prop for liking
+  onToggleLike?: (pollId: string) => void; // Ensure this is expected
   onPollActionComplete?: (pollId: string, swipeDirection?: 'left' | 'right') => void;
   onPledgeOutcome?: (pollId: string, outcome: 'accepted' | 'tipped_crowd') => void;
-  currentUser?: User | null; 
+  currentUser?: User | null;
 }
 
 const OPTION_TEXT_TRUNCATE_LENGTH = 100;
@@ -55,7 +55,7 @@ const PollOption: React.FC<{
     : option.text;
 
   const handleOptionClick = () => {
-    onVoteOptionClick(); // This will either vote or show details based on parent logic
+    onVoteOptionClick();
   };
 
   const handleDetailsIconClick = (e: React.MouseEvent) => {
@@ -70,11 +70,9 @@ const PollOption: React.FC<{
         className={cn(
           "w-full justify-start h-auto p-3 text-left relative overflow-hidden disabled:opacity-100 disabled:cursor-default",
           pollHasTwoOptions && "aspect-square flex flex-col items-center justify-center text-center",
-          // Make clickable for details if voted, deadline passed, or can't vote (for non-two-option polls)
           (!canCurrentUserVote || isVotedByCurrentUser || deadlinePassed || pollHasTwoOptions || isTruncated || option.affiliateLink) && "cursor-pointer hover:bg-accent/60"
         )}
         onClick={handleOptionClick}
-        // Disable button if user cannot vote AND it's not a case where clicking should show details (e.g., not truncated, no affiliate link, and two-option layout)
         disabled={!canCurrentUserVote && (isVotedByCurrentUser || deadlinePassed) && !pollHasTwoOptions && !(isTruncated || option.affiliateLink) }
         aria-pressed={isSelectedOptionByCurrentUser}
       >
@@ -131,11 +129,12 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
   const [deadlinePassed, setDeadlinePassed] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [createdAtFormatted, setCreatedAtFormatted] = useState<string | null>(null);
-  const [currentPoll, setCurrentPoll] = useState<Poll>(poll); // Local state for optimistic updates
+  const [currentPoll, setCurrentPoll] = useState<Poll>(poll);
   const [isTipping, setIsTipping] = useState(false);
+  const [isLikingInProgress, setIsLikingInProgress] = useState(false);
+
 
   useEffect(() => {
-    // Sync with prop changes, ensuring the local state reflects the parent's poll object
     setCurrentPoll({...poll});
   }, [poll]);
 
@@ -145,62 +144,62 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
   const controls = useAnimationControls();
   const canSwipe = !!currentUser?.id && currentPoll.options.length === 2 && !currentPoll.isVoted && !deadlinePassed && !!onVote;
 
-
   const handleInternalVote = (optionId: string) => {
-    if (!onVote) return; 
-    if (!currentUser?.id) { 
+    if (!onVote) return;
+    if (!currentUser?.id) {
         toast({title: "Login Required", description: "Please login to vote.", variant:"destructive"});
-        signIn(); 
+        signIn();
         return;
     }
-    
-    const pollBeforeUpdate = {...currentPoll}; 
+
+    const pollBeforeUpdate = {...currentPoll};
 
     setCurrentPoll(prevPoll => {
-      if (prevPoll.isVoted) return prevPoll; 
+      if (prevPoll.isVoted) return prevPoll;
       const newTotalVotes = prevPoll.totalVotes + 1;
       const updatedOptions = prevPoll.options.map(opt =>
         opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
       );
       return { ...prevPoll, options: updatedOptions, totalVotes: newTotalVotes, isVoted: true, votedOptionId: optionId };
     });
-    
-    onVote(currentPoll.id, optionId); 
-    
+
+    onVote(currentPoll.id, optionId);
+
     const updatedOption = currentPoll.options.find(opt => opt.id === optionId);
     if (currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0 && updatedOption) {
         const amountToDistributeToVoters = currentPoll.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
         const votesForThisOptionAfterCurrentVote = (pollBeforeUpdate.options.find(o => o.id === optionId)?.votes || 0) + 1;
 
         if ((amountToDistributeToVoters / votesForThisOptionAfterCurrentVote) < MIN_PAYOUT_PER_VOTER && votesForThisOptionAfterCurrentVote > 0) {
-            toast({
-                title: "Low Payout Warning",
-                description: `Your vote is counted! Potential PollitPoint payout might be low.`,
-                variant: "default", duration: 7000,
-            });
+            setTimeout(() => {
+              toast({
+                  title: "Low Payout Warning",
+                  description: `Your vote is counted! Potential PollitPoint payout might be low.`,
+                  variant: "default", duration: 7000,
+              });
+            }, 0);
         }
     }
   };
 
-  const handleInternalToggleLike = (e: React.MouseEvent) => {
+  const handleInternalToggleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!onToggleLike) return;
+    if (!onToggleLike || isLikingInProgress) return;
+
     if (!currentUser?.id) {
       toast({ title: "Login Required", description: "Please login to like polls.", variant: "destructive" });
       signIn();
       return;
     }
-    
-    // Optimistically update local state for immediate UI feedback
-    setCurrentPoll(prevPoll => {
-        const newIsLiked = !prevPoll.isLiked;
-        const newLikesCount = newIsLiked ? prevPoll.likes + 1 : Math.max(0, prevPoll.likes - 1);
-        return { ...prevPoll, isLiked: newIsLiked, likes: newLikesCount };
-    });
-    // Call the parent handler to update the source of truth
-    onToggleLike(currentPoll.id);
-  };
 
+    setIsLikingInProgress(true);
+    // Call the parent handler (from PollFeed) to update the source of truth
+    // The parent will then update its state, causing this PollCard to re-render with the new poll.isLiked status
+    onToggleLike(currentPoll.id);
+    // Simulate async operation if needed, or rely on parent's state update
+    await new Promise(resolve => setTimeout(resolve, 100)); // Small delay to allow state to propagate if needed
+    setIsLikingInProgress(false);
+  };
 
   const handlers = useSwipeable({
     onSwiped: async (eventData) => {
@@ -208,16 +207,14 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
       const direction = eventData.dir;
       const optionToVote = direction === 'Left' ? currentPoll.options[0].id : currentPoll.options[1].id;
       
-      // First, handle the vote logic (updates internal state and calls parent onVote)
+      // Call vote *before* animation starts so the state is updated
       handleInternalVote(optionToVote);
 
-      // Then, start the animation
       controls.start({
         x: direction === "Left" ? "-100%" : "100%",
         opacity: 0,
         transition: { duration: 0.3 },
       }).then(() => {
-        // After animation completes, call onPollActionComplete to remove from feed
         if (onPollActionComplete) {
           onPollActionComplete(currentPoll.id, direction.toLowerCase() as 'left' | 'right');
         }
@@ -241,7 +238,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
       }
     };
     checkDeadline();
-    const interval = setInterval(checkDeadline, 60000); // Check every minute
+    const interval = setInterval(checkDeadline, 60000);
     return () => clearInterval(interval);
   }, [currentPoll.deadline]);
 
@@ -262,7 +259,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
   };
 
   const onCreatorClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); 
+    e.stopPropagation();
     router.push(`/profile/${currentPoll.creator.id}`);
   };
 
@@ -305,7 +302,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: 500, 
+          amount: 500,
           currency: 'usd',
           itemName: `Tip for ${currentPoll.creator.name}`,
           metadata: { pollId: currentPoll.id, tipperUserId: currentUser.id }
@@ -348,11 +345,11 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
       <motion.div
         {...(canSwipe ? handlers : {})}
         data-swipe-handler={canSwipe ? "true" : undefined}
-        className="w-full touch-pan-y" // Allow vertical scroll
+        className="w-full touch-pan-y"
         animate={controls}
       >
-        <Card 
-          onClick={onCardClick} 
+        <Card
+          onClick={onCardClick}
           className="w-full max-w-md mx-auto shadow-lg rounded-xl overflow-hidden mb-4 bg-card active:shadow-2xl active:scale-[1.005] transition-transform duration-100 ease-out cursor-pointer"
         >
           <CardHeader className="p-4">
@@ -371,9 +368,9 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
               <span>{currentPoll.question}</span>
             </CardTitle>
              {currentPoll.imageUrls && currentPoll.imageUrls.length > 0 && (
-                <div className="mt-2 -mx-4"> 
+                <div className="mt-2 -mx-4">
                     <div className={cn("grid gap-0.5", currentPoll.imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
-                        {currentPoll.imageUrls.slice(0, currentPoll.imageUrls.length === 3 ? 2 : 4).map((imgUrl, idx) => ( 
+                        {currentPoll.imageUrls.slice(0, currentPoll.imageUrls.length === 3 ? 2 : 4).map((imgUrl, idx) => (
                             <div key={idx} className={cn(
                                 "relative bg-muted overflow-hidden",
                                 currentPoll.imageUrls?.length === 1 ? "aspect-[16/9]" : "aspect-square",
@@ -399,8 +396,8 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
               </div>
             ) : !currentUser?.id && !deadlinePassed && (
                  <div className="text-center text-destructive text-xs py-2 flex items-center justify-center bg-destructive/10 p-2 rounded-md">
-                    <AlertCircle className="w-4 h-4 mr-1.5" /> Please 
-                    <Button variant="link" className="p-0 h-auto text-destructive hover:text-destructive/80 mx-1 text-xs" onClick={(e) => {e.stopPropagation(); signIn();}}>login</Button> 
+                    <AlertCircle className="w-4 h-4 mr-1.5" /> Please
+                    <Button variant="link" className="p-0 h-auto text-destructive hover:text-destructive/80 mx-1 text-xs" onClick={(e) => {e.stopPropagation(); signIn();}}>login</Button>
                     to vote.
                 </div>
             )}
@@ -453,8 +450,8 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
           </CardContent>
 
           <CardFooter className="p-3 border-t flex justify-around">
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary text-xs px-1.5" onClick={handleInternalToggleLike}>
-              <Heart className={cn("w-4 h-4 mr-1", currentPoll.isLiked ? "fill-red-500 text-red-500" : "text-muted-foreground")} /> 
+            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary text-xs px-1.5" onClick={handleInternalToggleLike} disabled={isLikingInProgress}>
+              {isLikingInProgress ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Heart className={cn("w-4 h-4 mr-1", currentPoll.isLiked ? "fill-red-500 text-red-500" : "text-muted-foreground")} /> }
               {currentPoll.likes.toLocaleString()}
             </Button>
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary text-xs px-1.5" onClick={onCardClick}>
@@ -480,4 +477,3 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
     </>
   );
 }
-
