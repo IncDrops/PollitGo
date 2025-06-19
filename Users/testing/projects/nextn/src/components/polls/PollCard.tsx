@@ -17,15 +17,15 @@ import OptionDetailsDialog from './OptionDetailsDialog';
 import { motion, useAnimationControls } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { useStripe } from '@stripe/react-stripe-js';
-import { signIn } from 'next-auth/react';
+import { signIn } from 'next-auth/react'; // For prompting login
 
 interface PollCardProps {
   poll: Poll;
   onVote?: (pollId: string, optionId: string) => void;
-  onToggleLike?: (pollId: string) => void; // Ensure this is expected
+  onToggleLike?: (pollId: string) => void; // Prop for toggling like
   onPollActionComplete?: (pollId: string, swipeDirection?: 'left' | 'right') => void;
   onPledgeOutcome?: (pollId: string, outcome: 'accepted' | 'tipped_crowd') => void;
-  currentUser?: User | null;
+  currentUser?: User | null; 
 }
 
 const OPTION_TEXT_TRUNCATE_LENGTH = 100;
@@ -129,13 +129,13 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
   const [deadlinePassed, setDeadlinePassed] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [createdAtFormatted, setCreatedAtFormatted] = useState<string | null>(null);
+  // currentPoll state to reflect immediate optimistic updates from props
   const [currentPoll, setCurrentPoll] = useState<Poll>(poll);
   const [isTipping, setIsTipping] = useState(false);
-  const [isLikingInProgress, setIsLikingInProgress] = useState(false);
-
+  const [isLikingInProgress, setIsLikingInProgress] = useState(false); // Local state for like button loading
 
   useEffect(() => {
-    setCurrentPoll({...poll});
+    setCurrentPoll({...poll}); // Sync with external poll prop changes
   }, [poll]);
 
   const [selectedOptionForModal, setSelectedOptionForModal] = useState<PollOptionType | null>(null);
@@ -154,20 +154,15 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
 
     const pollBeforeUpdate = {...currentPoll};
 
-    setCurrentPoll(prevPoll => {
-      if (prevPoll.isVoted) return prevPoll;
-      const newTotalVotes = prevPoll.totalVotes + 1;
-      const updatedOptions = prevPoll.options.map(opt =>
-        opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
-      );
-      return { ...prevPoll, options: updatedOptions, totalVotes: newTotalVotes, isVoted: true, votedOptionId: optionId };
-    });
+    // Optimistic UI update for currentPoll is handled by parent via prop update.
+    // If PollCard were to manage its own complete poll state independently, you'd update here.
+    // Since PollFeed manages the source array, we just call the callback.
 
     onVote(currentPoll.id, optionId);
 
-    const updatedOption = currentPoll.options.find(opt => opt.id === optionId);
-    if (currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0 && updatedOption) {
-        const amountToDistributeToVoters = currentPoll.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
+    const updatedOption = pollBeforeUpdate.options.find(opt => opt.id === optionId); // Use pollBeforeUpdate for accurate calculation
+    if (pollBeforeUpdate.pledgeAmount && pollBeforeUpdate.pledgeAmount > 0 && updatedOption) {
+        const amountToDistributeToVoters = pollBeforeUpdate.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
         const votesForThisOptionAfterCurrentVote = (pollBeforeUpdate.options.find(o => o.id === optionId)?.votes || 0) + 1;
 
         if ((amountToDistributeToVoters / votesForThisOptionAfterCurrentVote) < MIN_PAYOUT_PER_VOTER && votesForThisOptionAfterCurrentVote > 0) {
@@ -194,10 +189,9 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
 
     setIsLikingInProgress(true);
     // Call the parent handler (from PollFeed) to update the source of truth
-    // The parent will then update its state, causing this PollCard to re-render with the new poll.isLiked status
-    onToggleLike(currentPoll.id);
-    // Simulate async operation if needed, or rely on parent's state update
-    await new Promise(resolve => setTimeout(resolve, 100)); // Small delay to allow state to propagate if needed
+    onToggleLike(currentPoll.id); 
+    // Simulate async operation; actual update will come via prop re-render
+    await new Promise(resolve => setTimeout(resolve, 100)); 
     setIsLikingInProgress(false);
   };
 
@@ -207,7 +201,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
       const direction = eventData.dir;
       const optionToVote = direction === 'Left' ? currentPoll.options[0].id : currentPoll.options[1].id;
       
-      // Call vote *before* animation starts so the state is updated
+      // Call vote *before* animation starts so the state is updated by parent
       handleInternalVote(optionToVote);
 
       controls.start({
@@ -302,7 +296,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: 500,
+          amount: 500, 
           currency: 'usd',
           itemName: `Tip for ${currentPoll.creator.name}`,
           metadata: { pollId: currentPoll.id, tipperUserId: currentUser.id }
@@ -477,3 +471,4 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
     </>
   );
 }
+

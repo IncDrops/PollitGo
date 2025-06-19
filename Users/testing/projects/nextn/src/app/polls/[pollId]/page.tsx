@@ -138,7 +138,7 @@ const PollOptionDisplay: React.FC<{
 
 export default function PollDetailsPage() {
   const routeParams = useParams<{ pollId: string }>();
-  const pollId = routeParams?.pollId; // Make access safe in case routeParams is null/undefined initially
+  const pollId = routeParams?.pollId;
 
   const [pollData, setPollData] = useState<{ poll: Poll | null; comments: CommentType[] }>({ poll: null, comments: [] });
   const [pageLoading, setPageLoading] = useState(true);
@@ -156,7 +156,7 @@ export default function PollDetailsPage() {
 
   useEffect(() => {
     if (!pollId) {
-        setPageLoading(false); // Stop loading if no pollId
+        setPageLoading(false); 
         return;
     }
 
@@ -188,7 +188,7 @@ export default function PollDetailsPage() {
       }
     };
     fetchData();
-  }, [pollId]);
+  }, [pollId]); // Removed toast from dependencies
 
   const poll = pollData.poll;
   const comments = pollData.comments;
@@ -288,6 +288,7 @@ export default function PollDetailsPage() {
     if (!poll) return;
 
     setIsLiking(true);
+    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 300)); 
     setPollData(prevData => {
         if (!prevData.poll) return prevData;

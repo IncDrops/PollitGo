@@ -8,7 +8,7 @@ import { fetchMorePolls } from '@/lib/mockData';
 import { Loader2, Zap, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
-import useAuth from '@/hooks/useAuth';
+import useAuth from '@/hooks/useAuth'; 
 import { signIn } from 'next-auth/react';
 
 const pollCardVariants = {
@@ -17,7 +17,7 @@ const pollCardVariants = {
   exit: (custom: 'left' | 'right' | 'default') => {
     if (custom === 'left') return { x: "-100%", opacity: 0, transition: { duration: 0.3 } };
     if (custom === 'right') return { x: "100%", opacity: 0, transition: { duration: 0.3 } };
-    return { opacity: 0, scale: 0.8, transition: { duration: 0.2 } };
+    return { opacity: 0, scale: 0.8, transition: { duration: 0.2 } }; 
   }
 };
 
@@ -28,21 +28,20 @@ const BATCH_SIZE = 10;
 interface PollFeedProps {
   staticPolls?: Poll[];
   onVoteCallback?: (pollId: string, optionId: string) => void;
-  onToggleLikeCallback?: (pollId: string) => void;
+  // onToggleLikeCallback is not strictly needed if PollFeed handles its own like state for dynamic feeds
   onPollActionCompleteCallback?: (pollId: string, swipeDirection?: 'left' | 'right') => void;
   onPledgeOutcomeCallback?: (pollId: string, outcome: 'accepted' | 'tipped_crowd') => void;
-  currentUser?: User | null;
+  currentUser?: User | null; 
 }
 
 export default function PollFeed({
   staticPolls,
   onVoteCallback,
-  onToggleLikeCallback,
   onPollActionCompleteCallback,
   onPledgeOutcomeCallback,
-  currentUser: propCurrentUser
+  currentUser: propCurrentUser 
 }: PollFeedProps) {
-  const [polls, setPolls] = useState<Poll[]>(staticPolls || []);
+  const [polls, setPolls] = useState<Poll[]>(() => (staticPolls || []).map(p => ({...p})));
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(!staticPolls);
   const [initialLoadComplete, setInitialLoadComplete] = useState(!!staticPolls);
@@ -60,7 +59,8 @@ export default function PollFeed({
 
     setLoadingMore(true);
     try {
-      const newPolls = await fetchMorePolls(isInitial ? 0 : polls.length, BATCH_SIZE);
+      const newPollsData = await fetchMorePolls(isInitial ? 0 : polls.length, BATCH_SIZE);
+      const newPolls = newPollsData.map(p => ({...p})); // Ensure fresh copies
       if (newPolls.length < BATCH_SIZE) {
         setHasMore(false);
       }
@@ -96,7 +96,7 @@ export default function PollFeed({
           loadMorePolls();
         }
       },
-      { threshold: 0.5 }
+      { threshold: 0.5 } 
     );
     observer.current = currentObserver;
     currentObserver.observe(loaderTriggerRef.current);
@@ -109,20 +109,20 @@ export default function PollFeed({
   }, [staticPolls, hasMore, loadingMore, loadMorePolls]);
 
   const handleVote = (pollId: string, optionId: string) => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated) { 
         setTimeout(() => {
           toast({title: "Login Required", description: "Please login to vote.", variant: "destructive"});
         }, 0);
-        signIn();
+        signIn(); 
         return;
     }
     if (onVoteCallback) {
-      onVoteCallback(pollId, optionId);
+      onVoteCallback(pollId, optionId); 
       return;
     }
     setPolls(prevPolls =>
       prevPolls.map(p => {
-        if (p.id === pollId && !p.isVoted) {
+        if (p.id === pollId && !p.isVoted) { 
           const newTotalVotes = p.totalVotes + 1;
           const updatedOptions = p.options.map(opt =>
             opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
@@ -164,11 +164,7 @@ export default function PollFeed({
         signIn();
         return;
     }
-    if (onToggleLikeCallback) {
-        onToggleLikeCallback(pollId);
-        return;
-    }
-
+    
     setPolls(prevPolls =>
         prevPolls.map(p => {
             if (p.id === pollId) {
@@ -188,6 +184,7 @@ export default function PollFeed({
     );
   };
 
+
   const handlePollActionComplete = (pollIdToRemove: string, swipeDirection?: 'left' | 'right') => {
      setExitDirectionMap(prev => ({ ...prev, [pollIdToRemove]: swipeDirection || 'default' }));
      setTimeout(() => {
@@ -201,7 +198,7 @@ export default function PollFeed({
             delete newMap[pollIdToRemove];
             return newMap;
         });
-     }, 300);
+     }, 300); // Animation duration
   };
 
   const handlePledgeOutcome = (pollId: string, outcome: 'accepted' | 'tipped_crowd') => {
@@ -233,7 +230,7 @@ export default function PollFeed({
       </div>
     );
   }
-
+  
   if (polls.length === 0 && (initialLoadComplete || staticPolls)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
@@ -256,12 +253,12 @@ export default function PollFeed({
             initial="initial"
             animate="animate"
             exit="exit"
-            className="min-h-[1px]"
+            className="min-h-[1px]" 
           >
             <PollCard
               poll={poll}
               onVote={handleVote}
-              onToggleLike={handleToggleLike}
+              onToggleLike={handleToggleLike} // Pass the new handler
               onPollActionComplete={handlePollActionComplete}
               currentUser={currentUser}
               onPledgeOutcome={handlePledgeOutcome}
@@ -286,3 +283,4 @@ export default function PollFeed({
     </div>
   );
 }
+
