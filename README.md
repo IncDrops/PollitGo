@@ -48,3 +48,4 @@ If using OAuth 2.0 providers like Google Sign-In with Firebase Authentication:
     *   Firebase uses this list to correctly manage the authentication flow and often populates the necessary Google Cloud OAuth client settings based on these domains.
 
 By correctly configuring these settings, you ensure that your API key is not misused and that authentication flows (like Google Sign-In) work correctly and securely from all your intended environments (local, Firebase hosting, and your custom domain).
+
