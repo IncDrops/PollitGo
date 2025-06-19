@@ -7,59 +7,60 @@ To get started, take a look at src/app/page.tsx.
 
 ## Troubleshooting: `auth/requests-from-referer-...-are-blocked` Error in Firebase Studio
 
-This is a common error when developing with Firebase Studio due to its dynamic URLs. Here's a comprehensive checklist:
+This is a common and frustrating error when developing with Firebase Studio due to its dynamic URLs. If you've followed the steps and are still seeing this, please meticulously re-check these points:
 
-1.  **Identify the EXACT URL from the Error Message:**
+1.  **Identify the EXACT URL from the LATEST Error Message (CRUCIAL):**
     *   When the error appears (e.g., `Firebase: Error (auth/requests-from-referer-https://<YOUR_DYNAMIC_URL>-are-blocked.)`), **immediately copy the `<YOUR_DYNAMIC_URL>` part.**
-    *   For example, if the error is `auth/requests-from-referer-https://6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev-are-blocked`, the URL you need to work with is `6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev`.
-    *   **Firebase Studio URLs can change** if you close and reopen Studio, or if your session refreshes. If the error reappears with a *new* URL, you **must** add that new URL.
+    *   For example, if your latest error shows `auth/requests-from-referer-https://6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev-are-blocked`, the URL you absolutely need to work with *right now* is `6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev`.
+    *   **Firebase Studio URLs can change!** If you close and reopen Studio, or if your session refreshes, or even sometimes after a period of inactivity, you might get a new URL. If the error reappears with a *new* URL, you **must** go back to step 2 and add that new URL. The old one may no longer be valid for your current session.
 
-2.  **Add to Firebase Authentication Authorized Domains (Most Crucial Step):**
+2.  **Add/Verify in Firebase Authentication Authorized Domains (Most Crucial Step):**
     *   Go to the **Firebase Console** ([console.firebase.google.com](https://console.firebase.google.com/)).
     *   Select your project (e.g., `pollitgo`).
     *   Navigate to **Authentication** (in the "Build" section of the left sidebar).
     *   Click the **Settings** tab.
     *   Find the **Authorized domains** section.
-    *   Click **"Add domain"**.
-    *   Carefully enter **ONLY the domain part** from the URL you copied (without `https://`).
+    *   **Check the list:** Is the EXACT domain you copied in Step 1 (e.g., `6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev`) already there?
+    *   If not, click **"Add domain"**.
+    *   Carefully enter **ONLY the domain part** from the URL you copied in Step 1 (without `https://`).
         *   Example: `6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev`
     *   Click **"Add"**.
     *   Ensure `localhost` is also listed here for local `npm run dev` testing.
 
-3.  **Add to Google Cloud API Key Restrictions (Recommended):**
+3.  **WAIT FOR PROPAGATION (EXTREMELY IMPORTANT):**
+    *   After making changes in the Firebase or Google Cloud consoles, it can take **5 to 15 minutes (sometimes longer)** for these settings to fully propagate across all of Google's servers.
+    *   **DO NOT retest your application immediately.** Set a timer for at least 10-15 minutes. Testing too soon will likely show the same error and lead to frustration. Patience here is key.
+
+4.  **Hard Refresh & Clear Cache (After Waiting):**
+    *   After the waiting period (Step 3), perform a **hard refresh** of your application page in the browser (e.g., `Ctrl+Shift+R` or `Cmd+Shift+R`).
+    *   Consider clearing your browser's cache for the site or testing in an **Incognito/Private window** to ensure you're not dealing with cached responses or configurations.
+
+5.  **Add to Google Cloud API Key Restrictions (Recommended for Security):**
     *   Go to the **Google Cloud Console** ([console.cloud.google.com](https://console.cloud.google.com/)).
     *   Select your project.
     *   Navigate to **APIs & Services > Credentials**.
     *   Find your API key (typically named "Browser key (auto created by Firebase)" or similar). Click on its name.
     *   Under **Application restrictions**, select **"Websites"**.
     *   Under **Website restrictions**, click **"ADD"**.
-    *   Enter the **full URL including `https://`**.
+    *   Enter the **full URL including `https://`** from Step 1.
         *   Example: `https://6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev`
-    *   Also add other necessary URLs like `http://localhost:9003`, your Firebase Hosting URLs (`pollitgo.web.app`, `pollitgo.firebaseapp.com`), and any custom domains.
-    *   Click **"Save"**.
+    *   Also add other necessary URLs like `http://localhost:9003` (if you run locally), your Firebase Hosting URLs (`pollitgo.web.app`, `pollitgo.firebaseapp.com`), and any custom domains.
+    *   Click **"Save"**. Remember this also has a propagation delay (Step 3).
 
-4.  **Add to Google Cloud OAuth 2.0 Client ID (If using Google Sign-In or other OAuth providers):**
+6.  **Add to Google Cloud OAuth 2.0 Client ID (If using Google Sign-In or other OAuth providers):**
     *   In the **Google Cloud Console**, go to **APIs & Services > Credentials**.
     *   Click on your **OAuth 2.0 Client ID** for Web application.
     *   Under **Authorized JavaScript origins**, click **"ADD URI"**.
-    *   Enter the **full URL including `https://`**.
+    *   Enter the **full URL including `https://`** from Step 1.
         *   Example: `https://6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev`
     *   Also add `http://localhost:9003` and other production origins.
     *   Under **Authorized redirect URIs**, ensure your primary Firebase redirect URI is present: `https://YOUR_PROJECT_ID.firebaseapp.com/__/auth/handler` (e.g., `https://pollitgo.firebaseapp.com/__/auth/handler`).
-    *   Click **"Save"**.
-
-5.  **WAIT FOR PROPAGATION (VERY IMPORTANT):**
-    *   After making changes in the Firebase or Google Cloud consoles, it can take **5 to 15 minutes (sometimes longer)** for these settings to fully propagate across all of Google's servers.
-    *   **Be patient and wait at least 10-15 minutes** before re-testing your application. Testing too soon will likely show the same error.
-
-6.  **Hard Refresh & Clear Cache:**
-    *   After the waiting period, perform a **hard refresh** of your application page in the browser (e.g., `Ctrl+Shift+R` or `Cmd+Shift+R`).
-    *   Consider clearing your browser's cache for the site or testing in an **Incognito/Private window** to ensure you're not dealing with cached responses or configurations.
+    *   Click **"Save"**. Remember this also has a propagation delay (Step 3).
 
 7.  **Double-Check the Correct Project:**
     *   Ensure you are making these changes in the Firebase and Google Cloud project settings that are **actually linked** to the `firebaseConfig` in your `src/lib/firebase.ts` file.
 
-By meticulously following these steps, especially paying attention to the exact URL from the error and the propagation delay, you should be able to resolve this error.
+If you've gone through all these steps, paid close attention to the **exact current URL from the error**, **waited patiently for propagation**, and **hard refreshed**, and the error *still* persists with the *exact same URL*, then there might be a more unusual issue. However, 99% of the time, the issue lies in the URL changing or the propagation delay not being respected.
 
 ## API Key Security Reminder
 
@@ -151,9 +152,9 @@ When configuring the "Run Payments with Stripe" Firebase Extension:
         *   The extension will display its unique **Webhook URL** (e.g., `https://<region>-<project-id>.cloudfunctions.net/ext-stripe-payments-events`). Copy this URL.
     3.  **Create Endpoint in Stripe:**
         *   In your Stripe Dashboard (Developers > Webhooks), click **"+ Add endpoint"**.
-        *   **Endpoint URL field:** Paste the Webhook URL you copied from the Firebase extension details page here.
+        *   **Endpoint URL field:** Paste the Webhook URL you copied from the Firebase extension details page here. (This is where you tell Stripe where to send events).
         *   **Description (Optional):** Add a description like "PollitGo Firebase Extension".
-        *   **Listen to events:** Click "Select events" and choose the events the extension is configured to handle (e.g., `checkout.session.completed`, `customer.created`, `customer.updated`).
+        *   **Listen to events:** Click "Select events" and choose the events the extension is configured to handle (e.g., `checkout.session.completed`, `customer.created`, `customer.updated`). (This is where you tell Stripe *which* events to send).
         *   Click "Add endpoint".
     4.  **Get the Signing Secret from Stripe:**
         *   After adding the endpoint, Stripe will display its details. Find and copy the **"Signing secret"** (starts with `whsec_...`). Click to reveal it if needed.
@@ -175,7 +176,7 @@ The Stripe extension will deploy its own Cloud Functions for its operations.
 Your Next.js application includes an API route at `src/app/api/stripe/create-checkout-session/route.ts`. This route is responsible for creating Stripe Checkout Sessions when a user initiates a pledge or a tip.
 
 *   **Environment Variable for Stripe Secret Key:** This API route requires your full Stripe **Secret Key** (e.g., `sk_test_...` or `sk_live_...`) to communicate with the Stripe API.
-    *   Set this key as an environment variable in a `.env.local` file in your project root:
+    *   Set this key as an environment variable in a `.env.local` file in your project root.
         ```
         # Open this .env.local file and replace the placeholder values below
         # with your ACTUAL Stripe keys from your Stripe Dashboard.
@@ -246,3 +247,5 @@ The `functions/src/index.ts` file in your project is for any *custom* webhook ha
     *   Check your Next.js terminal (where `npm run dev` is running) for server-side API route errors.
     *   Double-check your `.env.local` keys and ensure the server was restarted.
     *   Verify authorized domains in Firebase Authentication settings and API key/OAuth configurations in Google Cloud Console (see the "Troubleshooting: `auth/requests-from-referer-...-are-blocked`" section above).
+
+    
