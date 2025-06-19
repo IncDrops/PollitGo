@@ -20,10 +20,13 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=YOUR_ACTUAL_STRIPE_PUBLISHABLE_KEY_GOES_HERE
 
 # NextAuth.js Variables
 # This should be the base URL of your application during development.
-# If your app runs on a different port, or if you are using Firebase Studio's
-# dynamic URL for testing OAuth providers, update it accordingly.
+# For local dev with `npm run dev -p 9003`, this is http://localhost:9003
+# If your app runs on a different port, or if you are using a dynamic URL
+# for testing OAuth providers (like Firebase Studio often assigns), update it accordingly.
+# Ensure this URL is reachable from your browser AND by NextAuth.js for its internal operations.
 NEXTAUTH_URL=http://localhost:9003
-# Generate a strong secret for NextAuth.js.
+
+# Generate a strong secret for NextAuth.js. This is CRITICAL for security.
 # In your terminal, run: openssl rand -base64 32
 # Copy the output and paste it here.
 # Example: NEXTAUTH_SECRET=aVeryStrongAndRandomStringGeneratedByOpenSSL
@@ -31,9 +34,9 @@ NEXTAUTH_SECRET=REPLACE_THIS_WITH_A_STRONG_RANDOM_SECRET_YOU_GENERATE
 ```
 
 **Important:**
-1.  Replace the placeholder values (e.g., `YOUR_ACTUAL_STRIPE_SECRET_KEY_GOES_HERE` and `REPLACE_THIS_WITH_A_STRONG_RANDOM_SECRET_YOU_GENERATE`) with your **actual keys and generated secret**.
+1.  Replace ALL placeholder values (e.g., `YOUR_ACTUAL_STRIPE_SECRET_KEY_GOES_HERE` and `REPLACE_THIS_WITH_A_STRONG_RANDOM_SECRET_YOU_GENERATE`) with your **actual keys and generated secret**.
 2.  To generate `NEXTAUTH_SECRET`, you can run `openssl rand -base64 32` in your terminal.
-3.  **After creating or modifying `.env.local`, you MUST restart your Next.js development server** (stop `npm run dev` with `Ctrl+C` and run `npm run dev` again) for the changes to take effect.
+3.  **After creating or modifying `.env.local`, you MUST restart your Next.js development server** (stop `npm run dev` with `Ctrl+C` and run `npm run dev` again) for the changes to take effect. Next.js only loads environment variables on startup.
 
 ## Authentication with NextAuth.js
 
@@ -51,9 +54,6 @@ This application has been configured to use NextAuth.js for authentication.
 ## Stripe Integration
 
 This application uses Stripe for payments.
-
-### Stripe Firebase Extension Configuration Notes (If previously used and migrating away from Firebase)
-If you were previously using the Stripe Firebase Extension, note that removing Firebase means this extension will no longer function. You will need to implement your own backend logic to handle Stripe webhooks (e.g., using a Next.js API route) to process events like `checkout.session.completed` and update your database accordingly.
 
 ### Stripe API Route Configuration (`/api/stripe/create-checkout-session`)
 
@@ -84,7 +84,7 @@ Your Next.js application includes an API route at `src/app/api/stripe/create-che
     *   Log in to your Stripe Dashboard (in Test Mode).
     *   Go to "Payments" to see the test transaction.
 8.  **Troubleshooting:**
-    *   Check your browser's developer console (F12) for client-side errors.
+    *   Check your browser's developer console (F12) for client-side errors (e.g., "failed to fetch" might indicate `NEXTAUTH_URL` issues).
     *   Check your Next.js terminal (where `npm run dev` is running) for server-side API route errors.
     *   Double-check your `.env.local` keys and ensure the server was restarted.
 
