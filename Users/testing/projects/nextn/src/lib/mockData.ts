@@ -30,7 +30,7 @@ export const mockUsers: User[] = usersData.map((user, index) => ({
   avatarUrl: `https://placehold.co/100x100.png?text=${user.name.split(' ').map(n => n[0]).join('')}`,
   username: user.name.toLowerCase().replace(/\s+/g, '').substring(0, 10) + (index + 100),
   pollitPointsBalance: generatePollitPoints(),
-  isFollowedByCurrentUser: false, // Initialize for profile page interactions
+  isFollowedByCurrentUser: Math.random() > 0.8, // Initialize for profile page interactions
 }));
 
 const parseTimeRemaining = (timeString: string): number => {
@@ -183,7 +183,7 @@ const allPollsFull: Poll[] = basePolls.map((pollSkeleton, index) => {
     totalVotes,
     isVoted: shouldBeVoted, // If the current user has voted on this poll
     votedOptionId: determinedVotedOptionId, // Which option the current user voted for
-    isLiked: index % 5 === 0, // If the current user has liked this poll (initial mock state)
+    isLiked: Math.random() > 0.7, // If the current user has liked this poll (initial mock state)
     likes: (index * 17 % 250) + 10,
     commentsCount: (index * 7 % 35) + 2,
     pledgeAmount,
@@ -210,3 +210,4 @@ export const fetchMorePolls = async (offset: number, limit: number): Promise<Pol
   const newPollsToServe = mockPolls.slice(offset, offset + limit);
   return newPollsToServe;
 };
+

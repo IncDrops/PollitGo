@@ -37,7 +37,7 @@ interface PollFeedProps {
 export default function PollFeed({
   staticPolls,
   onVoteCallback,
-  onToggleLikeCallback, // New callback for likes
+  onToggleLikeCallback, 
   onPollActionCompleteCallback,
   onPledgeOutcomeCallback,
   currentUser: propCurrentUser 
@@ -152,17 +152,21 @@ export default function PollFeed({
         signIn();
         return;
     }
-    if (onToggleLikeCallback) { // If a specific callback is provided (e.g., from profile page)
+    if (onToggleLikeCallback) { 
         onToggleLikeCallback(pollId);
         return;
     }
-    // Standard feed like handling
+    
     setPolls(prevPolls =>
         prevPolls.map(p => {
             if (p.id === pollId) {
                 const newIsLiked = !p.isLiked;
-                const newLikesCount = newIsLiked ? p.likes + 1 : p.likes - 1;
-                toast({ title: newIsLiked ? "Poll Liked" : "Poll Unliked" });
+                const newLikesCount = newIsLiked ? p.likes + 1 : Math.max(0, p.likes - 1);
+                if (!p.isLiked) { // Only toast if it wasn't liked before
+                    toast({ title: "Poll Liked!" });
+                } else {
+                    toast({ title: "Poll Unliked" });
+                }
                 return { ...p, isLiked: newIsLiked, likes: newLikesCount };
             }
             return p;
@@ -183,7 +187,7 @@ export default function PollFeed({
             delete newMap[pollIdToRemove];
             return newMap;
         });
-     }, 500); 
+     }, 300); // Adjusted to match animation duration
   };
 
   const handlePledgeOutcome = (pollId: string, outcome: 'accepted' | 'tipped_crowd') => {
@@ -239,7 +243,7 @@ export default function PollFeed({
             <PollCard
               poll={poll}
               onVote={handleVote}
-              onToggleLike={handleToggleLike} // Pass the new handler
+              onToggleLike={handleToggleLike} 
               onPollActionComplete={handlePollActionComplete}
               currentUser={currentUser}
               onPledgeOutcome={handlePledgeOutcome}
@@ -264,3 +268,4 @@ export default function PollFeed({
     </div>
   );
 }
+

@@ -190,6 +190,14 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
       signIn();
       return;
     }
+    
+    // Optimistically update local state for immediate UI feedback
+    setCurrentPoll(prevPoll => {
+        const newIsLiked = !prevPoll.isLiked;
+        const newLikesCount = newIsLiked ? prevPoll.likes + 1 : Math.max(0, prevPoll.likes - 1);
+        return { ...prevPoll, isLiked: newIsLiked, likes: newLikesCount };
+    });
+    // Call the parent handler to update the source of truth
     onToggleLike(currentPoll.id);
   };
 
@@ -200,16 +208,20 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
       const direction = eventData.dir;
       const optionToVote = direction === 'Left' ? currentPoll.options[0].id : currentPoll.options[1].id;
       
+      // First, handle the vote logic (updates internal state and calls parent onVote)
+      handleInternalVote(optionToVote);
+
+      // Then, start the animation
       controls.start({
         x: direction === "Left" ? "-100%" : "100%",
         opacity: 0,
         transition: { duration: 0.3 },
       }).then(() => {
+        // After animation completes, call onPollActionComplete to remove from feed
         if (onPollActionComplete) {
           onPollActionComplete(currentPoll.id, direction.toLowerCase() as 'left' | 'right');
         }
       });
-      handleInternalVote(optionToVote);
     },
     trackMouse: true,
     preventScrollOnSwipe: true,
@@ -468,3 +480,4 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
     </>
   );
 }
+

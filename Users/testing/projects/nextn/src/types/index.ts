@@ -63,3 +63,17 @@ export type NavItem = {
   label: string;
   icon: React.ElementType;
 };
+
+// You might also want a type for your NextAuth session user if you customize it significantly
+// import type { DefaultUser } from 'next-auth';
+// declare module 'next-auth' {
+//   interface Session {
+//     user?: DefaultUser & {
+//       id: string;
+//       // Add other custom session properties here
+//     };
+//   }
+//   interface User extends DefaultUser {
+//     // Add other custom user properties here if needed for token/callbacks
+//   }
+// }
