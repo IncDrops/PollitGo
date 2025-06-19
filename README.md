@@ -49,3 +49,14 @@ If using OAuth 2.0 providers like Google Sign-In with Firebase Authentication:
 
 By correctly configuring these settings, you ensure that your API key is not misused and that authentication flows (like Google Sign-In) work correctly and securely from all your intended environments (local, Firebase hosting, and your custom domain).
 
+## Stripe Firebase Extension Configuration Notes
+
+When configuring the "Run Payments with Stripe" Firebase Extension:
+
+*   **Cloud Functions deployment location:** Choose a region close to your users/database (e.g., `us-central1`). Cannot be changed later.
+*   **Products and pricing plans collection:** Default `products` is usually fine.
+*   **Customer details and subscriptions collection:** Default `customers` is usually fine. This is where Stripe customer IDs and subscription data linked to your Firebase users will be stored.
+*   **Sync new users to Stripe customers and Cloud Firestore:** Recommended: **Sync**. This automatically creates Stripe customer objects for new Firebase Auth users.
+*   **Automatically delete Stripe customer objects:** Recommended: **Do not delete**. Retain Stripe data for history and reporting.
+*   **Stripe API key with restricted access:** Create a new **restricted** API key in your Stripe dashboard with only the permissions required by the extension. Store this key securely using the "Create secret" option (which uses Google Cloud Secret Manager).
+*   **Stripe webhook secret:** After installation, the extension will provide a webhook URL. Add this URL in your Stripe dashboard (Developers > Webhooks) to create a new webhook endpoint. Stripe will then provide a signing secret (`whsec_...`) for this endpoint. Reconfigure the extension to add this signing secret, storing it via "Create secret".
