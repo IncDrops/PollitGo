@@ -24,16 +24,18 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=YOUR_ACTUAL_STRIPE_PUBLISHABLE_KEY_GOES_HERE
 # If your app runs on a different port, or if you are using a dynamic URL
 # for testing OAuth providers (like Firebase Studio often assigns), update it accordingly.
 # Ensure this URL is reachable from your browser AND by NextAuth.js for its internal operations.
+# THIS IS CRITICAL FOR NEXTAUTH.JS TO WORK. A "FAILED TO FETCH" ERROR OFTEN MEANS THIS IS MISCONFIGURED OR THE SERVER WASN'T RESTARTED.
 NEXTAUTH_URL=http://localhost:9003
 
 # Generate a strong secret for NextAuth.js. This is CRITICAL for security.
 # In your terminal, run: openssl rand -base64 32
 # Copy the output and paste it here.
 # Example: NEXTAUTH_SECRET=aVeryStrongAndRandomStringGeneratedByOpenSSL
+# THIS IS CRITICAL FOR NEXTAUTH.JS TO WORK. IF MISSING, NEXTAUTH API ROUTES WILL FAIL.
 NEXTAUTH_SECRET=REPLACE_THIS_WITH_A_STRONG_RANDOM_SECRET_YOU_GENERATE
 ```
 
-**Important:**
+**VERY IMPORTANT:**
 1.  Replace ALL placeholder values (e.g., `YOUR_ACTUAL_STRIPE_SECRET_KEY_GOES_HERE` and `REPLACE_THIS_WITH_A_STRONG_RANDOM_SECRET_YOU_GENERATE`) with your **actual keys and generated secret**.
 2.  To generate `NEXTAUTH_SECRET`, you can run `openssl rand -base64 32` in your terminal.
 3.  **After creating or modifying `.env.local`, you MUST restart your Next.js development server** (stop `npm run dev` with `Ctrl+C` and run `npm run dev` again) for the changes to take effect. Next.js only loads environment variables on startup.
@@ -50,6 +52,14 @@ This application has been configured to use NextAuth.js for authentication.
     2.  Modify the `authorize` function in `src/app/api/auth/[...nextauth]/route.ts` to:
         *   Validate login credentials against your user database.
         *   Handle user registration by creating new user records in your database (likely via a separate API endpoint).
+
+### Troubleshooting NextAuth.js "Failed to fetch" errors:
+If you encounter "Failed to fetch" errors during login/signup:
+1.  **Verify `NEXTAUTH_URL` in `.env.local`:** Ensure it's correctly set to your application's base URL (e.g., `http://localhost:9003` for local development).
+2.  **Verify `NEXTAUTH_SECRET` in `.env.local`:** Ensure it's set to a strong, randomly generated string.
+3.  **Restart Server:** **You MUST restart your Next.js development server** (`npm run dev`) after any changes to `.env.local`.
+4.  **Check Server Terminal Logs:** Look at the terminal where `npm run dev` is running. Errors in the NextAuth.js API route (`src/app/api/auth/[...nextauth]/route.ts`) will appear here. The API route now includes an explicit check for `NEXTAUTH_SECRET`.
+5.  **Check Browser Developer Console:** Look for more detailed error messages logged by the login page itself.
 
 ## Stripe Integration
 
@@ -84,7 +94,7 @@ Your Next.js application includes an API route at `src/app/api/stripe/create-che
     *   Log in to your Stripe Dashboard (in Test Mode).
     *   Go to "Payments" to see the test transaction.
 8.  **Troubleshooting:**
-    *   Check your browser's developer console (F12) for client-side errors (e.g., "failed to fetch" might indicate `NEXTAUTH_URL` issues).
+    *   Check your browser's developer console (F12) for client-side errors (e.g., "failed to fetch" might indicate `NEXTAUTH_URL` issues or API route crashes).
     *   Check your Next.js terminal (where `npm run dev` is running) for server-side API route errors.
     *   Double-check your `.env.local` keys and ensure the server was restarted.
 
@@ -92,70 +102,13 @@ Your Next.js application includes an API route at `src/app/api/stripe/create-che
 This project previously used Firebase for authentication and database. These services have been removed. The following sections are for historical reference or if you decide to re-integrate Firebase or a similar BaaS.
 
 ### Troubleshooting: `auth/requests-from-referer-...-are-blocked` Error in Firebase Studio (If re-integrating Firebase)
-
-This is a common and frustrating error when developing with Firebase Studio due to its dynamic URLs. If you've followed the steps and are still seeing this, please meticulously re-check these points:
-
-1.  **Identify the EXACT URL from the LATEST Error Message (CRUCIAL):**
-    *   When the error appears (e.g., `Firebase: Error (auth/requests-from-referer-https://<YOUR_DYNAMIC_URL>-are-blocked.)`), **immediately copy the `<YOUR_DYNAMIC_URL>` part.**
-    *   For example, if your latest error shows `auth/requests-from-referer-https://6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev-are-blocked`, the URL you absolutely need to work with *right now* is `6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev`.
-    *   **Firebase Studio URLs can change!** If you close and reopen Studio, or if your session refreshes, or even sometimes after a period of inactivity, you might get a new URL. If the error reappears with a *new* URL, you **must** go back to step 2 and add that new URL. The old one may no longer be valid for your current session.
-
-2.  **Add/Verify in Firebase Authentication Authorized Domains (Most Crucial Step):**
-    *   Go to the **Firebase Console** ([console.firebase.google.com](https://console.firebase.google.com/)).
-    *   Select your project.
-    *   Navigate to **Authentication** (in the "Build" section of the left sidebar).
-    *   Click the **Settings** tab.
-    *   Find the **Authorized domains** section.
-    *   **Check the list:** Is the EXACT domain you copied in Step 1 (e.g., `6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev`) already there?
-    *   If not, click **"Add domain"**.
-    *   Carefully enter **ONLY the domain part** from the URL you copied in Step 1 (without `https://`).
-        *   Example: `6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev`
-    *   Click **"Add"**.
-    *   Ensure `localhost` is also listed here for local `npm run dev` testing.
-
-3.  **WAIT FOR PROPAGATION (EXTREMELY IMPORTANT):**
-    *   After making changes in the Firebase or Google Cloud consoles, it can take **5 to 15 minutes (sometimes longer)** for these settings to fully propagate across all of Google's servers.
-    *   **DO NOT retest your application immediately.** Set a timer for at least 10-15 minutes. Testing too soon will likely show the same error and lead to frustration. Patience here is key.
-
-4.  **Hard Refresh & Clear Cache (After Waiting):**
-    *   After the waiting period (Step 3), perform a **hard refresh** of your application page in the browser (e.g., `Ctrl+Shift+R` or `Cmd+Shift+R`).
-    *   Consider clearing your browser's cache for the site or testing in an **Incognito/Private window** to ensure you're not dealing with cached responses or configurations.
-
-5.  **Add to Google Cloud API Key Restrictions (Recommended for Security):**
-    *   Go to the **Google Cloud Console** ([console.cloud.google.com](https://console.cloud.google.com/)).
-    *   Select your project.
-    *   Navigate to **APIs & Services > Credentials**.
-    *   Find your API key (typically named "Browser key (auto created by Firebase)" or similar). Click on its name.
-    *   Under **Application restrictions**, select **"Websites"**.
-    *   Under **Website restrictions**, click **"ADD"**.
-    *   Enter the **full URL including `https://`** from Step 1.
-        *   Example: `https://6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev`
-    *   Also add other necessary URLs like `http://localhost:9003` (if you run locally), your Firebase Hosting URLs (if applicable), and any custom domains.
-    *   Click **"Save"**. Remember this also has a propagation delay (Step 3).
-
-6.  **Add to Google Cloud OAuth 2.0 Client ID (If using Google Sign-In or other OAuth providers):**
-    *   In the **Google Cloud Console**, go to **APIs & Services > Credentials**.
-    *   Click on your **OAuth 2.0 Client ID** for Web application.
-    *   Under **Authorized JavaScript origins**, click **"ADD URI"**.
-    *   Enter the **full URL including `https://`** from Step 1.
-        *   Example: `https://6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev`
-    *   Also add `http://localhost:9003` and other production origins.
-    *   Under **Authorized redirect URIs**, ensure your primary Firebase redirect URI is present: `https://YOUR_PROJECT_ID.firebaseapp.com/__/auth/handler` (e.g., `https://your-project-id.firebaseapp.com/__/auth/handler`).
-    *   Click **"Save"**. Remember this also has a propagation delay (Step 3).
-
-7.  **Double-Check the Correct Project:**
-    *   Ensure you are making these changes in the Firebase and Google Cloud project settings that are **actually linked** to the Firebase configuration your app would be using.
-
-If you've gone through all these steps, paid close attention to the **exact current URL from the error**, **waited patiently for propagation**, and **hard refreshed**, and the error *still* persists with the *exact same URL*, then there might be a more unusual issue. However, 99% of the time, the issue lies in the URL changing or the propagation delay not being respected.
+(Details omitted for brevity as Firebase is removed)
 
 ### API Key Security Reminder (If re-integrating Firebase)
-If you received a warning about an unrestricted API key, ensure you have followed the steps in the Google Cloud Console for your Firebase project's API key.
-(Details on restricting API keys: Application restrictions, API restrictions)
+(Details omitted for brevity as Firebase is removed)
 
 ### OAuth 2.0 Client ID Configuration (If re-integrating Firebase and using OAuth)
-(Details on configuring Authorized JavaScript origins and Authorized redirect URIs in Google Cloud Console, and Authorized domains in Firebase Console)
-
-By correctly configuring these settings (if you were using Firebase), you would ensure that your API key is not misused and that authentication flows work correctly.
+(Details omitted for brevity as Firebase is removed)
 
 ## Custom Webhook Handler (`functions/src/index.ts` - Deprecated)
 
@@ -169,4 +122,5 @@ The `functions` directory can be manually deleted from your project if you have 
 *   **Environment Variables:** Ensure all necessary environment variables from your `.env.local` (like `STRIPE_SECRET_KEY`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`) are set in your hosting provider's environment variable settings for your deployed application. **Do not commit your `.env.local` file.**
     *   `NEXTAUTH_URL` should be set to your production application's URL.
     *   Use your **LIVE** Stripe keys for production.
-```
+
+  
