@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { mockPolls, mockUsers } from "@/lib/mockData";
 import type { Poll, PollOption as PollOptionType, Comment as CommentType, User } from "@/types";
 import { formatDistanceToNowStrict, parseISO } from "date-fns";
-import { Clock, Heart, MessageSquare, Share2, Gift, Send, Info, CheckCircle2, Loader2, Check, Users, Flame, AlertCircle, UserCircle2, LogIn } from "lucide-react";
+import { Clock, Heart, MessageSquare, Share2, Gift, Send, Info, CheckCircle2, Loader2, Check, Users, Flame, AlertCircle, UserCircle2, LogIn, Video as VideoIconLucide } from "lucide-react";
 import Image from "next/image";
 import NextLink from "next/link";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useStripe } from "@stripe/react-stripe-js";
 import useAuth from '@/hooks/useAuth';
 import { signIn } from 'next-auth/react';
-import { useParams } from 'next/navigation'; // Import useParams
+import { useParams } from 'next/navigation';
 
 async function getPollDetails(pollId: string): Promise<{ poll: Poll | null; comments: CommentType[] }> {
   const poll = mockPolls.find(p => p.id === pollId) || null;
@@ -57,7 +57,7 @@ const PollOptionDisplay: React.FC<{
   pollPledgeAmount?: number;
   canCurrentUserVote: boolean;
 }> = ({ option, totalVotes, isVotedByCurrentUser, isSelectedOptionByCurrentUser, deadlinePassed, onVote, pollHasTwoOptions, onShowDetails, pollPledgeAmount, canCurrentUserVote }) => {
-  const { toast } = useToast();
+  
   const percentage = totalVotes > 0 ? (option.votes / totalVotes) * 100 : 0;
   const showResults = isVotedByCurrentUser || deadlinePassed;
   const isTruncated = option.text.length > OPTION_TEXT_TRUNCATE_LENGTH;
@@ -138,7 +138,7 @@ const PollOptionDisplay: React.FC<{
 
 export default function PollDetailsPage() {
   const routeParams = useParams<{ pollId: string }>();
-  const pollId = routeParams.pollId;
+  const pollId = routeParams?.pollId; // Make access safe in case routeParams is null/undefined initially
 
   const [pollData, setPollData] = useState<{ poll: Poll | null; comments: CommentType[] }>({ poll: null, comments: [] });
   const [pageLoading, setPageLoading] = useState(true);
@@ -155,13 +155,37 @@ export default function PollDetailsPage() {
   const [newCommentText, setNewCommentText] = useState('');
 
   useEffect(() => {
-    if (!pollId) return;
+    if (!pollId) {
+        setPageLoading(false); // Stop loading if no pollId
+        return;
+    }
 
     const fetchData = async () => {
       setPageLoading(true);
-      const data = await getPollDetails(pollId); // Uses pollId from useParams
-      setPollData(prev => ({ ...prev, ...data, poll: data.poll ? {...data.poll} : null }));
-      setPageLoading(false);
+      try {
+        const data = await getPollDetails(pollId);
+        if (!data.poll) {
+          setTimeout(() => {
+            toast({
+              title: "Poll Not Found",
+              description: `Could not load details for poll ID ${pollId}.`,
+              variant: "destructive",
+            });
+          }, 0);
+        }
+        setPollData(prev => ({ ...prev, ...data, poll: data.poll ? {...data.poll} : null }));
+      } catch (error) {
+        console.error("Error fetching poll details:", error);
+        setTimeout(() => {
+          toast({
+            title: "Error Loading Poll",
+            description: "There was an issue fetching the poll details.",
+            variant: "destructive",
+          });
+        }, 0);
+      } finally {
+        setPageLoading(false);
+      }
     };
     fetchData();
   }, [pollId]);
@@ -264,7 +288,7 @@ export default function PollDetailsPage() {
     if (!poll) return;
 
     setIsLiking(true);
-    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 300)); 
     setPollData(prevData => {
         if (!prevData.poll) return prevData;
         const newIsLiked = !prevData.poll.isLiked;

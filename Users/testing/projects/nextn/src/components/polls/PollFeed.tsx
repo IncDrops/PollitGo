@@ -28,7 +28,7 @@ const BATCH_SIZE = 10;
 interface PollFeedProps {
   staticPolls?: Poll[];
   onVoteCallback?: (pollId: string, optionId: string) => void;
-  onToggleLikeCallback?: (pollId: string) => void; // For profile page to manage its own state
+  onToggleLikeCallback?: (pollId: string) => void; 
   onPollActionCompleteCallback?: (pollId: string, swipeDirection?: 'left' | 'right') => void;
   onPledgeOutcomeCallback?: (pollId: string, outcome: 'accepted' | 'tipped_crowd') => void;
   currentUser?: User | null; 
@@ -71,13 +71,15 @@ export default function PollFeed({
       });
     } catch (error) {
       console.error("Failed to fetch more polls:", error);
-      toast({ title: "Error", description: "Could not load more polls.", variant: "destructive" });
+      setTimeout(() => {
+        toast({ title: "Error", description: "Could not load more polls.", variant: "destructive" });
+      }, 0);
       setHasMore(false); 
     } finally {
       setLoadingMore(false);
       if (isInitial) setInitialLoadComplete(true);
     }
-  }, [staticPolls, loadingMore, hasMore, polls.length, toast]);
+  }, [staticPolls, loadingMore, hasMore, polls.length]);
 
   useEffect(() => {
     if (!staticPolls && !initialLoadComplete) {
@@ -162,7 +164,7 @@ export default function PollFeed({
             if (p.id === pollId) {
                 const newIsLiked = !p.isLiked;
                 const newLikesCount = newIsLiked ? p.likes + 1 : Math.max(0, p.likes - 1);
-                if (!p.isLiked) { // Only toast if it wasn't liked before
+                if (!p.isLiked) { 
                     toast({ title: "Poll Liked!" });
                 } else {
                     toast({ title: "Poll Unliked" });
@@ -187,7 +189,7 @@ export default function PollFeed({
             delete newMap[pollIdToRemove];
             return newMap;
         });
-     }, 300); // Adjusted to match animation duration
+     }, 300); 
   };
 
   const handlePledgeOutcome = (pollId: string, outcome: 'accepted' | 'tipped_crowd') => {
