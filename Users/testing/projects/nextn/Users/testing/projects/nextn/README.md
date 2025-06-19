@@ -23,7 +23,7 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=YOUR_ACTUAL_STRIPE_PUBLISHABLE_KEY_GOES_HERE
 # This should be the base URL of your application FOR LOCAL DEVELOPMENT.
 # If `npm run dev` runs on port 9003, this is http://localhost:9003
 # If your app runs on a different port locally, update it.
-# FOR DEPLOYED ENVIRONMENTS (Vercel, Netlify, etc.), THIS MUST BE SET TO
+# FOR DEPLOYED ENVIRONMENTS (Vercel, Netlify, Google Cloud Build/Run etc.), THIS MUST BE SET TO
 # THE PUBLICLY ACCESSIBLE URL OF THAT DEPLOYED ENVIRONMENT in the hosting provider's settings.
 NEXTAUTH_URL=http://localhost:9003
 
@@ -40,9 +40,9 @@ NEXTAUTH_SECRET=REPLACE_THIS_WITH_A_STRONG_RANDOM_SECRET_YOU_GENERATE
 1.  Replace ALL placeholder values (e.g., `YOUR_ACTUAL_STRIPE_SECRET_KEY_GOES_HERE` and `REPLACE_THIS_WITH_A_STRONG_RANDOM_SECRET_YOU_GENERATE`) with your **actual keys and generated secret**.
 2.  To generate `NEXTAUTH_SECRET`, you can run `openssl rand -base64 32` in your terminal.
 3.  **After creating or modifying `.env.local` (for local development), you MUST restart your Next.js development server** (stop `npm run dev` with `Ctrl+C` and run `npm run dev` again) for the changes to take effect. Next.js only loads environment variables on startup.
-4.  **For Deployed/Prototype Environments (like Vercel, Netlify, Firebase Studio Prototypes):**
-    *   `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `STRIPE_SECRET_KEY`, and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` **must** be set as environment variables through your hosting provider's settings dashboard or environment configuration.
-    *   **The `.env.local` file is NOT used in deployed/prototype environments.**
+4.  **For Deployed/Prototype Environments (like Vercel, Netlify, Google Cloud Build/Run, Firebase Studio Prototypes):**
+    *   `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `STRIPE_SECRET_KEY`, and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` **must** be set as environment variables through your hosting provider's settings dashboard or environment configuration. **These are NOT read from `.env.local` in deployed environments.**
+    *   **`STRIPE_SECRET_KEY` is especially critical for the `/api/stripe/create-checkout-session` route to function. If it's missing in the build/deployment environment, your build might fail or the route will not work at runtime.**
     *   **`NEXTAUTH_URL` in deployed/prototype environments MUST be the full public URL of that specific deployment** (e.g., `https://your-app-name.vercel.app` or `https://your-dynamic-studio-url.cloudworkstations.dev`). If it's not set correctly, NextAuth.js API routes (like login/signup) will likely fail with "Failed to fetch" errors because the backend doesn't know its own public address.
     *   Firebase Studio prototypes, in particular, might not have a straightforward way to set *backend* environment variables for Next.js API routes that it hosts. This can lead to the "Failed to fetch" error for NextAuth.js when running on the prototype URL, even if it works perfectly locally. This is often a limitation of the specific prototyping environment's configuration options for Next.js backends.
 
@@ -69,7 +69,7 @@ If you encounter "Failed to fetch" errors during login/signup:
     *   **Deployed/Prototype:** Ensure `NEXTAUTH_SECRET` is also set to the exact same strong secret in your hosting provider's environment variable settings.
     *   The API route `src/app/api/auth/[...nextauth]/route.ts` includes an explicit check and will log an error to your **server terminal/logs** if `NEXTAUTH_SECRET` is missing or not loaded by the server.
 3.  **Restart Server (Local Development):** You **MUST restart your Next.js development server** (`npm run dev`) after any changes to `.env.local`.
-4.  **Check Server Terminal Logs / Deployment Logs:** Look at the terminal where `npm run dev` is running (or your deployed environment's server logs). Errors in the NextAuth.js API route will appear here, especially regarding missing `NEXTAUTH_SECRET` or other misconfigurations.
+4.  **Check Server Terminal Logs / Deployment Logs:** Look at the terminal where `npm run dev` is running (or your deployed environment's server logs). Errors in the NextAuth.js API route will appear here, especially regarding missing `NEXTAUTH_SECRET` or other misconfigurations. The Stripe API route will also log an error if `STRIPE_SECRET_KEY` is missing.
 5.  **Check Browser Developer Console:** Look for more detailed error messages logged by the login page itself. The login page was updated to show more specific error messages for "Failed to fetch".
 
 ## Stripe Integration
@@ -80,8 +80,8 @@ This application uses Stripe for payments.
 
 Your Next.js application includes an API route at `src/app/api/stripe/create-checkout-session/route.ts`. This route is responsible for creating Stripe Checkout Sessions.
 
-*   **Environment Variable for Stripe Secret Key:** Ensure `STRIPE_SECRET_KEY` is set in your `.env.local` file (for local) or hosting environment (for deployed).
-*   **Environment Variable for Stripe Publishable Key:** Ensure `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is set.
+*   **Environment Variable for Stripe Secret Key:** Ensure `STRIPE_SECRET_KEY` is set in your `.env.local` file (for local development) or in your hosting environment settings (for deployed/built applications). **If this key is missing in the build/deployment environment, the build may fail or the API route will not function correctly at runtime.**
+*   **Environment Variable for Stripe Publishable Key:** Ensure `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is set (used on the client-side).
 *   **Restart Dev Server (Local):** After editing `.env.local`, restart your Next.js development server.
 
 ## Testing the Payment Flow
@@ -101,7 +101,7 @@ Your Next.js application includes an API route at `src/app/api/stripe/create-che
     *   Complete the payment.
 6.  **Verify Redirection:** Success to `/payment-success`, cancel to `/payment-cancelled`.
 7.  **Check Stripe Dashboard (Test Mode).**
-8.  **Troubleshooting:** Check browser console and Next.js terminal/server logs.
+8.  **Troubleshooting:** Check browser console and Next.js terminal/server logs. Ensure environment variables are correctly set for the environment you are testing in (local vs. deployed).
 
 ## Deploying to Vercel (or similar platforms) for Testing
 
@@ -150,5 +150,3 @@ Firebase services have been removed from this project. Related sections in this 
 
 ## Custom Webhook Handler (`functions/src/index.ts` - Deprecated)
 The `functions` directory is no longer used for Firebase Functions. Custom backend logic (e.g., for Stripe webhooks) should be implemented using Next.js API routes if needed, separate from any Stripe extension.
-
-    
