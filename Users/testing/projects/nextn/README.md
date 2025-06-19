@@ -1,4 +1,5 @@
 
+
 # Firebase Studio
 
 This is a NextJS starter in Firebase Studio.
@@ -42,7 +43,11 @@ NEXTAUTH_SECRET=REPLACE_THIS_WITH_A_STRONG_RANDOM_SECRET_YOU_GENERATE
 1.  Replace ALL placeholder values (e.g., `YOUR_ACTUAL_STRIPE_SECRET_KEY_GOES_HERE` and `REPLACE_THIS_WITH_A_STRONG_RANDOM_SECRET_YOU_GENERATE`) with your **actual keys and generated secret**.
 2.  To generate `NEXTAUTH_SECRET`, you can run `openssl rand -base64 32` in your terminal.
 3.  **After creating or modifying `.env.local` (for local development), you MUST restart your Next.js development server** (stop `npm run dev` with `Ctrl+C` and run `npm run dev` again) for the changes to take effect. Next.js only loads environment variables on startup.
-4.  **For Deployed/Prototype Environments (like Firebase Studio):** `NEXTAUTH_URL` and `NEXTAUTH_SECRET` must be set as environment variables through your hosting provider's settings dashboard. Firebase Studio might not have an easy way to set *backend* environment variables for Next.js API routes, which can lead to the "Failed to fetch" error for NextAuth.js when running on the prototype URL. This is a limitation of the prototyping environment, not an issue with the NextAuth.js setup itself if it works locally.
+4.  **For Deployed/Prototype Environments (like Firebase Studio):**
+    *   `NEXTAUTH_URL` and `NEXTAUTH_SECRET` **must** be set as environment variables through your hosting provider's settings dashboard or environment configuration.
+    *   **The `.env.local` file is NOT used in deployed/prototype environments.**
+    *   **`NEXTAUTH_URL` in deployed/prototype environments MUST be the full public URL of that specific deployment** (e.g., `https://your-dynamic-studio-url.cloudworkstations.dev`). If it's not set correctly, NextAuth.js API routes (like login/signup) will likely fail with "Failed to fetch" errors because the backend doesn't know its own public address.
+    *   Firebase Studio, in particular, might not have an straightforward way to set *backend* environment variables for Next.js API routes that it hosts. This can lead to the "Failed to fetch" error for NextAuth.js when running on the prototype URL, even if it works perfectly locally. This is often a limitation of the specific prototyping environment's configuration options for Next.js backends.
 
 ## Authentication with NextAuth.js
 
@@ -59,13 +64,13 @@ This application has been configured to use NextAuth.js for authentication.
 
 ### Troubleshooting NextAuth.js "Failed to fetch" errors:
 If you encounter "Failed to fetch" errors during login/signup:
-1.  **Verify `NEXTAUTH_URL` in `.env.local` (for local dev) or your hosting environment settings (for deployed/prototype):**
+1.  **Verify `NEXTAUTH_URL` in `.env.local` (for local dev) OR your hosting environment settings (for deployed/prototype):**
     *   **Local:** Ensure it's `http://localhost:9003` (or your correct local port).
-    *   **Deployed/Prototype (e.g., Firebase Studio):** This is the most common cause of "Failed to fetch" in these environments. `NEXTAUTH_URL` **must** be set to the publicly accessible URL of *that specific environment* (e.g., `https://your-studio-url.cloudworkstations.dev`). If the environment doesn't allow setting backend environment variables for Next.js API routes, NextAuth.js may not function correctly.
-2.  **Verify `NEXTAUTH_SECRET` in `.env.local` (local) or hosting environment settings (deployed):** Ensure it's set to a strong, randomly generated string. The API route `src/app/api/auth/[...nextauth]/route.ts` includes an explicit check and will log an error to your **server terminal** if it's missing.
+    *   **Deployed/Prototype (e.g., Firebase Studio):** This is the **most common cause** of "Failed to fetch" in these environments. `NEXTAUTH_URL` **must** be set to the publicly accessible URL of *that specific environment* (e.g., `https://your-studio-url.cloudworkstations.dev`). If the environment doesn't allow setting backend environment variables for Next.js API routes, NextAuth.js may not function correctly.
+2.  **Verify `NEXTAUTH_SECRET` in `.env.local` (local) OR hosting environment settings (deployed):** Ensure it's set to a strong, randomly generated string. The API route `src/app/api/auth/[...nextauth]/route.ts` includes an explicit check and will log an error to your **server terminal** if it's missing.
 3.  **Restart Server (Local Development):** **You MUST restart your Next.js development server** (`npm run dev`) after any changes to `.env.local`.
-4.  **Check Server Terminal Logs:** Look at the terminal where `npm run dev` is running (or your deployed environment's server logs). Errors in the NextAuth.js API route will appear here, especially regarding missing `NEXTAUTH_SECRET`.
-5.  **Check Browser Developer Console:** Look for more detailed error messages logged by the login page itself.
+4.  **Check Server Terminal Logs:** Look at the terminal where `npm run dev` is running (or your deployed environment's server logs). Errors in the NextAuth.js API route will appear here, especially regarding missing `NEXTAUTH_SECRET` or misconfiguration.
+5.  **Check Browser Developer Console:** Look for more detailed error messages logged by the login page itself. The login page was updated to show more specific error messages for "Failed to fetch".
 
 ## Stripe Integration
 

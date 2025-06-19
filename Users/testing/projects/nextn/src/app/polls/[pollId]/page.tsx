@@ -9,8 +9,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { mockPolls, mockUsers } from "@/lib/mockData";
 import type { Poll, PollOption as PollOptionType, Comment as CommentType, User } from "@/types";
-import { formatDistanceToNowStrict, parseISO, isPast } from "date-fns";
-import { Clock, Heart, MessageSquare, Share2, Gift, Send, Image as ImageIconLucideShadcn, Video as VideoIconLucide, ThumbsUp, Film, Info, CheckCircle2, Loader2, Check, Users, Flame, AlertCircle, UserCircle2, LogIn } from "lucide-react";
+import { formatDistanceToNowStrict, parseISO } from "date-fns";
+import { Clock, Heart, MessageSquare, Share2, Gift, Send, Info, CheckCircle2, Loader2, Check, Users, Flame, AlertCircle, UserCircle2, LogIn } from "lucide-react";
 import Image from "next/image";
 import NextLink from "next/link";
 import { cn } from "@/lib/utils";
@@ -137,7 +137,7 @@ const PollOptionDisplay: React.FC<{
 };
 
 export default function PollDetailsPage() {
-  const routeParams = useParams<{ pollId: string }>(); // Use hook to get params
+  const routeParams = useParams<{ pollId: string }>();
   const pollId = routeParams.pollId;
 
   const [pollData, setPollData] = useState<{ poll: Poll | null; comments: CommentType[] }>({ poll: null, comments: [] });
@@ -155,16 +155,16 @@ export default function PollDetailsPage() {
   const [newCommentText, setNewCommentText] = useState('');
 
   useEffect(() => {
-    if (!pollId) return; // Guard if pollId is not yet available
+    if (!pollId) return;
 
     const fetchData = async () => {
       setPageLoading(true);
-      const data = await getPollDetails(pollId);
+      const data = await getPollDetails(pollId); // Uses pollId from useParams
       setPollData(prev => ({ ...prev, ...data, poll: data.poll ? {...data.poll} : null }));
       setPageLoading(false);
     };
     fetchData();
-  }, [pollId]); // Depend on pollId from useParams
+  }, [pollId]);
 
   const poll = pollData.poll;
   const comments = pollData.comments;
@@ -231,6 +231,7 @@ export default function PollDetailsPage() {
     e.preventDefault();
     if (!isAuthenticated || !currentUser) {
         toast({title: "Login Required", description: "Please login to comment.", variant: "destructive"});
+        signIn();
         return;
     }
     if (newCommentText.trim() !== "" && poll) {
@@ -263,7 +264,7 @@ export default function PollDetailsPage() {
     if (!poll) return;
 
     setIsLiking(true);
-    await new Promise(resolve => setTimeout(resolve, 300));
+    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate API call
     setPollData(prevData => {
         if (!prevData.poll) return prevData;
         const newIsLiked = !prevData.poll.isLiked;
