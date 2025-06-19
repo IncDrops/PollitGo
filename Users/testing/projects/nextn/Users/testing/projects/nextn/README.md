@@ -1,251 +1,154 @@
 
+
 # Firebase Studio
 
 This is a NextJS starter in Firebase Studio.
 
 To get started, take a look at src/app/page.tsx.
 
-## Troubleshooting: `auth/requests-from-referer-...-are-blocked` Error in Firebase Studio
+## Environment Variables (.env.local)
 
-This is a common and frustrating error when developing with Firebase Studio due to its dynamic URLs. If you've followed the steps and are still seeing this, please meticulously re-check these points:
+This project uses environment variables for configuration, especially for sensitive keys. You need to create a `.env.local` file in the root of your project. This file is included in `.gitignore` and should never be committed to version control.
 
-1.  **Identify the EXACT URL from the LATEST Error Message (CRUCIAL):**
-    *   When the error appears (e.g., `Firebase: Error (auth/requests-from-referer-https://<YOUR_DYNAMIC_URL>-are-blocked.)`), **immediately copy the `<YOUR_DYNAMIC_URL>` part.**
-    *   For example, if your latest error shows `auth/requests-from-referer-https://6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev-are-blocked`, the URL you absolutely need to work with *right now* is `6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev`.
-    *   **Firebase Studio URLs can change!** If you close and reopen Studio, or if your session refreshes, or even sometimes after a period of inactivity, you might get a new URL. If the error reappears with a *new* URL, you **must** go back to step 2 and add that new URL. The old one may no longer be valid for your current session.
+**Content for your `.env.local` file (for LOCAL DEVELOPMENT ONLY):**
 
-2.  **Add/Verify in Firebase Authentication Authorized Domains (Most Crucial Step):**
-    *   Go to the **Firebase Console** ([console.firebase.google.com](https://console.firebase.google.com/)).
-    *   Select your project (e.g., `pollitgo`).
-    *   Navigate to **Authentication** (in the "Build" section of the left sidebar).
-    *   Click the **Settings** tab.
-    *   Find the **Authorized domains** section.
-    *   **Check the list:** Is the EXACT domain you copied in Step 1 (e.g., `6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev`) already there?
-    *   If not, click **"Add domain"**.
-    *   Carefully enter **ONLY the domain part** from the URL you copied in Step 1 (without `https://`).
-        *   Example: `6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev`
-    *   Click **"Add"**.
-    *   Ensure `localhost` is also listed here for local `npm run dev` testing.
+```env
+# Stripe Keys
+# Replace with your ACTUAL Stripe Test Secret Key (starts with sk_test_...)
+STRIPE_SECRET_KEY=YOUR_ACTUAL_STRIPE_SECRET_KEY_GOES_HERE
+# Replace with your ACTUAL Stripe Test Publishable Key (starts with pk_test_...)
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=YOUR_ACTUAL_STRIPE_PUBLISHABLE_KEY_GOES_HERE
 
-3.  **WAIT FOR PROPAGATION (EXTREMELY IMPORTANT):**
-    *   After making changes in the Firebase or Google Cloud consoles, it can take **5 to 15 minutes (sometimes longer)** for these settings to fully propagate across all of Google's servers.
-    *   **DO NOT retest your application immediately.** Set a timer for at least 10-15 minutes. Testing too soon will likely show the same error and lead to frustration. Patience here is key.
+# NextAuth.js Variables
+# This should be the base URL of your application FOR LOCAL DEVELOPMENT.
+# If `npm run dev` runs on port 9003, this is http://localhost:9003
+# If your app runs on a different port locally, update it.
+# FOR DEPLOYED ENVIRONMENTS (Vercel, Netlify, etc.), THIS MUST BE SET TO
+# THE PUBLICLY ACCESSIBLE URL OF THAT DEPLOYED ENVIRONMENT in the hosting provider's settings.
+NEXTAUTH_URL=http://localhost:9003
 
-4.  **Hard Refresh & Clear Cache (After Waiting):**
-    *   After the waiting period (Step 3), perform a **hard refresh** of your application page in the browser (e.g., `Ctrl+Shift+R` or `Cmd+Shift+R`).
-    *   Consider clearing your browser's cache for the site or testing in an **Incognito/Private window** to ensure you're not dealing with cached responses or configurations.
+# Generate a strong secret for NextAuth.js. This is CRITICAL for security.
+# In your terminal, run: openssl rand -base64 32
+# Copy the output and paste it here.
+# Example: NEXTAUTH_SECRET=aVeryStrongAndRandomStringGeneratedByOpenSSL
+# THIS IS CRITICAL FOR NEXTAUTH.JS TO WORK. IF MISSING, NEXTAUTH API ROUTES WILL FAIL.
+# Ensure this variable is also set in your deployed environment's settings.
+NEXTAUTH_SECRET=REPLACE_THIS_WITH_A_STRONG_RANDOM_SECRET_YOU_GENERATE
+```
 
-5.  **Add to Google Cloud API Key Restrictions (Recommended for Security):**
-    *   Go to the **Google Cloud Console** ([console.cloud.google.com](https://console.cloud.google.com/)).
-    *   Select your project.
-    *   Navigate to **APIs & Services > Credentials**.
-    *   Find your API key (typically named "Browser key (auto created by Firebase)" or similar). Click on its name.
-    *   Under **Application restrictions**, select **"Websites"**.
-    *   Under **Website restrictions**, click **"ADD"**.
-    *   Enter the **full URL including `https://`** from Step 1.
-        *   Example: `https://6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev`
-    *   Also add other necessary URLs like `http://localhost:9003` (if you run locally), your Firebase Hosting URLs (`pollitgo.web.app`, `pollitgo.firebaseapp.com`), and any custom domains.
-    *   Click **"Save"**. Remember this also has a propagation delay (Step 3).
+**VERY IMPORTANT:**
+1.  Replace ALL placeholder values (e.g., `YOUR_ACTUAL_STRIPE_SECRET_KEY_GOES_HERE` and `REPLACE_THIS_WITH_A_STRONG_RANDOM_SECRET_YOU_GENERATE`) with your **actual keys and generated secret**.
+2.  To generate `NEXTAUTH_SECRET`, you can run `openssl rand -base64 32` in your terminal.
+3.  **After creating or modifying `.env.local` (for local development), you MUST restart your Next.js development server** (stop `npm run dev` with `Ctrl+C` and run `npm run dev` again) for the changes to take effect. Next.js only loads environment variables on startup.
+4.  **For Deployed/Prototype Environments (like Vercel, Netlify, Firebase Studio Prototypes):**
+    *   `NEXTAUTH_URL`, `NEXTAUTH_SECRET`, `STRIPE_SECRET_KEY`, and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` **must** be set as environment variables through your hosting provider's settings dashboard or environment configuration.
+    *   **The `.env.local` file is NOT used in deployed/prototype environments.**
+    *   **`NEXTAUTH_URL` in deployed/prototype environments MUST be the full public URL of that specific deployment** (e.g., `https://your-app-name.vercel.app` or `https://your-dynamic-studio-url.cloudworkstations.dev`). If it's not set correctly, NextAuth.js API routes (like login/signup) will likely fail with "Failed to fetch" errors because the backend doesn't know its own public address.
+    *   Firebase Studio prototypes, in particular, might not have a straightforward way to set *backend* environment variables for Next.js API routes that it hosts. This can lead to the "Failed to fetch" error for NextAuth.js when running on the prototype URL, even if it works perfectly locally. This is often a limitation of the specific prototyping environment's configuration options for Next.js backends.
 
-6.  **Add to Google Cloud OAuth 2.0 Client ID (If using Google Sign-In or other OAuth providers):**
-    *   In the **Google Cloud Console**, go to **APIs & Services > Credentials**.
-    *   Click on your **OAuth 2.0 Client ID** for Web application.
-    *   Under **Authorized JavaScript origins**, click **"ADD URI"**.
-    *   Enter the **full URL including `https://`** from Step 1.
-        *   Example: `https://6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev`
-    *   Also add `http://localhost:9003` and other production origins.
-    *   Under **Authorized redirect URIs**, ensure your primary Firebase redirect URI is present: `https://YOUR_PROJECT_ID.firebaseapp.com/__/auth/handler` (e.g., `https://pollitgo.firebaseapp.com/__/auth/handler`).
-    *   Click **"Save"**. Remember this also has a propagation delay (Step 3).
+## Authentication with NextAuth.js
 
-7.  **Double-Check the Correct Project:**
-    *   Ensure you are making these changes in the Firebase and Google Cloud project settings that are **actually linked** to the `firebaseConfig` in your `src/lib/firebase.ts` file.
+This application has been configured to use NextAuth.js for authentication.
 
-If you've gone through all these steps, paid close attention to the **exact current URL from the error**, **waited patiently for propagation**, and **hard refreshed**, and the error *still* persists with the *exact same URL*, then there might be a more unusual issue. However, 99% of the time, the issue lies in the URL changing or the propagation delay not being respected.
+*   **Credentials Provider:** A basic email/password login is set up.
+    *   **Test User:** You can log in with `test@example.com` and password `password`.
+    *   **Simulated Signup:** The current setup in `src/app/api/auth/[...nextauth]/route.ts` has a placeholder `authorize` function. This function will currently allow any new email/password combination to "sign up" and log in for demonstration purposes.
+*   **Database Integration Needed:** For a real application, you would need to:
+    1.  Integrate a database (e.g., Supabase, PostgreSQL with Prisma, MongoDB).
+    2.  Modify the `authorize` function in `src/app/api/auth/[...nextauth]/route.ts` to:
+        *   Validate login credentials against your user database.
+        *   Handle user registration by creating new user records in your database (likely via a separate API endpoint that you would create, e.g., `/api/auth/register`).
 
-## API Key Security Reminder
+### Troubleshooting NextAuth.js "Failed to fetch" errors:
+If you encounter "Failed to fetch" errors during login/signup:
+1.  **Verify `NEXTAUTH_URL`:**
+    *   **Local Development:** In `.env.local`, ensure it's `http://localhost:9003` (or your correct local port). **Restart your dev server after any change.**
+    *   **Deployed/Prototype (e.g., Vercel, Netlify, Firebase Studio):** This is the **most common cause** of "Failed to fetch" in these environments. `NEXTAUTH_URL` **must** be set to the publicly accessible URL of *that specific environment* (e.g., `https://your-app-name.vercel.app` or `https://your-studio-url.cloudworkstations.dev`) in your hosting provider's environment variable settings. If the environment doesn't allow setting backend environment variables for Next.js API routes, or if it's misconfigured, NextAuth.js may not function correctly.
+2.  **Verify `NEXTAUTH_SECRET`:**
+    *   **Local Development:** In `.env.local`, ensure it's set to a strong, randomly generated string. **Restart your dev server after any change.**
+    *   **Deployed/Prototype:** Ensure `NEXTAUTH_SECRET` is also set to the exact same strong secret in your hosting provider's environment variable settings.
+    *   The API route `src/app/api/auth/[...nextauth]/route.ts` includes an explicit check and will log an error to your **server terminal/logs** if `NEXTAUTH_SECRET` is missing or not loaded by the server.
+3.  **Restart Server (Local Development):** You **MUST restart your Next.js development server** (`npm run dev`) after any changes to `.env.local`.
+4.  **Check Server Terminal Logs / Deployment Logs:** Look at the terminal where `npm run dev` is running (or your deployed environment's server logs). Errors in the NextAuth.js API route will appear here, especially regarding missing `NEXTAUTH_SECRET` or other misconfigurations.
+5.  **Check Browser Developer Console:** Look for more detailed error messages logged by the login page itself. The login page was updated to show more specific error messages for "Failed to fetch".
 
-If you received a warning about an unrestricted API key, ensure you have followed these steps in the Google Cloud Console for your Firebase project's API key (typically named "Browser key (auto created by Firebase)" or similar):
+## Stripe Integration
 
-1.  **Application restrictions**:
-    *   Select "Websites".
-    *   Under **Website restrictions**:
-        *   Click "ADD" for each website URL you need to authorize.
-        *   Add your development URLs:
-            *   `localhost:9003`
-            *   `http://localhost:9003` (explicitly, if `localhost:9003` alone doesn't cover it for your testing)
-            *   **Your Firebase Studio development URL:** This will be something like `https://<port>-<your-studio-instance-details>.cloudworkstations.dev`. For example, if your app shows an error like `auth/requests-from-referer-https://6000-firebase-studio-INSTANCE-ID.cloudworkstations.dev-are-blocked`, then the URL to add here is `https://6000-firebase-studio-INSTANCE-ID.cloudworkstations.dev`.
-        *   Add your deployed Firebase Hosting URLs:
-            *   `pollitgo.web.app`
-            *   `pollitgo.firebaseapp.com`
-        *   Add your custom domain:
-            *   `pollitago.com` (if users access your site directly via this, e.g., `https://pollitago.com`)
-            *   `www.pollitago.com` (if you also use the `www` subdomain, e.g., `https://www.pollitago.com`)
-        *   Click "Done" after entering each URL.
-    *   Ensure all necessary domains are listed before proceeding.
+This application uses Stripe for payments.
 
-2.  **API restrictions**:
-    *   Select "Restrict key".
-    *   Click the dropdown or "Select APIs" button.
-    *   Choose only the necessary APIs for your client-side application. Typically these include:
-        *   Identity Toolkit API (for Firebase Authentication)
-        *   Cloud Firestore API (for Firestore client-side access)
-        *   Cloud Storage for Firebase API (or Firebase Storage API, for Firebase Storage client-side access)
-        *   Firebase Installations API
-        *   Token Service API
-    *   Deselect any other APIs not directly used by your client application to follow the principle of least privilege.
+### Stripe API Route Configuration (`/api/stripe/create-checkout-session`)
 
-3.  **Save** the changes in the Google Cloud Console. It might take a few minutes for restrictions to propagate.
+Your Next.js application includes an API route at `src/app/api/stripe/create-checkout-session/route.ts`. This route is responsible for creating Stripe Checkout Sessions.
 
-## OAuth 2.0 Client ID Configuration (for Google Sign-In etc.)
-
-If using OAuth 2.0 providers like Google Sign-In with Firebase Authentication:
-
-1.  **Google Cloud Console (Credentials -> OAuth 2.0 Client IDs -> Your Client ID for Web application):**
-    *   **Authorized JavaScript origins:** These are the domains from which your web application is allowed to initiate an OAuth 2.0 flow with Google. Add:
-        *   `http://localhost:9003` (for local development)
-        *   **Your Firebase Studio development URL:** (e.g., if your error shows `...referer-https://6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev-are-blocked`, add `https://6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev` here).
-        *   `https://pollitgo.web.app`
-        *   `https://pollitgo.firebaseapp.com`
-        *   `https://pollitago.com` (your custom domain)
-        *   `https://www.pollitago.com` (if applicable)
-    *   **Authorized redirect URIs:** This is where Google will send the user back *after* they have successfully authenticated with Google.
-        *   For Firebase Authentication, the primary redirect URI is: `https://YOUR_PROJECT_ID.firebaseapp.com/__/auth/handler`. For this project: `https://pollitgo.firebaseapp.com/__/auth/handler`.
-        *   **This `firebaseapp.com` redirect URI is used by Firebase to handle the token exchange, even if your main application is hosted on a custom domain (`pollitago.com`) that is *not* on Firebase Hosting.**
-
-2.  **Firebase Console (Authentication -> Settings -> Authorized domains):**
-    *   Ensure your custom domain (e.g., `pollitago.com`) is listed here. This is crucial for Firebase to recognize authentication requests originating from your custom domain, regardless of where it's hosted.
-    *   Also, ensure `localhost` is listed for development.
-    *   **Your Firebase Studio development URL (CRUCIAL FOR THIS ERROR):**
-        *   If you see an error like `auth/requests-from-referer-https://YOUR-STUDIO-URL.cloudworkstations.dev-are-blocked`, you **MUST** add `YOUR-STUDIO-URL.cloudworkstations.dev` to this list.
-        *   For example, if the error referer is `https://6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev`, you would add:
-            **`6000-firebase-studio-1750146504616.cluster-3ch54x2epbcnetrm6ivbqqebjk.cloudworkstations.dev`**
-        *   Note: For this specific Firebase "Authorized domains" setting, you typically add just the domain part, without the `https://` prefix. The Firebase Console will usually guide you if it needs the scheme or not, or it might strip it automatically.
-        *   **This is the most common fix for `auth/requests-from-referer-...-blocked` errors when using Firebase Studio.**
-    *   Firebase uses this list to correctly manage the authentication flow and often populates the necessary Google Cloud OAuth client settings based on these domains.
-
-By correctly configuring these settings, you ensure that your API key is not misused and that authentication flows (like Google Sign-In) work correctly and securely from all your intended environments (local, Firebase default domains, Firebase Studio, and your custom domain).
-
-## Stripe Firebase Extension Configuration Notes
-
-When configuring the "Run Payments with Stripe" Firebase Extension:
-
-*   **Cloud Functions deployment location:** Choose a region close to your users/database (e.g., `us-central1`). Cannot be changed later.
-*   **Products and pricing plans collection:** Default `products` is usually fine if you intend to sync predefined products from Stripe. If mainly using dynamic pricing (like for tips and pledges), this sync is less critical. You can leave the associated product/price sync events unchecked.
-*   **Customer details and subscriptions collection:** Default `customers` is usually fine. This is where Stripe customer IDs and subscription data linked to your Firebase users will be stored.
-*   **Sync new users to Stripe customers and Cloud Firestore:** Recommended: **Sync new users to Stripe and Firestore**. This automatically creates Stripe customer objects for new Firebase Auth users.
-*   **Automatically delete Stripe customer objects:** Recommended: **Do not delete**. Retain Stripe data for history and reporting.
-*   **Stripe API key with restricted access:**
-    1.  In your Stripe Dashboard (Developers > API keys), create a **new restricted API key**. Name it (e.g., "Firebase PollitGo Extension") and grant it only the permissions required by the extension (refer to the official Stripe Firebase extension documentation for the exact list of permissions).
-    2.  Copy the generated restricted key (e.g., `rk_test_...`).
-    3.  Back in the Firebase Extension configuration UI, for the "Stripe API key with restricted access" field:
-        *   **If the UI is direct (one input field before "Create secret" button):** Clear any existing content. Paste your `rk_test_...` key directly into this input field. Then, click the **"Create secret"** button next to it. The field should then update to show a *name* for the secret (this name might be auto-generated). Note this name.
-        *   **If the UI shows a pop-up after clicking "Create secret":** In the pop-up, provide a "Secret name" (e.g., `STRIPE_POLLITGO_EXTENSION_API_KEY`) and paste your `rk_test_...` key into the "Secret value" field. Create the secret. Then, back on the extension page, select this newly created secret name from the dropdown.
-    4.  **Verification (Important):** After starting the extension install/update, go to Google Cloud Console -> Security -> Secret Manager. Find the secret by the name that the extension configuration is now referencing. View its latest version and **confirm the stored value is your correct `rk_test_...` Stripe API key.** If it's incorrect, add a new version to that secret with the correct key value.
-*   **Events to listen for (during extension configuration):**
-    *   **Essential for payments/pledges/tips:** `checkout.session.completed` (Under "Checkout") - **Ensure this is CHECKED.**
-    *   **Recommended for customer sync:** `customer.created`, `customer.updated` (Under "Customer") - **Ensure these are CHECKED.**
-    *   **Optional product/price sync events:** `product.created`, `product.updated`, `product.deleted`, `price.created`, `price.updated`, `price.deleted`. If your tips/pledges are always dynamically priced, these can be left **UNCHECKED**.
-*   **Stripe webhook secret:** This secret is used by the *extension's own webhook endpoint* to verify events from Stripe.
-    1.  **Install/Update the Extension First:** You typically complete the initial installation or update of the extension.
-    2.  **Get the Extension's Webhook URL:**
-        *   After the extension is installed/updated, go to its configuration page in the Firebase Console (Firebase Console > Extensions > Manage your Stripe extension).
-        *   The extension will display its unique **Webhook URL** (e.g., `https://<region>-<project-id>.cloudfunctions.net/ext-stripe-payments-events`). Copy this URL.
-    3.  **Create Endpoint in Stripe:**
-        *   In your Stripe Dashboard (Developers > Webhooks), click **"+ Add endpoint"**.
-        *   **Endpoint URL field:** Paste the Webhook URL you copied from the Firebase extension details page here. (This is where you tell Stripe where to send events).
-        *   **Description (Optional):** Add a description like "PollitGo Firebase Extension".
-        *   **Listen to events:** Click "Select events" and choose the events the extension is configured to handle (e.g., `checkout.session.completed`, `customer.created`, `customer.updated`). (This is where you tell Stripe *which* events to send).
-        *   Click "Add endpoint".
-    4.  **Get the Signing Secret from Stripe:**
-        *   After adding the endpoint, Stripe will display its details. Find and copy the **"Signing secret"** (starts with `whsec_...`). Click to reveal it if needed.
-    5.  **Reconfigure the Extension in Firebase:**
-        *   Go back to the Firebase Console and **reconfigure** the Stripe extension.
-        *   For the "Stripe webhook secret" field, click the **"Create secret"** button.
-        *   In the pop-up:
-            *   **Secret name:** Give it a descriptive name (e.g., `STRIPE_POLLITGO_EXTENSION_WEBHOOK_SECRET`).
-            *   **Secret value:** Paste the `whsec_...` signing secret you copied from Stripe.
-            *   Click "Create secret".
-        *   Select this newly created secret name from the dropdown.
-        *   Save/Update the extension configuration.
-
-This ensures your Stripe keys are handled securely via Google Cloud Secret Manager.
-The Stripe extension will deploy its own Cloud Functions for its operations.
-
-## Stripe API Route Configuration (`/api/stripe/create-checkout-session`)
-
-Your Next.js application includes an API route at `src/app/api/stripe/create-checkout-session/route.ts`. This route is responsible for creating Stripe Checkout Sessions when a user initiates a pledge or a tip.
-
-*   **Environment Variable for Stripe Secret Key:** This API route requires your full Stripe **Secret Key** (e.g., `sk_test_...` or `sk_live_...`) to communicate with the Stripe API.
-    *   Set this key as an environment variable in a `.env.local` file in your project root.
-        ```
-        # Open this .env.local file and replace the placeholder values below
-        # with your ACTUAL Stripe keys from your Stripe Dashboard.
-        #
-        # Your Stripe SECRET Key (for server-side operations, starts with sk_test_... or sk_live_...)
-        STRIPE_SECRET_KEY=YOUR_ACTUAL_STRIPE_SECRET_KEY_GOES_HERE
-        #
-        # Your Stripe PUBLISHABLE Key (for client-side Stripe.js, starts with pk_test_... or pk_live_...)
-        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=YOUR_ACTUAL_STRIPE_PUBLISHABLE_KEY_GOES_HERE
-        ```
-    *   **Crucially, you must replace the placeholder text (like `YOUR_ACTUAL_STRIPE_SECRET_KEY_GOES_HERE`) with your actual secret values obtained from your Stripe Dashboard.**
-    *   The `STRIPE_SECRET_KEY` is used on the server-side by your API route.
-    *   The `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is used on the client-side for Stripe.js.
-    *   **Important Distinction:**
-        *   The **`STRIPE_SECRET_KEY` (`sk_...`)** used by this Next.js API route is your **full Stripe Secret Key**. It's needed by *your application's backend code* to perform privileged operations like creating checkout sessions.
-        *   The **Restricted API Key (`rk_...`)** configured for the Stripe Firebase Extension is *different*. It has limited permissions specifically for the extension's tasks (like syncing data and handling its own webhook events).
-        *   It is correct and secure to use these two different keys for their respective purposes.
-    *   Ensure `.env.local` is listed in your `.gitignore` file to prevent committing your secret keys.
-    *   For deployed environments (like Firebase Hosting if you also deploy Next.js functions, or other hosting providers), you will need to set `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` as server-side environment variables through your hosting provider's settings.
-    *   **After editing `.env.local` with your actual keys, restart your Next.js development server (e.g., stop `npm run dev` with Ctrl+C and run `npm run dev` again) for the changes to take effect.**
-
-## Custom Webhook Handler (`functions/src/index.ts`)
-
-The `functions/src/index.ts` file in your project is for any *custom* webhook handler you might implement for business logic *not* covered by the Stripe extension (e.g., awarding PollitPoints, sending custom emails after a payment).
-
-*   If you use this custom handler, it will need its own separate endpoint configured in Stripe (different from the extension's webhook URL).
-*   The signing secret for this custom handler should be configured via Firebase Functions environment configuration (e.g., `firebase functions:config:set stripe.webhook_secret="whsec_YOUR_CUSTOM_HANDLER_SECRET"`). The `stripe.secret_key` in the Functions config would be your main Stripe secret key.
-
-## Deploying Firebase Configurations
-
-*   **Firestore Rules & Indexes:**
-    ```bash
-    firebase deploy --only firestore
-    ```
-*   **Custom Cloud Functions (from `functions/src/index.ts`):**
-    ```bash
-    firebase deploy --only functions
-    ```
-    (Note: The Stripe Firebase Extension deploys its *own* functions automatically. This command is for *your* custom functions in the `functions` directory).
+*   **Environment Variable for Stripe Secret Key:** Ensure `STRIPE_SECRET_KEY` is set in your `.env.local` file (for local) or hosting environment (for deployed).
+*   **Environment Variable for Stripe Publishable Key:** Ensure `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is set.
+*   **Restart Dev Server (Local):** After editing `.env.local`, restart your Next.js development server.
 
 ## Testing the Payment Flow
-1.  **Set Environment Variables:** Ensure `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` are correctly set with your **actual key values** in `.env.local` in your project root.
-2.  **Restart Dev Server:** If your Next.js development server (`npm run dev`) was running, stop it (Ctrl+C in the terminal) and restart it (`npm run dev`) to load the new environment variables.
-3.  **Initiate a Payment:**
-    *   Open your app in the browser (e.g., `http://localhost:9003` or your Firebase Studio URL).
-    *   Navigate to the "New Poll" page.
-    *   Fill in the poll details and enter a pledge amount (e.g., `1.00` for $1.00).
-    *   Click "Poll it & Go".
-4.  **Stripe Checkout:** You should be redirected to Stripe's Checkout page.
-    *   Use Stripe's test card numbers (e.g., `4242 4242 4242 4242`, future expiry, any 3-digit CVC).
+1.  **Set Environment Variables:** Ensure `STRIPE_SECRET_KEY`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`, `NEXTAUTH_URL`, and `NEXTAUTH_SECRET` are correctly set (in `.env.local` for local, or in hosting provider settings for deployed).
+2.  **Restart Dev Server (Local if applicable).**
+3.  **Log In / Sign Up (Simulated):**
+    *   Open your app.
+    *   Use the Login/Sign Up buttons. Test with `test@example.com` / `password` or create a new "user".
+4.  **Initiate a Payment (e.g., on "New Poll" page with a pledge, or "Tip Creator" on poll pages).**
+5.  **Stripe Checkout:** You should be redirected to Stripe's Checkout page.
+    *   Use Stripe's test card numbers:
+        *   **Card Number:** `4242 4242 4242 4242`
+        *   **Expiration Date:** Any future date (e.g., `12/30`)
+        *   **CVC/CVV:** Any 3 digits (e.g., `123`)
+        *   **Name on Card:** Any name
+        *   **ZIP/Postal Code:** Any ZIP/Postal code
     *   Complete the payment.
-5.  **Verify Redirection:**
-    *   On successful payment, you should be redirected to `/payment-success` in your app.
-    *   If you cancel, you should be redirected to `/payment-cancelled`.
-6.  **Check Stripe Dashboard:**
-    *   Log in to your Stripe Dashboard (in Test Mode).
-    *   Go to "Payments" to see the test transaction.
-    *   Optionally, check "Customers" if customer sync is enabled for the extension.
-7.  **Check Webhooks (Optional but Recommended):**
-    *   In Stripe Dashboard, go to "Developers" > "Webhooks".
-    *   Click on the endpoint URL for your Firebase Extension.
-    *   Look for a `checkout.session.completed` event for your test payment. It should show a successful delivery (status 200).
-8.  **Check Firebase Console (Optional for Debugging):**
-    *   **Firestore:** If your extension updates Firestore (e.g., customer data, payment records), check the relevant collections.
-    *   **Extension Logs:** Go to Firebase Console > Extensions > (Your Stripe Extension) > Logs to view logs from the extension's functions.
-9.  **Troubleshooting:**
-    *   Check your browser's developer console (F12) for client-side errors.
-    *   Check your Next.js terminal (where `npm run dev` is running) for server-side API route errors.
-    *   Double-check your `.env.local` keys and ensure the server was restarted.
-    *   Verify authorized domains in Firebase Authentication settings and API key/OAuth configurations in Google Cloud Console (see the "Troubleshooting: `auth/requests-from-referer-...-are-blocked`" section above).
+6.  **Verify Redirection:** Success to `/payment-success`, cancel to `/payment-cancelled`.
+7.  **Check Stripe Dashboard (Test Mode).**
+8.  **Troubleshooting:** Check browser console and Next.js terminal/server logs.
+
+## Deploying to Vercel (or similar platforms) for Testing
+
+If you need to test on actual mobile devices and the prototype environment login isn't working (likely due to `NEXTAUTH_URL` issues in that specific prototype setup), deploying to a platform like Vercel or Netlify is recommended. These platforms offer straightforward ways to manage environment variables.
+
+**Steps for Vercel:**
+
+1.  **Ensure your code is in a Git Repository:**
+    *   Vercel deploys from Git (GitHub, GitLab, Bitbucket).
+    *   If not already, initialize Git, commit your files, and push to a remote repository on one of these services.
+
+2.  **Import Project on Vercel:**
+    *   Log in to Vercel.
+    *   Click "Add New..." > "Project".
+    *   Connect to your Git provider and select your project repository. Vercel usually auto-detects Next.js settings.
+
+3.  **Configure Environment Variables in Vercel Project Settings:**
+    *   This is the **most critical step** for NextAuth.js and Stripe to work correctly.
+    *   In your Vercel project settings, find the "Environment Variables" section.
+    *   Add the following variables:
+        *   `NEXTAUTH_URL`:
+            *   Key: `NEXTAUTH_URL`
+            *   Value: **The public URL Vercel assigns to your deployment** (e.g., `https://your-project-name.vercel.app`). You'll get this URL after the first deployment; you might need to deploy once, get the URL, then add/update this variable and redeploy.
+        *   `NEXTAUTH_SECRET`:
+            *   Key: `NEXTAUTH_SECRET`
+            *   Value: The **exact same strong, random secret** you generated for your local `.env.local` file.
+        *   `STRIPE_SECRET_KEY`:
+            *   Key: `STRIPE_SECRET_KEY`
+            *   Value: Your actual Stripe **Secret Key** (e.g., `sk_test_...` or `sk_live_...`).
+        *   `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`:
+            *   Key: `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+            *   Value: Your actual Stripe **Publishable Key** (e.g., `pk_test_...` or `pk_live_...`).
+    *   Ensure these are set for the "Production" environment on Vercel. You can also set them for "Preview" and "Development" environments if needed (though Vercel's "Development" often refers to their CLI, not your local machine directly).
+
+4.  **Deploy:**
+    *   Click the "Deploy" button in Vercel.
+    *   Vercel will build and deploy your application.
+
+5.  **Test:**
+    *   Use the Vercel-provided URL (e.g., `https://your-project-name.vercel.app`) to test your application on desktop and mobile devices. Login should now work.
+
+Similar steps apply to other platforms like Netlify; consult their documentation for specifics on setting environment variables.
+
+## Deprecated: Firebase Usage Notes
+Firebase services have been removed from this project. Related sections in this README are for historical reference only.
+
+## Custom Webhook Handler (`functions/src/index.ts` - Deprecated)
+The `functions` directory is no longer used for Firebase Functions. Custom backend logic (e.g., for Stripe webhooks) should be implemented using Next.js API routes if needed, separate from any Stripe extension.
 
     
