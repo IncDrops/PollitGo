@@ -1,0 +1,31 @@
+
+# Dependencies
+node_modules/
+
+# Build / Output
+lib/
+
+# Firebase emulators
+*.log
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+pubsub-debug.log
+database-debug.log
+eventarc-debug.log
+storage-debug.log
+
+# Misc
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.env
+.env.*.local
+.env.local
+.eslintcache
+coverage
+.nyc_output
+*~
+
+    

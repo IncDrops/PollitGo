@@ -1,5 +1,7 @@
 
-import type { Metadata, Viewport } from 'next';
+'use client';
+
+// import type { Metadata, Viewport } from 'next'; // No longer exporting these from here
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import BottomNavigationBar from '@/components/layout/BottomNavigationBar';
@@ -11,17 +13,9 @@ import { Elements } from '@stripe/react-stripe-js';
 // Make sure to replace this with your actual Stripe publishable key
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '');
 
-export const metadata: Metadata = {
-  title: 'PollitAGo',
-  description: 'THE 2nd OPINION APP - Universal Polling Platform',
-};
-
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-};
+// Metadata and viewport cannot be exported from a Client Component.
+// They should be defined in Server Components (like individual page.tsx files)
+// or through the file-based metadata API if this layout were a Server Component.
 
 export default function RootLayout({
   children,
@@ -31,6 +25,9 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full" suppressHydrationWarning>
       <head>
+        <title>PollitAGo</title> {/* Basic title as a fallback */}
+        <meta name="description" content="THE 2nd OPINION APP - Universal Polling Platform" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=League+Spartan:wght@400;600;700&family=Alice&display=swap" rel="stylesheet" />
