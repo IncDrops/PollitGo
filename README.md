@@ -38,7 +38,7 @@ If using OAuth 2.0 providers like Google Sign-In with Firebase Authentication:
     *   **Authorized JavaScript origins:** These are the domains from which your web application is allowed to initiate an OAuth 2.0 flow with Google.
         *   Add your development URL: `http://localhost:9003`
         *   Add your deployed Firebase Hosting default URLs: `https://YOUR_PROJECT_ID.web.app`, `https://YOUR_PROJECT_ID.firebaseapp.com` (replace `YOUR_PROJECT_ID` with `pollitgo`).
-        *   Add your custom domain if it's hosted **externally** (e.g., on Vercel, Netlify): `https://pollitago.com` (and `https://www.pollitago.com` if applicable).
+        *   Add your custom domain: `https://pollitago.com` (and `https://www.pollitago.com` if applicable).
     *   **Authorized redirect URIs:** This is where Google will send the user back *after* they have successfully authenticated with Google.
         *   For Firebase Authentication, the primary redirect URI is: `https://YOUR_PROJECT_ID.firebaseapp.com/__/auth/handler` (e.g., `https://pollitgo.firebaseapp.com/__/auth/handler`). This URL is used by Firebase to handle the token exchange and complete the sign-in process, *even if your main application is hosted on a custom domain elsewhere*.
 
@@ -60,30 +60,36 @@ When configuring the "Run Payments with Stripe" Firebase Extension:
 *   **Automatically delete Stripe customer objects:** Recommended: **Do not delete**. Retain Stripe data for history and reporting.
 *   **Stripe API key with restricted access:** 
     1.  In your Stripe Dashboard (Developers > API keys), create a **new restricted API key**.
-    2.  Grant it only the permissions required by the extension (refer to extension documentation).
-    3.  In the Firebase Extension configuration, for the "Stripe API key" field, click the **"Create secret"** button.
-    4.  In the "Create secret" dialog:
-        *   **Secret name:** Give it a memorable name (e.g., `STRIPE_EXTENSION_RESTRICTED_KEY`).
-        *   **Secret value:** Paste the restricted API key (`rk_test_...` or `rk_live_...`) from Stripe.
-    5.  Click "Create secret".
-    6.  Back in the extension configuration, select the newly created secret name from the dropdown list.
+    2.  Grant it only the permissions required by the extension (refer to extension documentation for the exact list).
+    3.  In the Firebase Extension configuration, for the "Stripe API key" field:
+        *   **Directly paste your Stripe Restricted API Key (e.g., `rk_test_...`) into the input field.**
+        *   Then, click the **"Create secret"** button associated with that field.
+        *   The system will store this key in Google Cloud Secret Manager. It might auto-generate a name for the secret, or if it prompts for a name in a subsequent small dialog, provide one (e.g., `STRIPE_EXTENSION_API_KEY`).
+        *   The field on the extension page will then show the *name* of the secret, not the raw key.
+    4.  If the UI for creating the secret is unclear or seems to store an incorrect value:
+        *   Note the *name* of the secret the extension is configured to use.
+        *   Go to Google Cloud Console -> Security -> Secret Manager.
+        *   Find the secret by its name.
+        *   View its versions. If the latest version does not contain your actual Stripe API key, click "+ ADD NEW VERSION", paste the correct Stripe API key as the "Secret value", and create the new version. The extension will use the latest enabled version.
 *   **Stripe webhook secret:** 
-    1.  After the initial installation of the extension, go to its configuration page in the Firebase Console. It will provide a **Webhook URL**.
-    2.  In your Stripe dashboard (Developers > Webhooks), click "Add endpoint".
-    3.  Paste the Webhook URL from Firebase.
-    4.  Select the events the extension should listen for (see "Events to listen for" below or extension documentation).
-    5.  Stripe will then provide a **Signing secret** (`whsec_...`) for this endpoint.
-    6.  Go back to the Firebase Console and **reconfigure** the Stripe extension.
-    7.  For the "Stripe webhook secret" field, click **"Create secret"**.
-    8.  In the "Create secret" dialog:
+    1.  For the *initial installation*, you might leave this blank if allowed, or if you have a general webhook signing secret already created in Secret Manager, you can select it.
+    2.  *After* the extension is installed, go to its configuration page in the Firebase Console. It will provide a **Webhook URL**.
+    3.  In your Stripe dashboard (Developers > Webhooks), click "Add endpoint".
+    4.  Paste the Webhook URL from Firebase.
+    5.  Select the events the extension should listen for (see "Events to listen for" below or extension documentation).
+    6.  Stripe will then provide a **Signing secret** (`whsec_...`) for this endpoint.
+    7.  Go back to the Firebase Console and **reconfigure** the Stripe extension.
+    8.  For the "Stripe webhook secret" field, click **"Create secret"**.
+    9.  In the "Create secret" dialog (or if the UI is direct, paste the `whsec_...` value):
         *   **Secret name:** (e.g., `STRIPE_EXTENSION_WEBHOOK_SECRET`).
         *   **Secret value:** Paste the signing secret (`whsec_...`) from Stripe.
-    9.  Click "Create secret".
-    10. Select the newly created secret name from the dropdown.
+    10. Click "Create secret".
+    11. Select the newly created secret name from the dropdown.
 *   **Events to listen for (during extension configuration):**
     *   **Essential for payments:** `checkout.session.completed`
     *   **Recommended for customer sync:** `customer.created`, `customer.updated`
     *   **Optional (if managing products/prices in Stripe that your app uses):** `product.created`, `product.updated`, `product.deleted`, `price.created`, `price.updated`, `price.deleted`
 
 This ensures your Stripe keys are handled securely via Google Cloud Secret Manager.
+The Stripe extension will deploy its own Cloud Functions for its operations. If you have custom Stripe-related Cloud Functions (like in `functions/src/index.ts`), they are separate and handle logic not covered by the extension.
 
