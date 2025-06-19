@@ -14,8 +14,8 @@ If you received a warning about an unrestricted API key, ensure you have followe
     *   Select "Websites".
     *   Click "ADD" for each website URL.
     *   Add your development URLs (e.g., `localhost:9003`, `http://localhost:9003`).
-    *   Add your deployed Firebase Hosting URLs (e.g., `your-project-id.web.app`, `your-project-id.firebaseapp.com`).
-    *   Add your custom domain if you have one (e.g., `yourcustomdomain.com`, `www.yourcustomdomain.com`). Ensure you include `https://` for live domains, e.g., `https://yourcustomdomain.com`.
+    *   Add your deployed Firebase Hosting URLs (e.g., `your-project-id.web.app`, `your-project-id.firebaseapp.com`). For this project: `pollitgo.web.app`, `pollitgo.firebaseapp.com`.
+    *   Add your custom domain if you have one (e.g., `pollitago.com`, `www.pollitago.com`). Ensure you include `https://` for live domains, e.g., `https://pollitago.com`.
 
 2.  **API restrictions**:
     *   Select "Restrict key".
@@ -38,12 +38,12 @@ If using OAuth 2.0 providers like Google Sign-In with Firebase Authentication:
     *   **Authorized JavaScript origins:** These are the domains from which your web application is allowed to initiate an OAuth 2.0 flow with Google.
         *   Add your development URL: `http://localhost:9003`
         *   Add your deployed Firebase Hosting default URLs: `https://YOUR_PROJECT_ID.web.app`, `https://YOUR_PROJECT_ID.firebaseapp.com` (replace `YOUR_PROJECT_ID` with `pollitgo`).
-        *   Add your custom domain (even if hosted externally): `https://yourcustomdomain.com` (e.g., `https://pollitago.com`) and `https://www.yourcustomdomain.com` if applicable.
+        *   Add your custom domain if it's hosted **externally** (e.g., on Vercel, Netlify): `https://pollitago.com` (and `https://www.pollitago.com` if applicable).
     *   **Authorized redirect URIs:** This is where Google will send the user back *after* they have successfully authenticated with Google.
-        *   For Firebase Authentication, the primary redirect URI is: `https://YOUR_PROJECT_ID.firebaseapp.com/__/auth/handler` (e.g., `https://pollitgo.firebaseapp.com/__/auth/handler`). This URL is used by Firebase to handle the token exchange and complete the sign-in process, even if your main application is hosted on a custom domain elsewhere.
+        *   For Firebase Authentication, the primary redirect URI is: `https://YOUR_PROJECT_ID.firebaseapp.com/__/auth/handler` (e.g., `https://pollitgo.firebaseapp.com/__/auth/handler`). This URL is used by Firebase to handle the token exchange and complete the sign-in process, *even if your main application is hosted on a custom domain elsewhere*.
 
 2.  **Firebase Console (Authentication -> Settings -> Authorized domains):**
-    *   Ensure your custom domain (e.g., `yourcustomdomain.com` or `pollitago.com`) is listed here. This is crucial for Firebase to recognize authentication requests originating from your custom domain, regardless of where it's hosted.
+    *   Ensure your custom domain (e.g., `pollitago.com`) is listed here. This is crucial for Firebase to recognize authentication requests originating from your custom domain, regardless of where it's hosted.
     *   Also, ensure `localhost` is listed for development.
     *   Firebase uses this list to correctly manage the authentication flow and often populates the necessary Google Cloud OAuth client settings based on these domains.
 
@@ -60,3 +60,8 @@ When configuring the "Run Payments with Stripe" Firebase Extension:
 *   **Automatically delete Stripe customer objects:** Recommended: **Do not delete**. Retain Stripe data for history and reporting.
 *   **Stripe API key with restricted access:** Create a new **restricted** API key in your Stripe dashboard with only the permissions required by the extension. Store this key securely using the "Create secret" option (which uses Google Cloud Secret Manager).
 *   **Stripe webhook secret:** After installation, the extension will provide a webhook URL. Add this URL in your Stripe dashboard (Developers > Webhooks) to create a new webhook endpoint. Stripe will then provide a signing secret (`whsec_...`) for this endpoint. Reconfigure the extension to add this signing secret, storing it via "Create secret".
+*   **Events to listen for (during extension configuration):**
+    *   **Essential for payments:** `checkout.session.completed`
+    *   **Recommended for customer sync:** `customer.created`, `customer.updated`
+    *   **Optional (if managing products/prices in Stripe):** `product.created`, `product.updated`, `product.deleted`, `price.created`, `price.updated`, `price.deleted`
+
