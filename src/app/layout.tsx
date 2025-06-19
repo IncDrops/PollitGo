@@ -25,7 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full" suppressHydrationWarning>
       <head>
-        <title>PollitAGo</title> {/* Basic title as a fallback */}
+        <title>PollitAGo</title>
         <meta name="description" content="THE 2nd OPINION APP - Universal Polling Platform" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
