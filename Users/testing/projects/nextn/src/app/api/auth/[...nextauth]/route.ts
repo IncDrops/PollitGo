@@ -6,11 +6,13 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import type { User } from 'next-auth';
 
 if (!process.env.NEXTAUTH_SECRET) {
-  throw new Error(
-    'CRITICAL ERROR: NEXTAUTH_SECRET is not set in the environment. ' +
-    'Please ensure it is defined in your .env.local file and that the server has been restarted. ' +
-    'NextAuth.js will not function without it.'
+  console.error(
+    'CRITICAL NEXTAUTH_SECRET ERROR: The NEXTAUTH_SECRET environment variable is not set. ' +
+    'This will cause NextAuth.js to fail. Ensure it is set in your Vercel project environment variables.'
   );
+  // Throwing an error here might not be caught well by Next.js build,
+  // but the console error should appear in Vercel runtime logs if the variable is missing.
+  // For runtime, NextAuth itself will likely fail more explicitly if the secret is truly absent.
 }
 
 // THIS IS A PLACEHOLDER AUTHORIZE FUNCTION.
@@ -90,6 +92,22 @@ export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development', // Enable debug logs in development
 };
 
-const handler = NextAuth(authOptions);
+try {
+  const handler = NextAuth(authOptions);
+  // Exporting the handler for GET and POST requests
+  // This is the standard way for Next.js API routes using NextAuth.js
+  // eslint-disable-next-line import/no-anonymous-default-export
+  // export default handler;
+  // For app router, export GET and POST:
+   module.exports = { GET: handler, POST: handler };
 
-export { handler as GET, handler as POST };
+} catch (error) {
+  console.error('Error initializing NextAuth:', error);
+  // You might want to handle this error more gracefully
+  // For example, by exporting a handler that returns a 500 error
+  const errorResponse = () => new Response(JSON.stringify({ error: "NextAuth initialization failed" }), {
+    status: 500,
+    headers: { 'Content-Type': 'application/json' },
+  });
+  module.exports = { GET: errorResponse, POST: errorResponse };
+}
