@@ -56,9 +56,9 @@ This application has been configured to use NextAuth.js for authentication.
 ### Troubleshooting NextAuth.js "Failed to fetch" errors:
 If you encounter "Failed to fetch" errors during login/signup:
 1.  **Verify `NEXTAUTH_URL` in `.env.local`:** Ensure it's correctly set to your application's base URL (e.g., `http://localhost:9003` for local development).
-2.  **Verify `NEXTAUTH_SECRET` in `.env.local`:** Ensure it's set to a strong, randomly generated string.
+2.  **Verify `NEXTAUTH_SECRET` in `.env.local`:** Ensure it's set to a strong, randomly generated string. The API route `src/app/api/auth/[...nextauth]/route.ts` includes an explicit check and will log an error to your **server terminal** if it's missing on startup or when the route is hit.
 3.  **Restart Server:** **You MUST restart your Next.js development server** (`npm run dev`) after any changes to `.env.local`.
-4.  **Check Server Terminal Logs:** Look at the terminal where `npm run dev` is running. Errors in the NextAuth.js API route (`src/app/api/auth/[...nextauth]/route.ts`) will appear here. The API route now includes an explicit check for `NEXTAUTH_SECRET`.
+4.  **Check Server Terminal Logs:** Look at the terminal where `npm run dev` is running. Errors in the NextAuth.js API route will appear here. The API route now includes an explicit check for `NEXTAUTH_SECRET`.
 5.  **Check Browser Developer Console:** Look for more detailed error messages logged by the login page itself.
 
 ## Stripe Integration
@@ -85,7 +85,12 @@ Your Next.js application includes an API route at `src/app/api/stripe/create-che
     *   Fill in the poll details and enter a pledge amount (e.g., `1.00` for $1.00).
     *   Click "Poll it & Go".
 5.  **Stripe Checkout:** You should be redirected to Stripe's Checkout page.
-    *   Use Stripe's test card numbers (e.g., `4242 4242 4242 4242`, future expiry, any 3-digit CVC).
+    *   Use Stripe's test card numbers. For a successful payment, use:
+        *   **Card Number:** `4242 4242 4242 4242`
+        *   **Expiration Date:** Any future date (e.g., `12/30`)
+        *   **CVC/CVV:** Any 3 digits (e.g., `123`)
+        *   **Name on Card:** Any name (e.g., "Test User")
+        *   **ZIP/Postal Code:** Any ZIP/Postal code (e.g., `12345`)
     *   Complete the payment.
 6.  **Verify Redirection:**
     *   On successful payment, you should be redirected to `/payment-success` in your app.
