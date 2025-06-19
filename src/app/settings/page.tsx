@@ -1,4 +1,4 @@
-
+// src/app/settings/page.tsx
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -10,14 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { UserCircle2, Bell, ShieldCheck, Palette, LogOut, HelpCircle, Info, Camera, Loader2, AlertCircle } from "lucide-react";
+import { UserCircle2, Bell, ShieldCheck, Palette, LogOut, HelpCircle, Info, Camera, Loader2, AlertCircle, LogIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "next-themes";
-// Firebase related imports are removed
-// import useAuth from '@/hooks/useAuth';
-// import { fetchUserProfile, auth } from '@/lib/firebase';
-// import { signOut } from 'firebase/auth';
-// import type { UserProfile as AppUserProfileType } from '@/types';
+import useAuth, { type AppUser } from '@/hooks/useAuth'; // Import AppUser type
+import { signOut, signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -26,18 +23,28 @@ export default function SettingsPage() {
   const { toast } = useToast();
   const { theme, setTheme } = useTheme();
   const router = useRouter();
+  
+  const { user: appUser, loading: authLoading, isAuthenticated } = useAuth();
+  
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
-
-  // Auth related state is removed or simplified
-  // const { user: authUser, loading: authLoading } = useAuth(); // This will now return null user
-  // const [userProfile, setUserProfile] = useState<AppUserProfileType | null>(null);
-  const [isProfileLoading, setIsProfileLoading] = useState(false); // Default to false
   const [isSaving, setIsSaving] = useState(false);
-
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+
+  // Form state for user profile details - will be placeholders for now
+  const [displayName, setDisplayName] = useState('');
+  const [username, setUsername] = useState('');
+
+
+  useEffect(() => {
+    setMounted(true);
+    if (appUser) {
+      setDisplayName(appUser.name || '');
+      setUsername(appUser.email?.split('@')[0] || ''); // Placeholder username
+      setAvatarPreview(appUser.image || null);
+    }
+  }, [appUser]);
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -55,26 +62,38 @@ export default function SettingsPage() {
     }
   };
 
-  // useEffect for fetching profile is removed as Firebase is gone.
-
   const handleSaveChanges = async () => {
+    if (!isAuthenticated || !appUser) {
+      toast({ title: "Not Authenticated", description: "Please log in to save changes.", variant: "destructive"});
+      return;
+    }
     setIsSaving(true);
-    console.log("Simulating saving settings. Avatar file to upload:", avatarFile);
+    // Simulate saving settings (profile name, username, avatar)
+    // In a real app, this would involve API calls to update the user's profile in the database
+    // and upload the avatarFile if present.
+    console.log("Simulating saving settings for user:", appUser.email);
+    console.log("New display name:", displayName);
+    console.log("New username:", username);
+    if (avatarFile) {
+      console.log("New avatar file to upload:", avatarFile.name);
+    }
     await new Promise(resolve => setTimeout(resolve, 1500));
     toast({
       title: "Settings Save Simulated",
-      description: "Firebase is removed; settings are not truly saved.",
+      description: "User profile changes are not persisted without a database.",
     });
     setIsSaving(false);
+    // Optionally, refresh session if NextAuth supports it after profile update
+    // router.refresh(); or use getSession() to update client-side session
   };
 
   const handleLogout = async () => {
-    // Firebase signOut logic removed
-    toast({ title: 'Logout Functionality Disabled', description: 'Firebase Auth removed.' });
+    await signOut({ redirect: false });
+    toast({ title: 'Logged Out', description: 'You have been successfully logged out.' });
     router.push('/');
   };
   
-  if (!mounted) {
+  if (!mounted || authLoading) {
     return (
       <div className="container mx-auto flex min-h-[calc(100vh-150px)] items-center justify-center px-4 py-8 text-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -83,39 +102,49 @@ export default function SettingsPage() {
     );
   }
 
-  // Since auth is removed, this page will show a "disabled" state.
+  if (!isAuthenticated || !appUser) {
+    return (
+       <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <h1 className="text-3xl font-headline font-bold mb-8 text-foreground">Settings</h1>
+          <Card>
+              <CardHeader>
+                  <CardTitle className="flex items-center text-xl font-headline"><AlertCircle className="mr-2 h-5 w-5 text-destructive" /> Settings Unavailable</CardTitle>
+                  <CardDescription>You need to be logged in to view and manage your settings.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                  <p className="text-muted-foreground">
+                      Please log in to access your account settings, notification preferences, and more.
+                  </p>
+              </CardContent>
+              <CardFooter className="flex flex-col space-y-3">
+                   <Button onClick={() => signIn()} className="w-full">
+                        <LogIn className="mr-2 h-4 w-4" /> Login
+                   </Button>
+                   <Button variant="outline" asChild className="w-full">
+                      <Link href="/">Go to Homepage</Link>
+                   </Button>
+              </CardFooter>
+          </Card>
+      </div>
+    );
+  }
+
+  // User is authenticated, show settings
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
       <h1 className="text-3xl font-headline font-bold mb-8 text-foreground">Settings</h1>
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center text-xl font-headline"><AlertCircle className="mr-2 h-5 w-5 text-destructive" /> Settings Unavailable</CardTitle>
-                <CardDescription>User authentication and profile management have been disabled as Firebase was removed. These settings require a user system.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-muted-foreground">
-                    To re-enable user-specific settings, an alternative authentication and database solution needs to be implemented.
-                </p>
-            </CardContent>
-            <CardFooter>
-                 <Button asChild className="w-full">
-                    <Link href="/">Go to Homepage</Link>
-                 </Button>
-            </CardFooter>
-        </Card>
-
-      <div className="space-y-8 mt-8 opacity-50 pointer-events-none">
+      <div className="space-y-8">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center text-xl font-headline"><UserCircle2 className="mr-2 h-5 w-5 text-primary" /> Account (Disabled)</CardTitle>
-            <CardDescription>Manage your account information and profile picture.</CardDescription>
+            <CardTitle className="flex items-center text-xl font-headline"><UserCircle2 className="mr-2 h-5 w-5 text-primary" /> Account</CardTitle>
+            <CardDescription>Manage your account information and profile picture. Current Email: {appUser.email}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col items-center space-y-4 sm:flex-row sm:space-y-0 sm:space-x-6">
               <div className="relative group">
                 <Avatar className="h-24 w-24 ring-2 ring-primary ring-offset-2 ring-offset-background">
-                  <AvatarImage src={avatarPreview || 'https://placehold.co/100x100.png'} alt={"User avatar"} data-ai-hint="profile avatar" />
-                  <AvatarFallback>U</AvatarFallback>
+                  <AvatarImage src={avatarPreview || `https://placehold.co/100x100.png?text=${displayName.charAt(0) || 'U'}`} alt={displayName || "User avatar"} data-ai-hint="profile avatar" />
+                  <AvatarFallback>{displayName ? displayName.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
                 </Avatar>
                 <Button
                   variant="outline"
@@ -123,7 +152,7 @@ export default function SettingsPage() {
                   className="absolute bottom-0 right-0 rounded-full h-8 w-8 bg-background group-hover:bg-accent"
                   onClick={() => avatarInputRef.current?.click()}
                   aria-label="Change profile picture"
-                  disabled
+                  disabled={isSaving}
                 >
                   <Camera className="h-4 w-4" />
                 </Button>
@@ -133,21 +162,21 @@ export default function SettingsPage() {
                   accept="image/*"
                   className="hidden"
                   onChange={handleAvatarChange}
-                  disabled
+                  disabled={isSaving}
                 />
               </div>
               <div className="flex-grow w-full space-y-4">
                 <div>
-                  <Label htmlFor="username">Username</Label>
-                  <Input id="username" defaultValue={''} disabled/>
+                  <Label htmlFor="displayName">Display Name</Label>
+                  <Input id="displayName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} disabled={isSaving} />
                 </div>
                 <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" defaultValue={''} readOnly disabled/> 
+                  <Label htmlFor="username">Username (derived from email for now)</Label>
+                  <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} disabled={isSaving} />
                 </div>
               </div>
             </div>
-            <Button variant="outline" className="mt-4 sm:mt-0" disabled>Change Password</Button>
+            <Button variant="outline" className="mt-4 sm:mt-0" disabled>Change Password (Not Implemented)</Button>
           </CardContent>
         </Card>
 
@@ -159,15 +188,15 @@ export default function SettingsPage() {
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <Label htmlFor="push-notifications" className="flex-grow">Enable Push Notifications</Label>
-              <Switch id="push-notifications" defaultChecked />
+              <Switch id="push-notifications" defaultChecked disabled={isSaving}/>
             </div>
             <div className="flex items-center justify-between">
               <Label htmlFor="email-notifications" className="flex-grow">Enable Email Notifications</Label>
-              <Switch id="email-notifications" />
+              <Switch id="email-notifications" disabled={isSaving} />
             </div>
              <div>
               <Label htmlFor="notification-sound">Notification Sound</Label>
-              <Select defaultValue="default">
+              <Select defaultValue="default" disabled={isSaving}>
                 <SelectTrigger id="notification-sound">
                   <SelectValue placeholder="Select sound" />
                 </SelectTrigger>
@@ -190,7 +219,7 @@ export default function SettingsPage() {
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="theme">Theme</Label>
-              <Select value={theme} onValueChange={setTheme}>
+              <Select value={theme} onValueChange={setTheme} disabled={isSaving}>
                 <SelectTrigger id="theme">
                   <SelectValue placeholder="Select theme" />
                 </SelectTrigger>
@@ -203,15 +232,15 @@ export default function SettingsPage() {
             </div>
              <div className="flex items-center justify-between">
               <Label htmlFor="compact-mode" className="flex-grow">Compact Mode</Label>
-              <Switch id="compact-mode" />
+              <Switch id="compact-mode" disabled={isSaving}/>
             </div>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center text-xl font-headline"><ShieldCheck className="mr-2 h-5 w-5 text-primary" /> Privacy & Security (Disabled)</CardTitle>
-            <CardDescription>Manage your privacy settings and account security.</CardDescription>
+            <CardTitle className="flex items-center text-xl font-headline"><ShieldCheck className="mr-2 h-5 w-5 text-primary" /> Privacy & Security</CardTitle>
+            <CardDescription>Manage your privacy settings and account security. (Features not implemented)</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
@@ -234,8 +263,8 @@ export default function SettingsPage() {
           </Button>
         </div>
 
-        <Button variant="destructive" className="w-full" onClick={handleLogout} disabled>
-          <LogOut className="mr-2 h-5 w-5" /> Log Out (Disabled)
+        <Button variant="destructive" className="w-full" onClick={handleLogout} disabled={isSaving}>
+          <LogOut className="mr-2 h-5 w-5" /> Log Out
         </Button>
 
         <div className="mt-8 flex justify-end">

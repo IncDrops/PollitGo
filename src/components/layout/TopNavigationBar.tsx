@@ -1,27 +1,24 @@
-
+// src/components/layout/TopNavigationBar.tsx
 'use client';
 
 import Link from 'next/link';
-import { Settings2, UserCircle2, LogIn, UserPlus, Loader2 } from 'lucide-react';
+import { Settings2, UserCircle2, LogIn, UserPlus, Loader2, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import useAuth from '@/hooks/useAuth';
-// Firebase auth and signOut are removed
-// import { auth } from '@/lib/firebase';
-// import { signOut } from 'firebase/auth';
+import { signIn, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 export default function TopNavigationBar() {
-  const { user: authUser, loading: authLoading } = useAuth();
+  const { user: appUser, loading: authLoading, isAuthenticated } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
   const handleLogout = async () => {
-    // Firebase signOut logic removed
-    toast({ title: 'Logout Functionality Disabled', description: 'Firebase Auth removed. Implement new logout logic.' });
-    // router.push('/login'); // Or homepage, as login is also disabled
-    router.push('/');
+    await signOut({ redirect: false }); // Set redirect to false to handle it manually
+    toast({ title: 'Logged Out', description: "You have been successfully logged out." });
+    router.push('/'); // Redirect to homepage after logout
   };
 
   return (
@@ -45,40 +42,42 @@ export default function TopNavigationBar() {
             <Button variant="ghost" size="icon" disabled>
               <Loader2 className="h-5 w-5 sm:h-6 sm:w-6 animate-spin text-nav-foreground" />
             </Button>
-          ) : authUser ? (
+          ) : isAuthenticated && appUser ? (
             <>
               <Link href="/settings" passHref>
                 <Button variant="ghost" size="icon" aria-label="Settings">
                   <Settings2 className="h-5 w-5 sm:h-6 sm:w-6 text-nav-foreground" />
                 </Button>
               </Link>
-              <Link href={`/profile/${authUser.uid}`} passHref>
+              <Link href={`/profile/${appUser.id}`} passHref>
                 <Button variant="ghost" size="icon" aria-label="Profile">
-                  {authUser.photoURL ? (
+                  {appUser.image ? (
                      <Avatar className="h-6 w-6 sm:h-7 sm:w-7">
-                        <AvatarImage src={authUser.photoURL} alt={authUser.displayName || 'User'} data-ai-hint="profile avatar"/>
-                        <AvatarFallback>{authUser.displayName ? authUser.displayName.substring(0,1).toUpperCase() : <UserCircle2 />}</AvatarFallback>
+                        <AvatarImage src={appUser.image} alt={appUser.name || 'User'} data-ai-hint="profile avatar"/>
+                        <AvatarFallback>{appUser.name ? appUser.name.substring(0,1).toUpperCase() : <UserCircle2 />}</AvatarFallback>
                       </Avatar>
                   ) : (
                     <UserCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-nav-foreground" />
                   )}
                 </Button>
               </Link>
-              {/* Logout button behavior changed as Firebase auth is removed */}
-              <Button variant="ghost" size="icon" aria-label="Logout (Disabled)" onClick={() => toast({ title: 'Logout Disabled', description: 'Firebase Auth removed.'})}>
-                 <UserCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-nav-foreground opacity-50" />
+              <Button variant="ghost" size="icon" aria-label="Logout" onClick={handleLogout}>
+                 <LogOut className="h-5 w-5 sm:h-6 sm:w-6 text-nav-foreground" />
               </Button>
             </>
           ) : (
             <>
-              <Link href="/login" passHref>
-                <Button variant="ghost" aria-label="Login (Disabled)">
-                  <LogIn className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5 opacity-50" />
-                  Login
-                </Button>
-              </Link>
+              <Button variant="ghost" aria-label="Login" onClick={() => signIn()}>
+                <LogIn className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                Login
+              </Button>
+              {/* The standard CredentialsProvider doesn't handle signup directly in the UI in the same way as login.
+                  Signup typically involves a custom form that posts to a backend, which then creates a user.
+                  For now, we'll link to a /signup page which will attempt a "login" with the credentials provider.
+                  Our dummy authorize function will accept it to simulate signup for demo.
+              */}
               <Link href="/signup" passHref>
-                <Button variant="default" aria-label="Sign Up (Disabled)" className="bg-primary hover:bg-primary/90 text-primary-foreground opacity-50 cursor-not-allowed">
+                <Button variant="default" aria-label="Sign Up" className="bg-primary hover:bg-primary/90 text-primary-foreground">
                   <UserPlus className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5" />
                   Sign Up
                 </Button>
