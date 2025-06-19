@@ -75,7 +75,7 @@ When configuring the "Run Payments with Stripe" Firebase Extension:
     2.  Copy the generated restricted key (e.g., `rk_test_...`).
     3.  Back in the Firebase Extension configuration UI, for the "Stripe API key with restricted access" field:
         *   **If the UI is direct (one input field before "Create secret" button):** Clear any existing content. Paste your `rk_test_...` key directly into this field. Then, click the **"Create secret"** button next to it. The field should then update to show a *name* for the secret (this name might be auto-generated or one you typed if the UI was sticky). Note this name.
-        *   **If the UI shows a pop-up after clicking "Create secret":** In the pop-up, provide a "Secret name" (e.g., `STRIPE_EXTENSION_API_KEY`) and paste your `rk_test_...` key into the "Secret value" field. Create the secret. Then, back on the extension page, select this newly created secret name from the dropdown.
+        *   **If the UI shows a pop-up after clicking "Create secret":** In the pop-up, provide a "Secret name" (e.g., `STRIPE_POLLITGO_EXTENSION_API_KEY`) and paste your `rk_test_...` key into the "Secret value" field. Create the secret. Then, back on the extension page, select this newly created secret name from the dropdown.
     4.  **Verification (Important):** After starting the extension install/update, go to Google Cloud Console -> Security -> Secret Manager. Find the secret by the name that the extension configuration is now referencing. View its latest version and **confirm the stored value is your correct `rk_test_...` Stripe API key.** If it's incorrect, add a new version to that secret with the correct key value.
 *   **Events to listen for (during extension configuration):**
     *   **Essential for payments/pledges/tips:** `checkout.session.completed`
@@ -98,7 +98,7 @@ When configuring the "Run Payments with Stripe" Firebase Extension:
         *   Go back to the Firebase Console and **reconfigure** the Stripe extension.
         *   For the "Stripe webhook secret" field, click the **"Create secret"** button.
         *   In the pop-up:
-            *   **Secret name:** Give it a descriptive name (e.g., `STRIPE_EXTENSION_WEBHOOK_SECRET`).
+            *   **Secret name:** Give it a descriptive name (e.g., `STRIPE_POLLITGO_EXTENSION_WEBHOOK_SECRET`).
             *   **Secret value:** Paste the `whsec_...` signing secret you copied from Stripe.
             *   Click "Create secret".
         *   Select this newly created secret name from the dropdown.
