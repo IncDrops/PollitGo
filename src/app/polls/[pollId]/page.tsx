@@ -10,7 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { mockPolls, mockUsers } from "@/lib/mockData";
 import type { Poll, PollOption as PollOptionType, Comment as CommentType, User } from "@/types";
 import { formatDistanceToNowStrict, parseISO, isPast } from "date-fns";
-import { Clock, Heart, MessageSquare, Share2, Gift, Send, Image as ImageIconLucideShadcn, Video as VideoIconLucide, ThumbsUp, Film, Info, CheckCircle2, Loader2, Check, Users, Flame, AlertCircle } from "lucide-react";
+import { Clock, Heart, MessageSquare, Share2, Gift, Send, Image as ImageIconLucideShadcn, Video as VideoIconLucide, ThumbsUp, Film, Info, CheckCircle2, Loader2, Check, Users, Flame, AlertCircle, UserCircle2, LogIn } from "lucide-react";
 import Image from "next/image";
 import NextLink from "next/link";
 import { cn } from "@/lib/utils";
@@ -18,13 +18,17 @@ import React, { useState, useEffect } from 'react';
 import OptionDetailsDialog from "@/components/polls/OptionDetailsDialog";
 import { useToast } from '@/hooks/use-toast';
 import { useStripe } from "@stripe/react-stripe-js";
-import useAuth from "@/hooks/useAuth"; // Import useAuth
+import useAuth from '@/hooks/useAuth'; // Updated to NextAuth useAuth
+import { signIn } from 'next-auth/react';
+
 
 async function getPollDetails(pollId: string): Promise<{ poll: Poll | null; comments: CommentType[] }> {
+  // Simulate fetching data as Firebase is removed
   const poll = mockPolls.find(p => p.id === pollId) || null;
+  // Create a fresh copy for state updates
   const freshPoll = poll ? {...mockPolls.find(p => p.id === pollId)} as Poll || null : null;
 
-  // Using mock users for comments as actual user system is being removed/changed
+  // Using mock users for comments
   const commentUser1 = mockUsers.find(u => u.id === 'user2') || mockUsers[1] || getRandomUserFromMock();
   const commentUser2 = mockUsers.find(u => u.id === 'user3') || mockUsers[2] || getRandomUserFromMock();
 
@@ -47,28 +51,28 @@ const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50;
 const PollOptionDisplay: React.FC<{
   option: PollOptionType;
   totalVotes: number;
-  isVoted: boolean;
-  isSelectedOption: boolean;
+  isVotedByCurrentUser: boolean; // Renamed for clarity
+  isSelectedOptionByCurrentUser: boolean; // Renamed for clarity
   deadlinePassed: boolean;
   onVote: () => Promise<void>;
   pollHasTwoOptions: boolean;
   onShowDetails: () => void;
   pollPledgeAmount?: number;
-  canVote: boolean; // Added to control voting ability
-}> = ({ option, totalVotes, isVoted, isSelectedOption, deadlinePassed, onVote, pollHasTwoOptions, onShowDetails, pollPledgeAmount, canVote }) => {
+  canCurrentUserVote: boolean; // Renamed for clarity
+}> = ({ option, totalVotes, isVotedByCurrentUser, isSelectedOptionByCurrentUser, deadlinePassed, onVote, pollHasTwoOptions, onShowDetails, pollPledgeAmount, canCurrentUserVote }) => {
   const { toast } = useToast(); 
   const percentage = totalVotes > 0 ? (option.votes / totalVotes) * 100 : 0;
-  const showResults = isVoted || deadlinePassed;
+  const showResults = isVotedByCurrentUser || deadlinePassed;
   const isTruncated = option.text.length > OPTION_TEXT_TRUNCATE_LENGTH;
   const truncatedText = isTruncated
     ? `${option.text.substring(0, OPTION_TEXT_TRUNCATE_LENGTH)}...`
     : option.text;
 
   const handleOptionClick = async () => {
-    if (canVote && !isVoted && !deadlinePassed) { // Check canVote
+    if (canCurrentUserVote && !isVotedByCurrentUser && !deadlinePassed) {
       await onVote();
     } else {
-      onShowDetails();
+      onShowDetails(); // Show details if already voted, deadline passed, or cannot vote
     }
   };
 
@@ -78,7 +82,7 @@ const PollOptionDisplay: React.FC<{
   };
 
   let isVotingVisuallyLimited = false;
-  if (pollPledgeAmount && pollPledgeAmount > 0 && !deadlinePassed && !isVoted && canVote) {
+  if (pollPledgeAmount && pollPledgeAmount > 0 && !deadlinePassed && !isVotedByCurrentUser && canCurrentUserVote) {
     const amountForVoters = pollPledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
     if ((amountForVoters / (option.votes + 1)) < MIN_PAYOUT_PER_VOTER && (option.votes + 1) > 0) {
       isVotingVisuallyLimited = true;
@@ -88,15 +92,16 @@ const PollOptionDisplay: React.FC<{
   return (
     <div className={cn("relative group", pollHasTwoOptions ? "flex-1" : "mb-3 w-full")}>
       <Button
-        variant={isSelectedOption && showResults ? "default" : "outline"}
+        variant={isSelectedOptionByCurrentUser && showResults ? "default" : "outline"}
         className={cn(
           "w-full justify-between h-auto p-3 text-left relative disabled:opacity-100 disabled:cursor-default",
            pollHasTwoOptions && "aspect-square flex flex-col items-center justify-center text-center",
-           (isVoted || deadlinePassed || isTruncated || option.affiliateLink || isVotingVisuallyLimited) && "cursor-pointer hover:bg-accent/60"
+           ((isVotedByCurrentUser || deadlinePassed) || isTruncated || option.affiliateLink || isVotingVisuallyLimited || !canCurrentUserVote) && "cursor-pointer hover:bg-accent/60"
         )}
         onClick={handleOptionClick}
-        disabled={!canVote && (isVoted || deadlinePassed) && !pollHasTwoOptions && !(isTruncated || option.affiliateLink) }
-        aria-pressed={isSelectedOption}
+        // Disable if cannot vote and not a details-triggering scenario (like truncated text)
+        disabled={!canCurrentUserVote && (isVotedByCurrentUser || deadlinePassed) && !pollHasTwoOptions && !(isTruncated || option.affiliateLink) }
+        aria-pressed={isSelectedOptionByCurrentUser}
         title={isVotingVisuallyLimited ? "Voting for this option is allowed, but your potential PollitPoint payout might be low due to pledge conditions." : undefined}
       >
         <div className={cn("flex w-full", pollHasTwoOptions ? "flex-col items-center" : "items-center")}>
@@ -106,7 +111,7 @@ const PollOptionDisplay: React.FC<{
 
           {showResults && <span className={cn("font-semibold text-sm", pollHasTwoOptions ? "mt-2" : "ml-auto pl-1")}>{percentage.toFixed(0)}%</span>}
 
-          {isSelectedOption && showResults && <CheckCircle2 className={cn("w-4 h-4", pollHasTwoOptions ? "mt-1 text-primary-foreground" : "ml-1 text-primary")} />}
+          {isSelectedOptionByCurrentUser && showResults && <CheckCircle2 className={cn("w-4 h-4", pollHasTwoOptions ? "mt-1 text-primary-foreground" : "ml-1 text-primary")} />}
 
           {(isTruncated || option.affiliateLink || isVotingVisuallyLimited) && (
              <div
@@ -137,11 +142,11 @@ const PollOptionDisplay: React.FC<{
 
 export default function PollDetailsPage({ params }: { params: { pollId: string } }) {
   const [pollData, setPollData] = useState<{ poll: Poll | null; comments: CommentType[] }>({ poll: null, comments: [] });
-  const [loading, setLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(true); // Renamed from loading to avoid conflict
   const [isTipping, setIsTipping] = useState(false);
   const [deadlinePassedState, setDeadlinePassedState] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState('');
-  const { user: currentUser, loading: authLoading } = useAuth(); // currentUser will be null
+  const { user: currentUser, loading: authLoading, isAuthenticated } = useAuth();
   const { toast } = useToast();
   const stripe = useStripe();
 
@@ -150,11 +155,10 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
 
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
-      const data = await getPollDetails(params.pollId); // Using mock data
+      setPageLoading(true);
+      const data = await getPollDetails(params.pollId);
       setPollData(prev => ({ ...prev, ...data, poll: data.poll ? {...data.poll} : null }));
-      // currentUser is now handled by useAuth hook
-      setLoading(false);
+      setPageLoading(false);
     };
     fetchData();
   }, [params.pollId]);
@@ -183,39 +187,59 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
   }, [poll]);
 
   const handleVote = async (optionId: string) => {
-    if (!poll || poll.isVoted || deadlinePassedState || !currentUser) {
-        if(!currentUser) toast({title: "Login Required", description: "Please login to vote.", variant: "destructive"})
+    if (!poll || !isAuthenticated || poll.isVoted || deadlinePassedState ) {
+        if(!isAuthenticated) toast({title: "Login Required", description: "Please login to vote.", variant: "destructive"})
         return;
     }
-    // ... (rest of vote logic, which might need currentUser for some operations not yet implemented)
     
+    // Simulate vote as DB is not integrated
     setPollData(prevData => {
       if (!prevData.poll) return prevData;
       const newPoll = {
         ...prevData.poll,
-        isVoted: true,
-        votedOptionId: optionId,
+        isVoted: true, // Mark as voted by current user
+        votedOptionId: optionId, // Store current user's vote
         totalVotes: prevData.poll.totalVotes + 1,
         options: prevData.poll.options.map(opt =>
           opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
         ),
       };
-      // ... (toast logic for low payout warning remains the same)
+      
+      const targetOption = newPoll.options.find(opt => opt.id === optionId);
+      if (newPoll.pledgeAmount && newPoll.pledgeAmount > 0 && targetOption) {
+        const amountToDistributeToVoters = newPoll.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
+        if ((amountToDistributeToVoters / targetOption.votes) < MIN_PAYOUT_PER_VOTER && targetOption.votes > 0) {
+          toast({
+            title: "Low Payout Warning",
+            description: `Your vote is counted! However, due to the current pledge and number of voters for this option, your potential PollitPoint payout might be below $${MIN_PAYOUT_PER_VOTER.toFixed(2)}.`,
+            variant: "default",
+            duration: 7000,
+          });
+        } else {
+           toast({ title: "Vote Cast!", description: "Your vote has been recorded." });
+        }
+      } else {
+        toast({ title: "Vote Cast!", description: "Your vote has been recorded." });
+      }
       return { ...prevData, poll: newPoll };
     });
   };
 
   const handleCommentSubmit = async (formData: FormData) => {
     const commentText = formData.get('comment') as string;
-    if (!currentUser) {
+    if (!isAuthenticated || !currentUser) { // Check both isAuthenticated and currentUser
         toast({title: "Login Required", description: "Please login to comment.", variant: "destructive"});
         return;
     }
     if (commentText && commentText.trim() !== "" && poll) {
-      const randomMockUser = getRandomUserFromMock(); // Use mock user for comment as currentUser is null
       const newComment: CommentType = {
         id: `comment${Date.now()}`,
-        user: randomMockUser, // Using mock user
+        user: { // Use current authenticated user's info
+            id: currentUser.id,
+            name: currentUser.name || "Anonymous",
+            avatarUrl: currentUser.image || `https://placehold.co/100x100.png?text=${currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'A'}`,
+            username: currentUser.email?.split('@')[0] || 'anonuser'
+        },
         text: commentText,
         createdAt: new Date().toISOString(),
       };
@@ -225,24 +249,40 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
       }));
       const formElement = document.getElementById('comment-form') as HTMLFormElement | null;
       formElement?.reset();
+      toast({title: "Comment Added", description: "Your comment has been posted."});
     }
   };
 
   const handleShare = async (e: React.MouseEvent) => {
-    // ... (share logic remains client-side and mostly unaffected)
     e.stopPropagation();
     if (!poll || typeof window === 'undefined') return;
-    // ...
+    const shareUrl = window.location.href;
+    const shareData = {
+      title: poll.question,
+      text: `Check out this poll: ${poll.question}`,
+      url: shareUrl,
+    };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({ title: "Link Copied", description: "Poll link copied to clipboard."});
+      }
+    } catch (error) {
+       console.error("Error sharing poll:", error);
+       toast({ title: "Error", description: "Could not share poll link.", variant: "destructive"});
+    }
   };
 
   const handleTipCreator = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!currentUser) {
+    if (!isAuthenticated || !currentUser) {
         toast({title: "Login Required", description: "Please login to tip.", variant: "destructive"});
         return;
     }
     if (!stripe || !poll) {
-      toast({ title: "Stripe not loaded or poll data missing.", variant: "destructive" });
+      toast({ title: "Error", description: "Stripe not loaded or poll data missing.", variant: "destructive" });
       return;
     }
     setIsTipping(true);
@@ -254,12 +294,22 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
           amount: 500, 
           currency: 'usd',
           itemName: `Tip for ${poll.creator.name} (Poll: ${poll.question.substring(0,30)}...)`,
-          metadata: { pollId: poll.id, pollCreatorId: poll.creator.id, tipperUserId: currentUser.uid } // currentUser.uid will be an issue
+          metadata: { pollId: poll.id, pollCreatorId: poll.creator.id, tipperUserId: currentUser.id }
         }),
       });
-      // ... (rest of Stripe session handling)
+      
+      const session = await response.json();
+      if (response.ok && session.id) {
+        const result = await stripe.redirectToCheckout({ sessionId: session.id });
+        if (result.error) {
+          throw new Error(result.error.message);
+        }
+      } else {
+        throw new Error(session.error || 'Failed to create Stripe session for tip.');
+      }
     } catch (error: any) {
-        // ...
+        console.error("Tip error:", error);
+        toast({ title: "Tip Failed", description: error.message || "Could not process tip.", variant: "destructive" });
     } finally {
       setIsTipping(false);
     }
@@ -271,11 +321,11 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
   };
 
   const handlePledgeOutcome = (outcome: 'accepted' | 'tipped_crowd') => {
-    if (!currentUser) {
+    if (!isAuthenticated || !currentUser) {
         toast({title: "Login Required", description: "Only the poll creator can decide the pledge outcome.", variant: "destructive"});
         return;
     }
-    if (poll && currentUser?.id === poll.creator.id) { // Check if current (mock) user is creator
+    if (poll && currentUser?.id === poll.creator.id) {
         setPollData(prev => prev.poll ? ({...prev, poll: {...prev.poll, pledgeOutcome: outcome }}) : prev);
         toast({ title: `Pledge Outcome: ${outcome.replace('_', ' ')}`, description: "Action simulated on client."});
     } else {
@@ -283,7 +333,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
     }
   };
 
-  if (loading || authLoading) {
+  if (pageLoading || authLoading) {
     return <div className="container mx-auto px-4 py-8 text-center text-muted-foreground"><Loader2 className="h-8 w-8 animate-spin mx-auto" /> Loading poll details...</div>;
   }
 
@@ -291,10 +341,10 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
     return <div className="container mx-auto px-4 py-8 text-center text-destructive">Poll not found.</div>;
   }
   
-  const canVoteOnPoll = !!currentUser && !poll.isVoted && !deadlinePassedState;
+  const canCurrentUserVoteOnPoll = isAuthenticated && !poll.isVoted && !deadlinePassedState;
 
   const pollHasTwoOptions = poll.options.length === 2;
-  const isCreator = currentUser?.uid === poll.creator.id; // This will be false
+  const isCreator = isAuthenticated && currentUser?.id === poll.creator.id;
   const showPledgeOutcomeButtons = isCreator && deadlinePassedState && poll.pledgeAmount && poll.pledgeAmount > 0 && (poll.pledgeOutcome === 'pending' || poll.pledgeOutcome === undefined);
 
   return (
@@ -306,7 +356,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
               <NextLink href={`/profile/${poll.creator.id}`}>
                 <Avatar className="h-12 w-12 border cursor-pointer">
                   <AvatarImage src={poll.creator.avatarUrl} alt={poll.creator.name} data-ai-hint={generateHintFromText(poll.creator.name) || "profile avatar"}/>
-                  <AvatarFallback>{poll.creator.name.substring(0, 1)}</AvatarFallback>
+                  <AvatarFallback>{poll.creator.name ? poll.creator.name.substring(0, 1).toUpperCase() : 'U'}</AvatarFallback>
                 </Avatar>
               </NextLink>
               <div>
@@ -321,15 +371,20 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
               <span>{poll.question}</span>
             </CardTitle>
 
-            {/* Image and Video display logic remains similar */}
             {poll.imageUrls && poll.imageUrls.length > 0 && (
               <div className="mt-4 space-y-3">
-                 {/* ... */}
+                <div className={cn("grid gap-2", poll.imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2", poll.imageUrls.length > 2 && "md:grid-cols-" + Math.min(poll.imageUrls.length, 4))}>
+                    {poll.imageUrls.map((imgUrl, idx) => (
+                        <div key={idx} className="relative aspect-video bg-muted rounded-md overflow-hidden shadow-sm">
+                            <Image src={imgUrl} alt={`Poll image ${idx + 1}`} layout="fill" objectFit="cover" data-ai-hint={poll.imageKeywords && poll.imageKeywords[idx] ? poll.imageKeywords[idx] : "poll visual"}/>
+                        </div>
+                    ))}
+                </div>
               </div>
             )}
             {poll.videoUrl && (
               <div className="mt-4">
-                {/* ... */}
+                <video src={poll.videoUrl} controls className="w-full rounded-md shadow-sm max-h-96" data-ai-hint="poll video" />
               </div>
             )}
           </CardHeader>
@@ -341,21 +396,25 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
                   key={option.id}
                   option={option}
                   totalVotes={poll.totalVotes}
-                  isVoted={!!poll.isVoted}
-                  isSelectedOption={poll.votedOptionId === option.id}
+                  isVotedByCurrentUser={!!poll.isVoted} // Based on poll's overall voted status for the user
+                  isSelectedOptionByCurrentUser={poll.votedOptionId === option.id}
                   deadlinePassed={deadlinePassedState}
                   onVote={() => handleVote(option.id)}
                   pollHasTwoOptions={pollHasTwoOptions}
                   onShowDetails={() => handleShowOptionDetails(option)}
                   pollPledgeAmount={poll.pledgeAmount}
-                  canVote={canVoteOnPoll} // Pass canVote
+                  canCurrentUserVote={canCurrentUserVoteOnPoll}
                 />
               ))}
             </div>
-             {!currentUser && (
-                <div className="mt-3 text-sm text-destructive flex items-center">
+             {!isAuthenticated && (
+                <div className="mt-3 text-sm text-destructive flex items-center justify-center bg-destructive/10 p-2 rounded-md">
                     <AlertCircle className="w-4 h-4 mr-1.5" />
-                    Please <NextLink href="/login" className="underline hover:text-destructive/80 mx-1">login</NextLink> or <NextLink href="/signup" className="underline hover:text-destructive/80 mx-1">sign up</NextLink> to vote.
+                    Please 
+                    <Button variant="link" className="p-0 h-auto text-destructive hover:text-destructive/80 mx-1 text-sm" onClick={() => signIn()}>login</Button> 
+                    or 
+                    <NextLink href="/signup" className="underline hover:text-destructive/80 mx-1">sign up</NextLink> 
+                    to vote.
                 </div>
             )}
             <div className="mt-4 flex items-center text-sm text-muted-foreground">
@@ -390,7 +449,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary">
                 <Heart className="w-5 h-5 mr-1.5" /> {poll.likes.toLocaleString()} Likes
               </Button>
-              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" onClick={handleTipCreator} disabled={isTipping || !currentUser}>
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary" onClick={handleTipCreator} disabled={isTipping || !isAuthenticated}>
                 {isTipping ? <Loader2 className="mr-1.5 h-5 w-5 animate-spin" /> : <Gift className="w-5 h-5 mr-1.5" />}
                  Tip Creator {poll.tipCount && poll.tipCount > 0 ? `(${poll.tipCount.toLocaleString()})` : ''}
               </Button>
@@ -404,28 +463,48 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
             <div>
               <h3 className="text-lg font-semibold mb-3 text-foreground">Comments ({comments.length})</h3>
               <form action={handleCommentSubmit} id="comment-form" className="flex items-start space-x-2 mb-6">
-                {currentUser ? (
+                {isAuthenticated && currentUser ? (
                   <Avatar className="h-10 w-10 border">
-                    <AvatarImage src={currentUser.photoURL || getRandomUserFromMock().avatarUrl} alt={currentUser.displayName || "User"} data-ai-hint="profile avatar" />
-                    <AvatarFallback>{currentUser.displayName ? currentUser.displayName.substring(0,1) : 'U'}</AvatarFallback>
+                    <AvatarImage src={currentUser.image || `https://placehold.co/100x100.png?text=${currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}`} alt={currentUser.name || "User"} data-ai-hint="profile avatar" />
+                    <AvatarFallback>{currentUser.name ? currentUser.name.substring(0,1).toUpperCase() : 'U'}</AvatarFallback>
                   </Avatar>
                 ) : (
                    <Avatar className="h-10 w-10 border bg-muted">
                       <UserCircle2 className="h-full w-full text-muted-foreground p-1.5"/>
                    </Avatar>
                 )}
-                <Textarea name="comment" placeholder={currentUser ? "Add a comment..." : "Login to add a comment..."} className="flex-grow min-h-[40px] max-h-[120px]" rows={1} disabled={!currentUser}/>
-                <Button type="submit" size="icon" variant="default" className="h-10 w-10 bg-primary hover:bg-primary/90 text-primary-foreground" disabled={!currentUser}>
+                <Textarea name="comment" placeholder={isAuthenticated ? "Add a comment..." : "Login to add a comment..."} className="flex-grow min-h-[40px] max-h-[120px]" rows={1} disabled={!isAuthenticated}/>
+                <Button type="submit" size="icon" variant="default" className="h-10 w-10 bg-primary hover:bg-primary/90 text-primary-foreground" disabled={!isAuthenticated}>
                   <Send className="h-5 w-5" />
                 </Button>
               </form>
-              {/* Comment display logic remains similar, using mock user data */}
+              
               <div className="space-y-4">
                 {comments.map(comment => (
                   <div key={comment.id} className="flex items-start space-x-3">
-                     {/* ... comment user avatar and details */}
+                     <Avatar className="h-8 w-8 border">
+                        <AvatarImage src={comment.user.avatarUrl} alt={comment.user.name} data-ai-hint="profile avatar" />
+                        <AvatarFallback>{comment.user.name ? comment.user.name.substring(0,1).toUpperCase() : 'U'}</AvatarFallback>
+                     </Avatar>
+                     <div className="flex-1 bg-muted/50 p-3 rounded-lg">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold text-foreground">{comment.user.name}</span>
+                            <span className="text-xs text-muted-foreground">{formatDistanceToNowStrict(parseISO(comment.createdAt), { addSuffix: true })}</span>
+                        </div>
+                        <p className="text-sm text-foreground mt-1">{comment.text}</p>
+                     </div>
                   </div>
                 ))}
+                 {!isAuthenticated && comments.length > 0 && (
+                     <div className="mt-3 text-sm text-center text-destructive flex items-center justify-center bg-destructive/10 p-2 rounded-md">
+                        <AlertCircle className="w-4 h-4 mr-1.5" />
+                        <Button variant="link" className="p-0 h-auto text-destructive hover:text-destructive/80 mx-1 text-sm" onClick={() => signIn()}>Login</Button> 
+                        to see more comments or add your own.
+                    </div>
+                 )}
+                 {comments.length === 0 && (
+                    <p className="text-sm text-center text-muted-foreground py-4">No comments yet. Be the first to share your thoughts!</p>
+                 )}
               </div>
             </div>
           </CardFooter>
@@ -441,3 +520,6 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
     </>
   );
 }
+
+
+    

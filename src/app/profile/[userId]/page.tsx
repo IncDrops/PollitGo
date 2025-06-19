@@ -3,37 +3,36 @@
 
 import React, { useState, useEffect } from 'react';
 import type { User, Poll } from "@/types";
-import { mockUsers, mockPolls } from "@/lib/mockData"; // Keep mockData for now
+import { mockUsers, mockPolls } from "@/lib/mockData";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, MessageSquare, Edit3, ChevronLeft, Share2, Search, CalendarDays, MapPin, Link as LinkIconLucide, Flame, AlertCircle } from "lucide-react";
+import { Settings, MessageSquare, Edit3, ChevronLeft, Share2, Search, CalendarDays, MapPin, Link as LinkIconLucide, Flame, AlertCircle, Loader2, UserPlus, LogIn } from "lucide-react";
 import Image from "next/image";
-// UserProfile type might need adjustment if its source (firebase.ts) changed
-// For now, assuming it's still a valid type definition from "@/types"
 import type { UserProfile as AppUserProfileType } from '@/types';
-import { useRouter, useParams } from "next/navigation"; // useParams for client components
+import { useRouter } from "next/navigation";
 import { useToast } from "@/hooks/use-toast";
 import PollFeed from '@/components/polls/PollFeed';
-// useAuth will now return null user
-import useAuth from '@/hooks/useAuth'; 
+import useAuth from '@/hooks/useAuth'; // Updated to NextAuth useAuth
+import NextLink from 'next/link';
+import { signIn } from 'next-auth/react';
 
-// fetchUserProfile from firebase.ts is removed.
-// We'll rely on mockData or a new data fetching mechanism.
+
 async function getUserData(userId: string): Promise<{ user: User | null; polls: Poll[] }> {
-  console.warn(`[UserProfilePage] Firebase removed. Using mock data for userId: ${userId}`);
+  console.warn(`[UserProfilePage] Using mock data for userId: ${userId}`);
   const user = mockUsers.find(u => u.id === userId) || null;
   
   let polls: Poll[] = [];
   if (user) {
+    // Ensure polls are fresh copies for independent state updates if needed later
     polls = mockPolls.filter(p => p.creator.id === userId).map(p => ({...p}));
   }
   return { user, polls };
 }
 
 const urlSafeText = (text: string, maxLength: number = 15): string => {
-  const cleanedText = text.replace(/[^a-zA-Z\\s]/g, "").substring(0, maxLength);
+  const cleanedText = text.replace(/[^a-zA-Z0-9\s]/g, "").substring(0, maxLength);
   return encodeURIComponent(cleanedText);
 };
 
@@ -41,19 +40,14 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   const router = useRouter();
   const { toast } = useToast();  
   
-  const { user: authUser, loading: authLoading } = useAuth(); // authUser will be null
+  const { user: authUser, loading: authLoading, isAuthenticated } = useAuth();
   const [userData, setUserData] = useState<{ user: User | null; polls: Poll[] }>({ user: null, polls: [] });
-  const [isLoading, setIsLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(true); // Renamed for clarity
 
   useEffect(() => {
-    // authLoading will be false quickly as useAuth is stubbed
-    // if (authLoading) {
-    //   return;
-    // }
-
     if (params && params.userId) {
-      setIsLoading(true);
-      getUserData(params.userId) // Using mock data
+      setPageLoading(true);
+      getUserData(params.userId)
         .then(data => {
           setUserData(data);          
           if (!data.user) {
@@ -69,10 +63,10 @@ export default function UserProfilePage({ params }: { params: { userId: string }
           toast({ title: "Error", description: "Could not load user profile.", variant: "destructive" });
         })
         .finally(() => {
-          setIsLoading(false);
+          setPageLoading(false);
         });
     } else {
-      setIsLoading(false);
+      setPageLoading(false);
       toast({ title: "Error", description: "User ID not provided for profile.", variant: "destructive" });
     }    
   }, [params, toast]);
@@ -80,9 +74,10 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   const user = userData.user;
   const userPolls = userData.polls;
 
-  if (isLoading) { // Removed authLoading check
+  if (pageLoading || authLoading) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center">
+      <div className="container mx-auto px-4 py-8 text-center flex flex-col items-center justify-center min-h-[calc(100vh-150px)]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
         Loading profile...
       </div>
     );
@@ -90,22 +85,33 @@ export default function UserProfilePage({ params }: { params: { userId: string }
 
   if (!user) {
     return (
-      <div className="container mx-auto px-4 py-8 text-center text-destructive">
-        User profile could not be loaded. They may not exist in mock data.
+       <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
+        <Card className="w-full max-w-md text-center shadow-xl">
+          <CardHeader>
+            <AlertCircle className="mx-auto h-16 w-16 text-destructive mb-4" />
+            <CardTitle className="text-2xl">User Not Found</CardTitle>
+            <CardDescription>
+                The profile for user ID <span className="font-mono bg-muted px-1 rounded">{params.userId}</span> could not be loaded. They may not exist or there was an issue.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button asChild className="w-full">
+              <NextLink href="/">Go to Homepage</NextLink>
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
     );
   }
   
-  const isOwnProfile = authUser?.uid === user.id; // authUser will be null, so this will be false
+  const isOwnProfile = isAuthenticated && authUser?.id === user.id;
 
   const handleShareProfile = async () => {
-    // This functionality remains client-side
     if (typeof window === 'undefined') return;
-    // ... (rest of the share logic remains the same)
     const shareUrl = window.location.href;
     const shareData = {
-      title: `${user.name}'s Profile on PollitGo`,
-      text: `Check out ${user.name}'s profile and polls!`,
+      title: `${user.name}'s Profile on PollitAGo`,
+      text: `Check out ${user.name}'s profile and polls on PollitAGo!`,
       url: shareUrl,
     };
     try {
@@ -142,15 +148,15 @@ export default function UserProfilePage({ params }: { params: { userId: string }
           <Image
             src={coverPhotoUrl} 
             alt={`${user.name}'s cover photo`}
-            layout="fill"
-            objectFit="cover"
+            fill
+            style={{objectFit: 'cover'}}
             priority 
             data-ai-hint="profile cover"
           />
           <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 transform">
             <Avatar className="h-32 w-32 border-4 border-background ring-2 ring-primary shadow-lg">
               <AvatarImage src={user.avatarUrl} alt={user.name} data-ai-hint="profile avatar" />
-              <AvatarFallback className="text-4xl">{user.name.split(" ").map(n => n[0]).join("").toUpperCase()}</AvatarFallback>
+              <AvatarFallback className="text-4xl">{user.name ? user.name.split(" ").map(n => n[0]).join("").toUpperCase() : "U"}</AvatarFallback>
             </Avatar>
           </div>
         </div>
@@ -171,29 +177,28 @@ export default function UserProfilePage({ params }: { params: { userId: string }
           </a>
 
           <div className="mt-4 flex justify-center space-x-2 sm:space-x-4">
-            {isOwnProfile ? ( // This will be false
+            {isOwnProfile ? (
               <>
-                <Button variant="outline" onClick={() => router.push('/settings/profile-edit')}>
-                  <Edit3 className="mr-2 h-4 w-4" /> Edit Profile (Disabled)
+                <Button variant="outline" onClick={() => router.push('/settings')}>
+                  <Edit3 className="mr-2 h-4 w-4" /> Edit Profile
                 </Button>
                 <Button variant="outline" onClick={() => router.push('/settings')}>
-                  <Settings className="mr-2 h-4 w-4" /> Settings (Disabled)
+                  <Settings className="mr-2 h-4 w-4" /> Settings
                 </Button>
               </>
             ) : (
               <>
-                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                  <UserPlus className="mr-2 h-4 w-4" /> Follow
+                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={!isAuthenticated} onClick={() => !isAuthenticated && signIn()}>
+                  {isAuthenticated ? <UserPlus className="mr-2 h-4 w-4" /> : <LogIn className="mr-2 h-4 w-4" /> }
+                  {isAuthenticated ? 'Follow' : 'Login to Follow'}
                 </Button>
-                <Button variant="outline">
-                  <MessageSquare className="mr-2 h-4 w-4" /> Message
+                <Button variant="outline" disabled={!isAuthenticated} onClick={() => !isAuthenticated && signIn()}>
+                   {isAuthenticated ? <MessageSquare className="mr-2 h-4 w-4" /> : <LogIn className="mr-2 h-4 w-4" /> }
+                   {isAuthenticated ? 'Message' : 'Login to Message'}
                 </Button>
               </>
             )}
           </div>
-          {!isOwnProfile && (
-             <p className="text-xs text-muted-foreground mt-2">Login to edit your profile or view settings.</p>
-          )}
         </div>
         
         <div className="mt-4 flex justify-around border-b pb-3">
@@ -226,40 +231,53 @@ export default function UserProfilePage({ params }: { params: { userId: string }
             {userPolls.length > 0 ? (
               <PollCardFeedWrapper 
                 initialPolls={userPolls} 
-                userIdForFeed={user.id} // This can still be used for filtering mock data
+                userIdForFeed={user.id} 
                 feedType="userCreated"
-                // authUser is now null
               />
             ) : (
               <Card className="shadow-none rounded-none border-0">
                 <CardHeader className="items-center text-center pt-12 pb-8">
                    <Search className="h-12 w-12 text-muted-foreground/50 mb-4" />
                   <CardTitle className="text-xl">No Polls Created Yet</CardTitle>
-                  <CardDescription>This user hasn't created any polls. Check back later!</CardDescription>
+                  <CardDescription>{user.name} hasn't created any polls. Check back later!</CardDescription>
                 </CardHeader>
               </Card>
             )}
           </TabsContent>
-           {/* Placeholder for other tabs as they'd likely require auth/db */}
           <TabsContent value="voted">
             <Card className="shadow-none rounded-none border-0 items-center text-center pt-12 pb-8">
                 <AlertCircle className="h-12 w-12 text-muted-foreground/50 mb-4 mx-auto" />
                 <CardTitle className="text-xl">Voted Polls Unavailable</CardTitle>
-                <CardDescription>This feature requires a user system.</CardDescription>
+                <CardDescription>This feature requires login and database integration to track votes.</CardDescription>
+                 {!isAuthenticated && (
+                    <Button onClick={() => signIn()} className="mt-4">
+                        <LogIn className="mr-2 h-4 w-4" /> Login to see Voted Polls
+                    </Button>
+                )}
             </Card>
           </TabsContent>
           <TabsContent value="media">
              <Card className="shadow-none rounded-none border-0 items-center text-center pt-12 pb-8">
                 <AlertCircle className="h-12 w-12 text-muted-foreground/50 mb-4 mx-auto" />
-                <CardTitle className="text-xl">Media Polls Unavailable</CardTitle>
-                <CardDescription>This feature requires a user system.</CardDescription>
+                <CardTitle className="text-xl">Media Feed Unavailable</CardTitle>
+                <CardDescription>This feature requires login and database integration to show media-specific polls.</CardDescription>
+                 {!isAuthenticated && (
+                    <Button onClick={() => signIn()} className="mt-4">
+                        <LogIn className="mr-2 h-4 w-4" /> Login to see Media Feed
+                    </Button>
+                )}
             </Card>
           </TabsContent>
            <TabsContent value="liked" className="hidden sm:block">
              <Card className="shadow-none rounded-none border-0 items-center text-center pt-12 pb-8">
                 <AlertCircle className="h-12 w-12 text-muted-foreground/50 mb-4 mx-auto" />
                 <CardTitle className="text-xl">Liked Polls Unavailable</CardTitle>
-                <CardDescription>This feature requires a user system.</CardDescription>
+                <CardDescription>This feature requires login and database integration to track liked polls.</CardDescription>
+                {!isAuthenticated && (
+                    <Button onClick={() => signIn()} className="mt-4">
+                        <LogIn className="mr-2 h-4 w-4" /> Login to see Liked Polls
+                    </Button>
+                )}
             </Card>
           </TabsContent>
         </Tabs>
@@ -268,32 +286,66 @@ export default function UserProfilePage({ params }: { params: { userId: string }
   );
 }
 
-// PollCardFeedWrapper remains largely the same but authUser will be null
 const PollCardFeedWrapper: React.FC<{ initialPolls: Poll[], userIdForFeed?: string, feedType?: string }> = ({ initialPolls }) => {
   if (!initialPolls || initialPolls.length === 0) {
     return <p className="text-center py-8 text-muted-foreground">No polls to display for this feed.</p>;
   }
   
-  const [polls, setPolls] = useState(initialPolls.map(p => ({...p})));
-  const { user: authUser } = useAuth(); // authUser will be null
+  // Local state for polls within this wrapper for potential local modifications
+  const [polls, setPolls] = useState(() => initialPolls.map(p => ({...p})));
+  const { user: authUser, isAuthenticated } = useAuth();
   const { toast } = useToast();
 
   const MIN_PAYOUT_PER_VOTER = 0.10; 
   const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50; 
 
   const handleVote = (pollId: string, optionId: string) => {
-    if (!authUser) {
+    if (!isAuthenticated) {
         toast({title: "Login Required", description: "Please login to vote.", variant: "destructive"});
         return;
     }
-    // ... existing vote logic
+    setPolls(prevPolls =>
+      prevPolls.map(p => {
+        if (p.id === pollId && !p.isVoted) {
+          const newTotalVotes = p.totalVotes + 1;
+          const updatedOptions = p.options.map(opt =>
+            opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
+          );
+          const votedOption = updatedOptions.find(opt => opt.id === optionId);
+          if (p.pledgeAmount && p.pledgeAmount > 0 && votedOption) {
+            const amountToDistributeToVoters = p.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
+            if ((amountToDistributeToVoters / votedOption.votes) < MIN_PAYOUT_PER_VOTER && votedOption.votes > 0) {
+              toast({
+                title: "Low Payout Warning",
+                description: `Your vote is counted! However, due to the current pledge and number of voters for this option, your potential PollitPoint payout might be below $${MIN_PAYOUT_PER_VOTER.toFixed(2)}.`,
+                variant: "default",
+                duration: 7000,
+              });
+            } else {
+              toast({ title: "Vote Cast!", description: "Your vote has been recorded." });
+            }
+          } else {
+            toast({ title: "Vote Cast!", description: "Your vote has been recorded." });
+          }
+          return { ...p, options: updatedOptions, totalVotes: newTotalVotes, isVoted: true, votedOptionId: optionId };
+        }
+        return p;
+      })
+    );
   };
 
   const handlePollActionComplete = (pollIdToRemove: string) => {
+    // This is a placeholder for actions like "hide poll" or "report poll"
+    // For now, it just removes from local display if needed
     setPolls(prevPolls => prevPolls.filter(p => p.id !== pollIdToRemove));
+    toast({title: "Action Noted", description: "This action would be processed by the backend."});
   };
   
   const handlePledgeOutcome = (pollId: string, outcome: 'accepted' | 'tipped_crowd') => {
+     if (!isAuthenticated || !authUser || polls.find(p=>p.id === pollId)?.creator.id !== authUser.id) {
+        toast({title: "Action Denied", description: "Only the poll creator can decide the pledge outcome.", variant: "destructive"});
+        return;
+    }
     setPolls(prevPolls =>
       prevPolls.map(p =>
         p.id === pollId ? { ...p, pledgeOutcome: outcome } : p
@@ -309,8 +361,11 @@ const PollCardFeedWrapper: React.FC<{ initialPolls: Poll[], userIdForFeed?: stri
         onVoteCallback={handleVote}
         onPollActionCompleteCallback={handlePollActionComplete}
         onPledgeOutcomeCallback={handlePledgeOutcome}
-        currentUser={authUser} // Pass authUser (which is null)
+        currentUser={authUser} // Pass authenticated user from hook
       />
     </div>
   );
 };
+
+
+    

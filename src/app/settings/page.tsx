@@ -1,9 +1,10 @@
+
 // src/app/settings/page.tsx
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,7 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { UserCircle2, Bell, ShieldCheck, Palette, LogOut, HelpCircle, Info, Camera, Loader2, AlertCircle, LogIn } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "next-themes";
-import useAuth, { type AppUser } from '@/hooks/useAuth'; // Import AppUser type
+import useAuth from '@/hooks/useAuth';
 import { signOut, signIn } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -32,19 +33,24 @@ export default function SettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // Form state for user profile details - will be placeholders for now
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
 
 
   useEffect(() => {
-    setMounted(true);
+    setMounted(true); // Indicate component has mounted for theme select
     if (appUser) {
       setDisplayName(appUser.name || '');
-      setUsername(appUser.email?.split('@')[0] || ''); // Placeholder username
+      // For username, if your NextAuth session/token includes a username field, use that.
+      // Otherwise, derive from email or leave blank/allow user to set.
+      setUsername( (appUser as any).username || appUser.email?.split('@')[0] || ''); 
       setAvatarPreview(appUser.image || null);
+    } else if (!authLoading) { // If not loading and no user, reset fields
+        setDisplayName('');
+        setUsername('');
+        setAvatarPreview(null);
     }
-  }, [appUser]);
+  }, [appUser, authLoading]);
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -68,29 +74,39 @@ export default function SettingsPage() {
       return;
     }
     setIsSaving(true);
-    // Simulate saving settings (profile name, username, avatar)
-    // In a real app, this would involve API calls to update the user's profile in the database
-    // and upload the avatarFile if present.
+    
+    // Simulate saving settings. In a real app:
+    // 1. Call an API endpoint to update user profile in your database (name, username).
+    // 2. If avatarFile exists, upload it to storage (e.g., Cloudinary, S3, or your own server)
+    //    and get back the URL to save in the user's profile.
     console.log("Simulating saving settings for user:", appUser.email);
     console.log("New display name:", displayName);
     console.log("New username:", username);
     if (avatarFile) {
       console.log("New avatar file to upload:", avatarFile.name);
+      // Placeholder for avatar upload logic
     }
-    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
+    
     toast({
       title: "Settings Save Simulated",
-      description: "User profile changes are not persisted without a database.",
+      description: "User profile changes are not persisted. Database integration is needed.",
     });
+
+    // Optional: If NextAuth session needs updating after profile change,
+    // you might call `getSession()` or trigger a session update if your backend supports it.
+    // For now, client-side changes are just visual until a DB is in place.
+    
     setIsSaving(false);
-    // Optionally, refresh session if NextAuth supports it after profile update
-    // router.refresh(); or use getSession() to update client-side session
   };
 
   const handleLogout = async () => {
-    await signOut({ redirect: false });
+    setIsSaving(true); // Use isSaving to disable buttons during logout process
+    await signOut({ redirect: false, callbackUrl: '/' }); // Redirect to home after logout
     toast({ title: 'Logged Out', description: 'You have been successfully logged out.' });
-    router.push('/');
+    // router.push('/') is handled by callbackUrl, but good to be explicit if needed elsewhere
+    setIsSaving(false);
   };
   
   if (!mounted || authLoading) {
@@ -102,7 +118,7 @@ export default function SettingsPage() {
     );
   }
 
-  if (!isAuthenticated || !appUser) {
+  if (!isAuthenticated) { // Check if user is not authenticated after loading
     return (
        <div className="container mx-auto px-4 py-8 max-w-2xl">
         <h1 className="text-3xl font-headline font-bold mb-8 text-foreground">Settings</h1>
@@ -117,10 +133,10 @@ export default function SettingsPage() {
                   </p>
               </CardContent>
               <CardFooter className="flex flex-col space-y-3">
-                   <Button onClick={() => signIn()} className="w-full">
+                   <Button onClick={() => signIn()} className="w-full" disabled={isSaving}>
                         <LogIn className="mr-2 h-4 w-4" /> Login
                    </Button>
-                   <Button variant="outline" asChild className="w-full">
+                   <Button variant="outline" asChild className="w-full" disabled={isSaving}>
                       <Link href="/">Go to Homepage</Link>
                    </Button>
               </CardFooter>
@@ -129,7 +145,7 @@ export default function SettingsPage() {
     );
   }
 
-  // User is authenticated, show settings
+  // User is authenticated and appUser should be available
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
       <h1 className="text-3xl font-headline font-bold mb-8 text-foreground">Settings</h1>
@@ -137,14 +153,14 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center text-xl font-headline"><UserCircle2 className="mr-2 h-5 w-5 text-primary" /> Account</CardTitle>
-            <CardDescription>Manage your account information and profile picture. Current Email: {appUser.email}</CardDescription>
+            <CardDescription>Manage your account information and profile picture. Email: {appUser?.email}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col items-center space-y-4 sm:flex-row sm:space-y-0 sm:space-x-6">
               <div className="relative group">
                 <Avatar className="h-24 w-24 ring-2 ring-primary ring-offset-2 ring-offset-background">
-                  <AvatarImage src={avatarPreview || `https://placehold.co/100x100.png?text=${displayName.charAt(0) || 'U'}`} alt={displayName || "User avatar"} data-ai-hint="profile avatar" />
-                  <AvatarFallback>{displayName ? displayName.charAt(0).toUpperCase() : 'U'}</AvatarFallback>
+                  <AvatarImage src={avatarPreview || `https://placehold.co/100x100.png?text=${displayName ? displayName.charAt(0).toUpperCase() : 'U'}`} alt={displayName || "User avatar"} data-ai-hint="profile avatar" />
+                  <AvatarFallback>{displayName ? displayName.charAt(0).toUpperCase() : (appUser?.name ? appUser.name.charAt(0).toUpperCase() : 'U')}</AvatarFallback>
                 </Avatar>
                 <Button
                   variant="outline"
@@ -171,8 +187,9 @@ export default function SettingsPage() {
                   <Input id="displayName" value={displayName} onChange={(e) => setDisplayName(e.target.value)} disabled={isSaving} />
                 </div>
                 <div>
-                  <Label htmlFor="username">Username (derived from email for now)</Label>
-                  <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} disabled={isSaving} />
+                  <Label htmlFor="username">Username</Label>
+                  <Input id="username" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="e.g., cooluser123" disabled={isSaving} />
+                   <p className="text-xs text-muted-foreground mt-1">This will be your public @username. (Feature in development)</p>
                 </div>
               </div>
             </div>
@@ -183,7 +200,7 @@ export default function SettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center text-xl font-headline"><Bell className="mr-2 h-5 w-5 text-primary" /> Notifications</CardTitle>
-            <CardDescription>Configure your notification preferences.</CardDescription>
+            <CardDescription>Configure your notification preferences. (Settings not yet functional)</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
@@ -219,20 +236,22 @@ export default function SettingsPage() {
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="theme">Theme</Label>
-              <Select value={theme} onValueChange={setTheme} disabled={isSaving}>
-                <SelectTrigger id="theme">
-                  <SelectValue placeholder="Select theme" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="light">Light</SelectItem>
-                  <SelectItem value="dark">Dark</SelectItem>
-                  <SelectItem value="system">System</SelectItem>
-                </SelectContent>
-              </Select>
+              {mounted && ( // Ensure theme select only renders client-side
+                <Select value={theme} onValueChange={setTheme} disabled={isSaving}>
+                  <SelectTrigger id="theme">
+                    <SelectValue placeholder="Select theme" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="light">Light</SelectItem>
+                    <SelectItem value="dark">Dark</SelectItem>
+                    <SelectItem value="system">System</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
              <div className="flex items-center justify-between">
-              <Label htmlFor="compact-mode" className="flex-grow">Compact Mode</Label>
-              <Switch id="compact-mode" disabled={isSaving}/>
+              <Label htmlFor="compact-mode" className="flex-grow">Compact Mode (Not Implemented)</Label>
+              <Switch id="compact-mode" disabled={isSaving || true}/>
             </div>
           </CardContent>
         </Card>
@@ -255,25 +274,29 @@ export default function SettingsPage() {
         <Separator />
 
         <div className="space-y-2">
-           <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-foreground">
-            <HelpCircle className="mr-2 h-5 w-5" /> Help & Support
+           <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-foreground" disabled>
+            <HelpCircle className="mr-2 h-5 w-5" /> Help & Support (Not Implemented)
           </Button>
-          <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-foreground">
-            <Info className="mr-2 h-5 w-5" /> About PollitAGo
+          <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-foreground" disabled>
+            <Info className="mr-2 h-5 w-5" /> About PollitAGo (Not Implemented)
           </Button>
         </div>
 
         <Button variant="destructive" className="w-full" onClick={handleLogout} disabled={isSaving}>
-          <LogOut className="mr-2 h-5 w-5" /> Log Out
+          {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <LogOut className="mr-2 h-5 w-5" />}
+           Log Out
         </Button>
 
         <div className="mt-8 flex justify-end">
           <Button onClick={handleSaveChanges} className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSaving}>
             {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Save Changes
+            Save Changes (Simulated)
           </Button>
         </div>
       </div>
     </div>
   );
 }
+
+
+    

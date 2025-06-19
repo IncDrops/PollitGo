@@ -4,17 +4,20 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { Poll, User } from '@/types';
 import PollCard from './PollCard';
-import { fetchMorePolls } from '@/lib/mockData'; // mockUsers removed from here
+import { fetchMorePolls } from '@/lib/mockData';
 import { Loader2, Zap, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
-import useAuth from '@/hooks/useAuth'; // Import useAuth
+import useAuth from '@/hooks/useAuth'; // No changes needed here if already using it
+import { signIn } from 'next-auth/react';
 
 const pollCardVariants = {
   initial: { opacity: 0, y: 50, scale: 0.95 },
   animate: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 400, damping: 30 } },
   exit: (custom: 'left' | 'right' | 'default') => {
-    // ... (variants remain the same)
+    if (custom === 'left') return { x: "-100%", opacity: 0, transition: { duration: 0.3 } };
+    if (custom === 'right') return { x: "100%", opacity: 0, transition: { duration: 0.3 } };
+    return { opacity: 0, scale: 0.8, transition: { duration: 0.2 } }; // Default exit for non-swipe actions
   }
 };
 
@@ -27,7 +30,7 @@ interface PollFeedProps {
   onVoteCallback?: (pollId: string, optionId: string) => void;
   onPollActionCompleteCallback?: (pollId: string, swipeDirection?: 'left' | 'right') => void;
   onPledgeOutcomeCallback?: (pollId: string, outcome: 'accepted' | 'tipped_crowd') => void;
-  currentUser?: User | null; // This prop might still be passed from profile page using mockUser
+  currentUser?: User | null; 
 }
 
 export default function PollFeed({
@@ -35,49 +38,134 @@ export default function PollFeed({
   onVoteCallback,
   onPollActionCompleteCallback,
   onPledgeOutcomeCallback,
-  currentUser: propCurrentUser // Renamed to avoid conflict with hook's currentUser
+  currentUser: propCurrentUser 
 }: PollFeedProps) {
   const [polls, setPolls] = useState<Poll[]>(staticPolls || []);
-  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false); // Renamed from 'loading'
   const [hasMore, setHasMore] = useState(!staticPolls);
   const [initialLoadComplete, setInitialLoadComplete] = useState(!!staticPolls);
   const observer = useRef<IntersectionObserver | null>(null);
   const loaderTriggerRef = useRef<HTMLDivElement | null>(null);
 
-  const { user: authHookUser, loading: authLoading } = useAuth(); // Get user from hook (will be null)
-  const currentUser = propCurrentUser !== undefined ? propCurrentUser : authHookUser; // Prioritize prop, then hook
+  // Use useAuth hook for current user context if propCurrentUser is not provided
+  const { user: authHookUser, loading: authLoading, isAuthenticated } = useAuth();
+  const currentUser = propCurrentUser !== undefined ? propCurrentUser : authHookUser;
 
   const { toast } = useToast();
   const [exitDirectionMap, setExitDirectionMap] = useState<Record<string, 'left' | 'right' | 'default'>>({});
 
-  // useEffect for propCurrentUser and authHookUser sync removed as currentUser is now derived
-
   const loadMorePolls = useCallback(async (isInitial = false) => {
-    // ... (loadMorePolls logic remains largely the same)
-  }, [staticPolls, loading, hasMore, polls.length]);
+    if (staticPolls || loadingMore || !hasMore) return;
 
+    setLoadingMore(true);
+    try {
+      const newPolls = await fetchMorePolls(isInitial ? 0 : polls.length, BATCH_SIZE);
+      if (newPolls.length < BATCH_SIZE) {
+        setHasMore(false);
+      }
+      // Ensure no duplicate poll IDs are added
+      setPolls(prevPolls => {
+        const existingIds = new Set(prevPolls.map(p => p.id));
+        const uniqueNewPolls = newPolls.filter(p => !existingIds.has(p.id));
+        return [...prevPolls, ...uniqueNewPolls];
+      });
+    } catch (error) {
+      console.error("Failed to fetch more polls:", error);
+      toast({ title: "Error", description: "Could not load more polls.", variant: "destructive" });
+      setHasMore(false); // Stop trying if error
+    } finally {
+      setLoadingMore(false);
+      if (isInitial) setInitialLoadComplete(true);
+    }
+  }, [staticPolls, loadingMore, hasMore, polls.length, toast]);
 
-  // useEffects for loading polls remain largely the same
-  // ...
+  useEffect(() => {
+    if (!staticPolls && !initialLoadComplete) {
+      loadMorePolls(true);
+    }
+  }, [staticPolls, initialLoadComplete, loadMorePolls]);
+
+  useEffect(() => {
+    if (staticPolls || !hasMore || loadingMore || !loaderTriggerRef.current) return;
+
+    const currentObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          loadMorePolls();
+        }
+      },
+      { threshold: 0.5 } // Trigger when 50% visible
+    );
+    observer.current = currentObserver;
+    currentObserver.observe(loaderTriggerRef.current);
+
+    return () => {
+      if (currentObserver) {
+        currentObserver.disconnect();
+      }
+    };
+  }, [staticPolls, hasMore, loadingMore, loadMorePolls]);
 
   const handleVote = (pollId: string, optionId: string) => {
-    if (!currentUser) {
+    if (!isAuthenticated) { // Check NextAuth's isAuthenticated
         toast({title: "Login Required", description: "Please login to vote.", variant: "destructive"});
+        signIn(); // Prompt login
         return;
     }
     if (onVoteCallback) {
-      onVoteCallback(pollId, optionId);
+      onVoteCallback(pollId, optionId); // For profile page specific handling
       return;
     }
-    // ... (rest of vote logic, check for currentUser if needed for specific actions)
+    // Standard feed vote handling
+    setPolls(prevPolls =>
+      prevPolls.map(p => {
+        if (p.id === pollId && !p.isVoted) { // Check if this poll instance has been voted on by current user
+          const newTotalVotes = p.totalVotes + 1;
+          const updatedOptions = p.options.map(opt =>
+            opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
+          );
+          const votedOption = updatedOptions.find(opt => opt.id === optionId);
+
+          if (p.pledgeAmount && p.pledgeAmount > 0 && votedOption) {
+            const amountToDistributeToVoters = p.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
+            if ((amountToDistributeToVoters / votedOption.votes) < MIN_PAYOUT_PER_VOTER && votedOption.votes > 0) {
+              toast({
+                title: "Low Payout Warning",
+                description: `Your vote is counted! However, due to the current pledge and number of voters for this option, your potential PollitPoint payout might be below $${MIN_PAYOUT_PER_VOTER.toFixed(2)}.`,
+                variant: "default", duration: 7000,
+              });
+            } else {
+              toast({ title: "Vote Cast!", description: "Your vote has been recorded." });
+            }
+          } else {
+            toast({ title: "Vote Cast!", description: "Your vote has been recorded." });
+          }
+          return { ...p, options: updatedOptions, totalVotes: newTotalVotes, isVoted: true, votedOptionId: optionId };
+        }
+        return p;
+      })
+    );
   };
 
   const handlePollActionComplete = (pollIdToRemove: string, swipeDirection?: 'left' | 'right') => {
-     // ...
+     setExitDirectionMap(prev => ({ ...prev, [pollIdToRemove]: swipeDirection || 'default' }));
+     // Simulate removal after animation - in real app, this might come from backend
+     setTimeout(() => {
+        if (onPollActionCompleteCallback) {
+            onPollActionCompleteCallback(pollIdToRemove, swipeDirection);
+        } else {
+            setPolls(prevPolls => prevPolls.filter(p => p.id !== pollIdToRemove));
+        }
+        setExitDirectionMap(prev => {
+            const newMap = {...prev};
+            delete newMap[pollIdToRemove];
+            return newMap;
+        });
+     }, 500); // Match animation duration
   };
 
   const handlePledgeOutcome = (pollId: string, outcome: 'accepted' | 'tipped_crowd') => {
-    if (!currentUser || polls.find(p => p.id === pollId)?.creator.id !== currentUser.uid) {
+    if (!isAuthenticated || !currentUser || polls.find(p => p.id === pollId)?.creator.id !== currentUser.id) {
         toast({title: "Action Denied", description: "Only the poll creator can decide the pledge outcome.", variant: "destructive"});
         return;
     }
@@ -85,10 +173,15 @@ export default function PollFeed({
       onPledgeOutcomeCallback(pollId, outcome);
       return;
     }
-    // ...
+    setPolls(prevPolls =>
+      prevPolls.map(p =>
+        p.id === pollId ? { ...p, pledgeOutcome: outcome } : p
+      )
+    );
+    toast({ title: `Pledge Outcome: ${outcome.replace('_', ' ')}`, description: "Action simulated on client."});
   };
 
-  if (!staticPolls && !initialLoadComplete && (loading || authLoading) && polls.length === 0) {
+  if (!staticPolls && !initialLoadComplete && (loadingMore || authLoading) && polls.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
         <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
@@ -97,7 +190,15 @@ export default function PollFeed({
     );
   }
   
-  // ... (other loading/empty states remain similar)
+  if (polls.length === 0 && (initialLoadComplete || staticPolls)) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
+        <Zap className="h-16 w-16 text-muted-foreground/50 mb-4" />
+        <h3 className="text-xl font-semibold text-foreground">No Polls Yet!</h3>
+        <p className="text-muted-foreground">Be the first to create one or check back soon.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full space-y-0 relative">
@@ -111,21 +212,35 @@ export default function PollFeed({
             initial="initial"
             animate="animate"
             exit="exit"
-            className="min-h-[1px]"
+            className="min-h-[1px]" // Prevents layout shift during exit animation
           >
             <PollCard
               poll={poll}
               onVote={handleVote}
               onPollActionComplete={handlePollActionComplete}
-              currentUser={currentUser} // Pass derived currentUser
+              currentUser={currentUser}
               onPledgeOutcome={handlePledgeOutcome}
             />
           </motion.div>
         ))}
       </AnimatePresence>
 
-      {/* Loader trigger and end-of-feed messages remain similar */}
-      {/* ... */}
+      {!staticPolls && hasMore && (
+        <div ref={loaderTriggerRef} className="flex justify-center items-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <span className="ml-2 text-muted-foreground">Loading more polls...</span>
+        </div>
+      )}
+
+      {!staticPolls && !hasMore && polls.length > 0 && (
+         <div className="text-center py-10 text-muted-foreground">
+            <Zap className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p>You&apos;ve reached the end of the polls!</p>
+        </div>
+      )}
     </div>
   );
 }
+
+
+    
