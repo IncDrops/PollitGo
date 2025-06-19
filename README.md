@@ -117,9 +117,13 @@ Your Next.js application includes an API route at `src/app/api/stripe/create-che
         STRIPE_SECRET_KEY=sk_test_YOUR_STRIPE_SECRET_KEY_HERE
         NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_YOUR_STRIPE_PUBLISHABLE_KEY_HERE
         ```
-    *   Replace placeholders with your actual Stripe keys. The `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is used on the client-side.
-    *   **Important:** The `STRIPE_SECRET_KEY` used by this API route is *different* from the *restricted API key* (`rk_test_...`) used by the Stripe Firebase Extension. The extension's key has limited permissions for its specific tasks, while your API route needs broader permissions to create checkout sessions.
-    *   Ensure `.env.local` is listed in your `.gitignore` file.
+    *   Replace placeholders with your actual Stripe keys. The `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is used on the client-side for Stripe.js.
+    *   **Important Distinction:**
+        *   The **`STRIPE_SECRET_KEY` (`sk_...`)** used by this Next.js API route is your **full Stripe Secret Key**. It's needed by *your application's backend code* to perform privileged operations like creating checkout sessions.
+        *   The **Restricted API Key (`rk_...`)** configured for the Stripe Firebase Extension is *different*. It has limited permissions specifically for the extension's tasks (like syncing data and handling its own webhook events).
+        *   It is correct and secure to use these two different keys for their respective purposes.
+    *   Ensure `.env.local` is listed in your `.gitignore` file to prevent committing your secret keys.
+    *   For deployed environments (like Firebase Hosting if you also deploy Next.js functions, or other hosting providers), you will need to set `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` as server-side environment variables through your hosting provider's settings.
 
 ## Custom Webhook Handler (`functions/src/index.ts`)
 
@@ -130,7 +134,7 @@ The `functions/src/index.ts` file in your project is for any *custom* webhook ha
 
 ## Deploying Firebase Configurations
 
-*   **Firestore Rules:**
+*   **Firestore Rules & Indexes:**
     ```bash
     firebase deploy --only firestore
     ```
@@ -138,12 +142,13 @@ The `functions/src/index.ts` file in your project is for any *custom* webhook ha
     ```bash
     firebase deploy --only functions
     ```
+    (Note: The Stripe Firebase Extension deploys its *own* functions automatically. This command is for *your* custom functions in the `functions` directory).
 
-**Testing the Payment Flow:**
+## Testing the Payment Flow
 1.  Ensure `STRIPE_SECRET_KEY` and `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` are set in `.env.local`.
-2.  Restart your Next.js development server if you just added/modified `.env.local`.
+2.  Restart your Next.js development server if you just added/modified `.env.local` (`npm run dev`).
 3.  Attempt a pledge or tip in your application.
 4.  Verify redirection to Stripe Checkout and back to your success/cancel pages.
-5.  Check Stripe Dashboard for payment and customer records.
-6.  Check Firebase Extension logs and Stripe webhook logs for `checkout.session.completed` events.
+5.  Check Stripe Dashboard for payment and customer records (in test mode).
+6.  Check Firebase Extension logs (Firebase Console > Extensions > Your Stripe Extension > Logs) and Stripe webhook logs (Stripe Dashboard > Developers > Webhooks > Your Extension Endpoint > Events) for `checkout.session.completed` events.
     
