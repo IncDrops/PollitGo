@@ -233,6 +233,7 @@ export default function NewPollPage() {
 
     if (numericPledgeAmount > 0 && stripe && currentUser) {
       try {
+        console.log("Attempting to create Stripe session with amount:", numericPledgeAmount * 100);
         toast({
           title: 'Processing Pledge...',
           description: `Your pledge of $${numericPledgeAmount.toFixed(2)} is being prepared. You'll be redirected to Stripe.`,
@@ -250,6 +251,8 @@ export default function NewPollPage() {
         });
         
         const sessionData = await response.json();
+        console.log("Stripe session response:", sessionData);
+
 
         if (!response.ok) {
           const apiErrorMessage = sessionData.error || `Server Error: ${response.status}. Please ensure your STRIPE_SECRET_KEY is correctly set in .env.local and your server restarted.`;
@@ -266,6 +269,7 @@ export default function NewPollPage() {
           throw new Error('Failed to retrieve Stripe session ID from server.');
         }
       } catch (error: any) {
+        console.error("Stripe submission error:", error);
         toast({ title: "Pledge Failed", description: error.message || "Could not process pledge. Check console for details.", variant: "destructive", duration: 7000 });
         setIsSubmitting(false);
         return;

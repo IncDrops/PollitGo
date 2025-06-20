@@ -139,7 +139,6 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
   }, [poll]);
 
   const controls = useAnimationControls();
-  const longPressTimer = React.useRef<NodeJS.Timeout | null>(null);
 
   const [selectedOptionForModal, setSelectedOptionForModal] = useState<PollOptionType | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -152,23 +151,6 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
         toast({title: "Login Required", description: "Please login to vote.", variant:"destructive"});
         signIn();
         return;
-    }
-    
-    if (currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0) {
-        const votedOption = currentPoll.options.find(opt => opt.id === optionId);
-        if (votedOption) {
-            const amountToDistributeToVoters = currentPoll.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
-            const votesAfterThisUsersVote = votedOption.votes + 1;
-            if ((amountToDistributeToVoters / votesAfterThisUsersVote) < MIN_PAYOUT_PER_VOTER && votesAfterThisUsersVote > 0) {
-                setTimeout(() => {
-                  toast({
-                      title: "Low Payout Warning",
-                      description: `Your vote is counted! Potential PollitPoint payout might be low.`,
-                      variant: "default", duration: 7000,
-                  });
-                }, 100);
-            }
-        }
     }
     onVote(currentPoll.id, optionId);
   };
@@ -183,7 +165,8 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
     }
     setIsLikingInProgress(true);
     onToggleLike(currentPoll.id);
-    await new Promise(resolve => setTimeout(resolve, 300));
+    // The delay helps prevent spamming, but the state update is now handled by the parent
+    await new Promise(resolve => setTimeout(resolve, 300)); 
     setIsLikingInProgress(false);
   };
 
@@ -202,6 +185,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
         transition: { duration: 0.3, ease: "easeIn" },
       });
       
+      // Pause to allow parent state to update
       await new Promise(resolve => setTimeout(resolve, 500));
 
       controls.set({
@@ -219,25 +203,6 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
     preventScrollOnSwipe: true,
   });
 
-  const clearLongPressTimer = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  }, []);
-  
-  const handlePointerDown = useCallback((event: React.PointerEvent) => {
-    if (event.pointerType === 'mouse' && event.button !== 0) return;
-    clearLongPressTimer();
-    longPressTimer.current = setTimeout(() => {
-      router.push(`/profile/${currentPoll.creator.id}`);
-      longPressTimer.current = null;
-    }, 800);
-  }, [clearLongPressTimer, router, currentPoll.creator.id]);
-
-  const handlePointerUp = useCallback(() => {
-    clearLongPressTimer();
-  }, [clearLongPressTimer]);
 
   useEffect(() => {
     const deadlineDate = parseISO(currentPoll.deadline);
@@ -356,9 +321,6 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
       <motion.div
         layout
         {...(canSwipe ? swipeHandlers : {})}
-        onPointerDown={handlePointerDown}
-        onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp}
         onDoubleClick={() => handleInternalToggleLike()}
         className="w-full touch-pan-y"
         animate={controls}
