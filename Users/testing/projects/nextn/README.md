@@ -70,7 +70,9 @@ The `.env.local` file is **NOT** used in deployed environments. You **MUST** con
 *   **`NEXTAUTH_URL`**:
     *   **Value:** Set to the **full public URL of that specific deployment**.
         *   **For Vercel (e.g., `www.pollitago.com`):** This **MUST BE** `https://www.pollitago.com` (or your actual Vercel domain, e.g., `https://your-project-name.vercel.app`). **It CANNOT be `http://localhost:9003` on Vercel.**
-        *   **For Firebase Studio Prototypes (Google Cloud Build):** This **MUST BE** the full public URL of your prototype (e.g., `https://your-prototype-id.cloudworkstations.dev`). **It CANNOT be `http://localhost:9003` during the prototype's cloud build.**
+        *   **For Firebase Studio Prototypes (Google Cloud Build):**
+            *   **Find Your Prototype URL:** When you launch a prototype in Firebase Studio, the interface will display its public URL (e.g., `https://your-prototype-id-random-string.region.cloudworkstations.dev`). This URL is unique to your prototype instance. You can also find it in the Firebase Studio deployment logs or where active prototypes are listed.
+            *   **Set in Google Cloud Build:** This **MUST BE** the full public URL of your prototype. **It CANNOT be `http://localhost:9003` during the prototype's cloud build.**
     *   **Importance:** Critical for redirects, callbacks, and NextAuth.js to know its own address. **An incorrect `NEXTAUTH_URL` in the build environment can lead to build errors like "missing `app-build-manifest.json`".**
 
 *   **`NEXTAUTH_SECRET`**:
@@ -86,7 +88,7 @@ The `.env.local` file is **NOT** used in deployed environments. You **MUST** con
 *   **`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`**:
     *   **Value:**
         *   **For LIVE Production:** Your **LIVE** Stripe Publishable Key (starts with `pk_live_...`).
-        *   **For Test/Staging Deployments:** Your **TEST** Stripe Publishable Key (starts with `pk_test_...`).
+        *   **For Test/Staging Deployments (including Firebase Studio Prototypes):** Your **TEST** Stripe Publishable Key (starts with `pk_test_...`).
     *   **Importance:** Required for client-side Stripe.js. If missing or incorrect for the environment, Stripe payment forms will break (potentially causing the "client-side exception" on the "New Poll" page). The app logs a "CRITICAL STRIPE ERROR" to the browser console if this is missing.
 
 **Verifying Stripe Keys:**
@@ -118,7 +120,7 @@ This error means Next.js could **NOT** complete the build for that specific auth
 2.  **`NEXTAUTH_URL` is INCORRECT for the BUILD ENVIRONMENT.**
     *   **Why:** NextAuth.js needs to know its own public address.
     *   **For Vercel:** **MUST** be the full public URL of THAT Vercel deployment (e.g., `https://www.pollitago.com` or `https://your-project.vercel.app`). **IT CANNOT BE `http://localhost:9003` ON VERCEL.**
-    *   **For Firebase Studio Prototypes:** **MUST** be the full public URL of THAT specific prototype (e.g., `https://your-prototype-id.cloudworkstations.dev`). **IT CANNOT BE `http://localhost:9003` during the prototype's cloud build.**
+    *   **For Firebase Studio Prototypes:** **MUST** be the full public URL of THAT specific prototype (e.g., `https://your-prototype-id.cloudworkstations.dev` - find this URL in your Firebase Studio interface or deployment logs). **IT CANNOT BE `http://localhost:9003` during the prototype's cloud build.**
 
 **VERCEL DEPLOYMENT - MOST CRITICAL CHECKLIST:**
     *   Go to your Vercel Project Dashboard -> **Settings -> Environment Variables**.
@@ -127,20 +129,27 @@ This error means Next.js could **NOT** complete the build for that specific auth
         *   Is its value **EXACTLY** the strong, random string you generated? (Check for typos, extra spaces, or if it's accidentally empty. Copy-paste carefully.)
     *   **2. `NEXTAUTH_URL`:**
         *   Does it exist?
-        *   Is its value the **full public URL of THAT Vercel deployment** (e.g., `https://www.pollitago.com`)?
+        *   Is its value the **full public URL of THAT Vercel deployment** (e.g., `https://www.pollitago.com`)? **IT MUST START WITH `https://` FOR VERCEL.**
     *   **3. Redeploy:** After confirming or changing these, **YOU MUST TRIGGER A NEW BUILD/DEPLOYMENT** on Vercel for the changes to take effect. Use the "Redeploy" option.
 
 **FIREBASE STUDIO PROTOTYPES / GOOGLE CLOUD BUILD - MOST CRITICAL CHECKLIST:**
     *   These builds get their environment variables from the Google Cloud Build configuration.
-    *   **1. `NEXTAUTH_SECRET`:**
-        *   Ensure this is set as an environment variable (or substitution variable) in the Google Cloud Build trigger that Firebase Studio uses.
-        *   The value must be **EXACTLY** your strong, random secret.
-    *   **2. `NEXTAUTH_URL`:**
-        *   Ensure this is set to the **prototype's full public URL** (e.g., `https://your-prototype-id.cloudworkstations.dev`) in the Google Cloud Build trigger.
-    *   **How to set for Prototypes:** This can be tricky. If Firebase Studio doesn't offer a direct UI for build-time environment variables, you might need to:
+    *   **1. Find Your Prototype URL:**
+        *   When you launch a prototype in Firebase Studio, the UI or logs will show its unique public URL (e.g., `https://<prototype-id>.cloudworkstations.dev` or similar). **You need this exact URL.**
+    *   **2. Configure Google Cloud Build Trigger:**
         *   Go to Google Cloud Console -> Cloud Build -> Triggers.
         *   Find the trigger associated with your Firebase Studio prototype.
-        *   Edit the trigger. Look for "Advanced" settings or "Substitution variables" / "Environment variables" sections to add/update `NEXTAUTH_SECRET` and `NEXTAUTH_URL`.
+        *   Edit the trigger. Look for "Advanced" settings or **"Substitution variables"** (most common).
+        *   Add/Update the following substitution variables (Cloud Build often prefers variables start with an underscore, but check their docs or try both):
+            *   **Variable Name:** `_NEXTAUTH_URL` (or `NEXTAUTH_URL`)
+            *   **Value:** The **exact, full public URL of your prototype** (e.g., `https://your-prototype-id.cloudworkstations.dev`).
+            *   **Variable Name:** `_NEXTAUTH_SECRET` (or `NEXTAUTH_SECRET`)
+            *   **Value:** Your **exact, strong, random NextAuth secret string**.
+            *   **Variable Name:** `_NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (or `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`)
+            *   **Value:** Your **Stripe TEST Publishable Key** (`pk_test_...`).
+            *   **Variable Name:** `_STRIPE_SECRET_KEY` (or `STRIPE_SECRET_KEY`)
+            *   **Value:** Your **Stripe TEST Secret Key** (`sk_test_...`).
+        *   **Save the trigger.**
     *   **3. Rebuild Prototype:** After making changes in Google Cloud Build, trigger a new build/deployment of your prototype from Firebase Studio.
 
 **LOCAL DEVELOPMENT (If building locally with `npm run build` or seeing similar issues with `npm run dev`):**
@@ -158,7 +167,7 @@ This usually means JavaScript code running in the browser encountered an unrecov
     *   **Check Browser Console:** Your application logs a "CRITICAL STRIPE ERROR" to the browser's Developer Tools Console if this key is not found or is empty when `src/app/layout.tsx` loads. Open the console (usually F12) and look for this message.
     *   **Local Development:** Ensure `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (your **TEST** key `pk_test_...`) is correctly set in `.env.local`. Restart your dev server.
     *   **Vercel Deployment:** Ensure `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (your **LIVE** key `pk_live_...` if it's production, or **TEST** key if it's a test deployment) is correctly set in Vercel Environment Variables. Redeploy after changes.
-    *   **Firebase Studio Prototype:** Ensure `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (your **TEST** key `pk_test_...`) is set in the Google Cloud Build environment variables for the prototype. Rebuild the prototype.
+    *   **Firebase Studio Prototype:** Ensure `_NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` (or `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`) with your **TEST** key (`pk_test_...`) is set in the Google Cloud Build substitution variables for the prototype. Rebuild the prototype.
 
 2.  **Other JavaScript Errors:**
     *   Check the browser's Developer Console for any other JavaScript errors that might be occurring before or after the Stripe-related issue.
