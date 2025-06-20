@@ -5,7 +5,7 @@ This is a NextJS starter in Firebase Studio.
 
 ## Environment Variables: Crucial for Local & Deployed Apps
 
-This project relies heavily on environment variables for configuration. **Incorrectly configured environment variables in your BUILD ENVIRONMENT (Google Cloud Build for prototypes) are the most common cause of build failures (like "missing `app-build-manifest.json`") and runtime errors (like "client-side exception", "Stripe checkout session missing", or "Firebase is blocking Next").**
+This project relies heavily on environment variables for configuration. **Incorrectly configured environment variables in your BUILD ENVIRONMENT (Google Cloud Build for prototypes) are the most common cause of build failures (like "missing `app-build-manifest.json`" or "Firebase is blocking Next") and runtime errors (like "client-side exception", "Stripe checkout session missing").**
 
 ### For Local Development: `.env.local` File (Project Root)
 
@@ -94,7 +94,7 @@ When you launch or update a prototype in Firebase Studio, the interface will dis
 3.  Find and **Edit** the trigger associated with your Firebase Studio prototype.
 4.  Scroll down to the **"Advanced"** section and find **"Substitution variables"**.
 5.  Click **"Add variable"** for each of the following (ensure variable names start with an underscore `_` as per Cloud Build convention).
-    *   **IMPORTANT:** When pasting values, do **NOT** wrap them in quotation marks.
+    *   **IMPORTANT: When pasting values, do NOT wrap them in quotation marks.**
 
     *   **Variable Name:** `_NEXTAUTH_URL`
         *   **Value:** Paste the **full public URL of THIS Firebase Studio prototype** you copied earlier.
@@ -112,8 +112,8 @@ When you launch or update a prototype in Firebase Studio, the interface will dis
             *   **Value:** Your **LIVE** Stripe Secret Key (starts with `sk_live_...`).
             *   **Importance:** Required for backend Stripe API calls in the deployed app.
 
-    *   **Firebase Variables (If using Firebase Services like Storage):**
-        *   If you are using any Firebase services (e.g., Firebase Storage for image uploads), these variables are **MANDATORY** for the deployed prototype. Missing or incorrect Firebase config can lead to build failures or runtime errors (e.g., "Firebase is blocking Next" or app crashes).
+    *   **Firebase Variables (MANDATORY IF USING FIREBASE SERVICES):**
+        *   If you are using any Firebase services (e.g., Firebase Storage for image uploads), these variables are **MANDATORY** for the deployed prototype. Missing or incorrect Firebase config can lead to build failures (e.g., "Firebase is blocking Next") or runtime errors.
         *   Add each of your Firebase project config keys here, prefixed with `_NEXT_PUBLIC_FIREBASE_`. For example:
             *   `_NEXT_PUBLIC_FIREBASE_API_KEY` (Value: YOUR_FIREBASE_API_KEY)
             *   `_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` (Value: YOUR_FIREBASE_AUTH_DOMAIN)
@@ -154,10 +154,18 @@ When you launch or update a prototype in Firebase Studio, the interface will dis
     *   Check Browser Console for "CRITICAL STRIPE ERROR" (if publishable key is bad on client).
     *   Check Cloud Run logs for errors from `/api/stripe/create-checkout-session` (if secret key is bad on server).
     *   Redeploy after fixing.
-2.  **Firebase SDK Initialization Failure (if using Firebase features):**
-    *   If "Firebase is blocking Next" or you see Firebase errors in console/logs:
-    *   Ensure all `_NEXT_PUBLIC_FIREBASE_...` variables are correctly set in the Cloud Build Trigger (no quotes).
-    *   The file `src/lib/firebase.ts` logs specific errors if core Firebase config keys are missing. If Firebase is not used, consider removing the SDK.
+
+### C. BUILD ERROR or RUNTIME ERROR: "Firebase is blocking Next" / Firebase SDK initialization failures
+
+**PRIMARY CAUSE: `_NEXT_PUBLIC_FIREBASE_...` variables are MISSING or INCORRECT in the Google Cloud Build Trigger.**
+
+**SOLUTION:**
+1.  **Verify ALL Firebase Configuration Variables:** Go to your Firebase project settings (Project Overview > Project settings > General > Your apps > SDK setup and configuration - "Config").
+2.  **In Google Cloud Build Trigger > Substitution variables:**
+    *   Ensure you have **ALL** the required Firebase config variables added, each prefixed with `_NEXT_PUBLIC_FIREBASE_` (e.g., `_NEXT_PUBLIC_FIREBASE_API_KEY`, `_NEXT_PUBLIC_FIREBASE_PROJECT_ID`, etc.).
+    *   Double-check that the values pasted are **EXACTLY** correct and **DO NOT HAVE QUOTATION MARKS** around them.
+    *   The `src/lib/firebase.ts` file attempts to initialize the SDK. If these keys are missing or wrong in the build environment, the build can fail, or the deployed app will have runtime errors when trying to use Firebase services (like Storage).
+3.  **REBUILD/REDEPLOY PROTOTYPE** from Firebase Studio after confirming.
 
 ---
 
@@ -187,4 +195,3 @@ For local development, Genkit uses Application Default Credentials (`gcloud auth
 ## Vercel Deployment (Currently Not Focused)
 
 This section remains for informational purposes if you decide to deploy to Vercel later. You would configure similar environment variables (using LIVE keys for production) in Vercel Project Settings.
-```
