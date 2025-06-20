@@ -30,8 +30,7 @@ steps:
       - 'NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=${_NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID}'
       # Server-side secrets like NEXTAUTH_SECRET and STRIPE_SECRET_KEY are generally
       # needed by the *runtime* environment, not directly by `npm run build`.
-      # However, they are available in the build environment if needed. For this Next.js build,
-      # we are focusing on variables typically consumed by the build process.
+      # They are available if needed, but `npm run build` doesn't usually consume them directly.
 
 # The output of `npm run build` (typically the .next folder) is what Firebase App Hosting
 # expects to deploy. Firebase's integration usually handles picking up this artifact.

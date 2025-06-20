@@ -138,17 +138,17 @@ When you launch or update a prototype in Firebase Studio, the interface will dis
 Your Cloud Build trigger can be configured in two main ways:
 
 1.  **Buildpacks (Recommended for Firebase App Hosting & Next.js):**
-    *   Set the trigger "Type" to "Buildpacks".
+    *   Set the trigger **"Type"** to **"Buildpacks"**.
     *   Cloud Build automatically detects your Next.js app and builds it.
     *   You **do not need** a `cloudbuild.yaml` file in your repository with this setting.
 
 2.  **Cloud Build configuration file (yaml or json):**
-    *   Set the trigger "Type" to "Cloud Build configuration file (yaml or json)".
-    *   You **must** have a `cloudbuild.yaml` (or JSON) file in your repository (e.g., at the root).
+    *   Set the trigger **"Type"** to **"Cloud Build configuration file (yaml or json)"**.
+    *   You **must** have a `cloudbuild.yaml` (or JSON) file in your repository (e.g., at the root). A basic one has been created for you in `cloudbuild.yaml`.
     *   In the trigger settings, under "Location", specify the path to this file (e.g., `cloudbuild.yaml`).
-    *   This file gives you manual control over each build step. A basic one has been provided in `cloudbuild.yaml` in this project.
+    *   This file gives you manual control over each build step.
 
-**IMPORTANT:** The error "Failed to trigger build: if 'build.service\_account' is specified..." is related to the trigger's logging configuration when using a user-managed service account. This needs to be resolved at the trigger level, potentially using `gcloud` commands to set the logging mode (e.g., to `CLOUD_LOGGING_ONLY` or `NONE`), regardless of whether you use Buildpacks or a `cloudbuild.yaml` file.
+**IMPORTANT: The error "Failed to trigger build: if 'build.service\_account' is specified..." is related to the trigger's logging configuration when using a user-managed service account. This needs to be resolved at the trigger level, potentially using `gcloud` commands to set the logging mode (e.g., to `CLOUD_LOGGING_ONLY` or `NONE`), regardless of whether you use Buildpacks or a `cloudbuild.yaml` file. See Troubleshooting section D.**
 
 ---
 
@@ -188,14 +188,22 @@ Your Cloud Build trigger can be configured in two main ways:
 
 ### D. TRIGGER ERROR: "Failed to trigger build: if 'build.service_account' is specified..."
 
-**PRIMARY CAUSE: The Cloud Build trigger's logging configuration is incompatible with the use of a user-managed service account due to organization policy.**
+**This error means the Cloud Build trigger's logging configuration is incompatible with using a user-managed service account, likely due to an organization policy.**
 
-**SOLUTION:**
-1.  Update the trigger's logging mode using the `gcloud` command-line tool. Run one of these from Cloud Shell or your local `gcloud` CLI (replace `YOUR_TRIGGER_REGION`):
-    *   `gcloud beta builds triggers update PollitGo --region=YOUR_TRIGGER_REGION --update-logging=CLOUD_LOGGING_ONLY`
-    *   OR: `gcloud beta builds triggers update PollitGo --region=YOUR_TRIGGER_REGION --update-logging=NONE`
-2.  This modifies the trigger directly to satisfy the logging requirement.
-3.  After successfully running the command, try to **Run** the trigger again from the Cloud Console.
+**SOLUTION: UPDATE TRIGGER LOGGING MODE VIA `gcloud`**
+1.  **Open Cloud Shell** in the Google Cloud Console or use your local `gcloud` CLI, ensuring you're authenticated to the correct project (`pollitgo`).
+2.  **Identify your trigger's region** (e.g., `us-central1`, `europe-west1`). You can find this on the Cloud Build Triggers page.
+3.  Run one of the following commands to update the logging mode for your "PollitGo" trigger (replace `YOUR_TRIGGER_REGION`):
+    *   **Recommended first try:**
+        ```bash
+        gcloud beta builds triggers update PollitGo --region=YOUR_TRIGGER_REGION --update-logging=CLOUD_LOGGING_ONLY
+        ```
+    *   If the above gives an error or doesn't resolve the issue, try:
+        ```bash
+        gcloud beta builds triggers update PollitGo --region=YOUR_TRIGGER_REGION --update-logging=NONE
+        ```
+4.  These commands directly modify the trigger's configuration to satisfy the logging requirement that the UI might not expose.
+5.  After successfully running the `gcloud` command, try to **Run** the trigger again from the Cloud Console or redeploy from Firebase Studio. This "Failed to trigger build..." error should now be resolved. If the build starts but fails later, check the build logs for new errors.
 
 ---
 
