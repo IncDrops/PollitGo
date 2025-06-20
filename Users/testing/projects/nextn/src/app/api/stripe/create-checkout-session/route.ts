@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Initialize Stripe client inside the handler
-  // This is crucial for build processes that might analyze routes without full runtime env vars
+  // This is crucial for picking up environment variable changes without full server restarts in some environments
   const stripe = new Stripe(stripeSecretKey, {
     apiVersion: STRIPE_API_VERSION,
     typescript: true, // Recommended for type safety
@@ -80,13 +80,7 @@ export async function POST(request: NextRequest) {
         message: error.message,
       };
       // You could set specific status codes based on error.type
-      // For example, for card errors, Stripe might suggest a 402 status.
-      // switch (error.type) {
-      //   case 'StripeCardError':
-      //     statusCode = 402; // Payment Required
-      //     break;
-      //   // Handle other specific Stripe error types
-      // }
+      // For card errors, Stripe suggests a 402, but we'll stick with 500/400 for simplicity unless needed
     }
     
     return NextResponse.json(
