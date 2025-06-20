@@ -1,5 +1,4 @@
 
-
 # Firebase Studio Project: PollitAGo
 
 This is a NextJS starter in Firebase Studio.
@@ -214,16 +213,19 @@ The most direct way to resolve this, especially if the UI options in the Cloud C
     *   In your Cloud Shell or terminal, run: `gcloud config set project pollitago`
         (Replace `pollitago` if your Project ID is different).
 
-3.  **Identify your trigger's region** (e.g., `us-central1`, `europe-west1`). You can find this on the Cloud Build Triggers page in the Google Cloud Console.
+3.  **Identify your trigger's exact name and region.**
+    *   Go to the [Google Cloud Console](https://console.cloud.google.com/), navigate to **Cloud Build > Triggers**.
+    *   Carefully note the **exact Name** (it's case-sensitive) and **Region** of your trigger (e.g., `PollitGo`, `us-central1`).
+    *   The error `Invalid choice: 'PollitGo'` means the name you used in the command didn't match. Double-check it.
 
-4.  Run one of the following commands to update the logging mode for your "PollitGo" trigger (replace `YOUR_TRIGGER_REGION` with the actual region):
+4.  Run one of the following commands to update the logging mode for your trigger (replace `YOUR_TRIGGER_NAME` and `YOUR_TRIGGER_REGION` with the actual values you just verified):
     *   **Recommended first try:**
         ```bash
-        gcloud beta builds triggers update PollitGo --region=YOUR_TRIGGER_REGION --update-logging=CLOUD_LOGGING_ONLY
+        gcloud beta builds triggers update YOUR_TRIGGER_NAME --region=YOUR_TRIGGER_REGION --update-logging=CLOUD_LOGGING_ONLY
         ```
     *   If the above gives an error or doesn't resolve the issue, try:
         ```bash
-        gcloud beta builds triggers update PollitGo --region=YOUR_TRIGGER_REGION --update-logging=NONE
+        gcloud beta builds triggers update YOUR_TRIGGER_NAME --region=YOUR_TRIGGER_REGION --update-logging=NONE
         ```
 5.  These commands directly modify the trigger's configuration to satisfy the logging storage requirement that the Cloud Console UI might not expose for user-managed service accounts under certain organization policies.
 6.  After successfully running the `gcloud` command, try to **Run** the trigger again from the Cloud Console or redeploy from Firebase Studio. This "Failed to trigger build..." error should now be resolved. If the build starts but fails later (e.g., with "Firebase is blocking Next" or "Could not find valid build file"), check the build logs for those new errors and address them based on other troubleshooting sections (like ensuring `cloudbuild.yaml` is pushed to GitHub if you're using it).
@@ -293,4 +295,3 @@ For local development, Genkit uses Application Default Credentials (`gcloud auth
 ## Vercel Deployment (Currently Not Focused)
 
 This section remains for informational purposes if you decide to deploy to Vercel later. You would configure similar environment variables (using LIVE keys for production) in Vercel Project Settings.
-
