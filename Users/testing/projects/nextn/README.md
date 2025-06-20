@@ -156,17 +156,18 @@ If you previously used Firebase services and had environment variables like `NEX
 
 If you see "Application error: a client-side exception has occurred" or "Stripe is not available for pledges" on the "New Poll" page:
 
-1.  **Open Browser Developer Tools (Console tab).**
+1.  **Open Browser Developer Tools (Console tab).** Look for specific error messages.
 2.  **Check `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`**:
     *   Ensure this is correctly set in your `.env.local` (for local) AND in your Vercel / Google Cloud Build environment variables for the deployed version. It must be the correct **test key** for local/prototypes/test deployments, and **live key** for live production.
     *   The `src/app/layout.tsx` logs a "CRITICAL STRIPE ERROR" to the browser console if this key is not found or empty when the page loads.
     *   If Stripe.js fails to load, other dependent JavaScript might error out, or the pledge input might be disabled when it shouldn't be.
-3.  **Test in Incognito/Private Browsing Mode:** This can rule out browser extensions causing the "pollitago is not defined" error.
-4.  **Share the Console Error:** The exact error message from the console is crucial.
+3.  **Test in Incognito/Private Browsing Mode:** This can rule out browser extensions causing JavaScript errors.
+4.  **Share the Console Error:** The exact error message from the console is crucial if the issue persists after checking the key.
 
 ## Stripe Integration, Genkit, Deploying to Vercel, Google Cloud Build Sections
 (Content for these sections remains largely the same as previously provided, emphasizing the need for corresponding environment variables in deployed settings.)
 
 ## Deprecated: Firebase Usage Notes
 Firebase services have been removed from this project. If you previously had Firebase SDK environment variables set on Vercel or Google Cloud Build, you can remove them. This step is for tidiness and **will not fix NextAuth.js build errors like "missing app-build-manifest.json"**. Focus on `NEXTAUTH_SECRET` and `NEXTAUTH_URL` for those build errors.
-```
+
+    
