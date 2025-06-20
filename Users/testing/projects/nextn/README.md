@@ -144,7 +144,7 @@ This usually means JavaScript code running in the browser encountered an unrecov
 **PRIMARY CAUSES & SOLUTIONS:**
 
 1.  **`_NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is MISSING or INCORRECT in the Cloud Build Trigger.**
-    *   **Check Browser Console:** Look for "CRITICAL STRIPE ERROR" messages on the deployed prototype.
+    *   **Check Browser Console:** Look for "CRITICAL STRIPE ERROR" messages on the deployed prototype. The error message comes from `src/app/layout.tsx` if the key is missing.
     *   **Cloud Build Trigger:** Ensure `_NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is set to your correct **TEST** key (`pk_test_...`) in the substitution variables. Redeploy/Rebuild.
 
 ---
@@ -172,4 +172,3 @@ Deployment via Vercel is currently not the primary focus. If you choose to use V
 
 ## Deprecated: Firebase Usage Notes
 Firebase services have been removed from this project.
-```
