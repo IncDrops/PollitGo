@@ -20,9 +20,6 @@ You **MUST** create a `.env.local` file in the root of your project (at the same
 
 # NEXTAUTH_URL: The base URL of your application.
 # Local Development: If `npm run dev` runs on port 9003, this is http://localhost:9003. Adjust if different.
-# Deployed Environments (Vercel, Google Cloud etc.): This MUST be the FULL PUBLIC URL of that deployment.
-# Example for Vercel: NEXTAUTH_URL=https://your-project-name.vercel.app
-# Example for your live domain: NEXTAUTH_URL=https://www.pollitago.com
 NEXTAUTH_URL=http://localhost:9003
 
 # NEXTAUTH_SECRET: A strong, random secret for session encryption. CRITICAL.
@@ -54,7 +51,7 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=YOUR_ACTUAL_STRIPE_PUBLISHABLE_KEY_GOES_HERE
 # Deployed environments (like Google Cloud Run) will use service account permissions.
 ```
 
-**VERY IMPORTANT INSTRUCTIONS:**
+**VERY IMPORTANT INSTRUCTIONS FOR `.env.local` (Local Development):**
 
 1.  **Generate `NEXTAUTH_SECRET` ONCE:**
     *   In your terminal, run: `openssl rand -base64 32`.
@@ -62,29 +59,49 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=YOUR_ACTUAL_STRIPE_PUBLISHABLE_KEY_GOES_HERE
 2.  **Replace Placeholders in `.env.local`:**
     *   Update `NEXTAUTH_SECRET` in `.env.local` with the value you just generated.
     *   Substitute ALL other placeholder values (e.g., `YOUR_ACTUAL_STRIPE_SECRET_KEY_GOES_HERE`) with your **actual keys**.
-3.  **Setup Google Cloud ADC (for Genkit local dev):** If you haven't already, run `gcloud auth application-default login` in your terminal and follow the prompts.
-4.  **Restart Dev Server:** After creating or modifying `.env.local`, **MUST** restart your Next.js development server (`npm run dev`) for changes to take effect.
+3.  **Setup Google Cloud ADC (for Genkit local dev):** If you haven't already, run `gcloud auth application-default login` in your terminal and follow the prompts. This is for AI features and usually not related to NextAuth/Stripe build errors.
+4.  **Restart Dev Server:** After creating or modifying `.env.local`, you **MUST** restart your Next.js development server (stop `npm run dev` with `Ctrl+C` and run `npm run dev` again) for changes to take effect.
 
 ### For Deployed Environments (Vercel, Google Cloud Build / Firebase Studio Prototypes)
 
 The `.env.local` file is **NOT** used in deployed environments. You **MUST** configure these environment variables directly through your hosting provider's settings dashboard or build configuration:
 
-*   `NEXTAUTH_URL`: Set to the **full public URL of that specific deployment** (e.g., `https://your-project.vercel.app`, `https://your-prototype-id.cloudworkstations.dev`, or `https://www.pollitago.com`).
-*   `NEXTAUTH_SECRET`: Set to the **EXACT SAME strong, random secret** you generated and used in `.env.local`. **This is paramount for build success of auth pages.** Double-check for typos or extra spaces when pasting.
-*   `STRIPE_SECRET_KEY`: Your actual Stripe Secret Key.
-*   `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`: Your actual Stripe Publishable Key.
-*   **Google Cloud Project (for Genkit/AI):** In deployed Google Cloud environments, the project ID is often automatically available. The service account running your application needs appropriate IAM permissions.
+*   **`NEXTAUTH_URL`**:
+    *   **Value:** Set to the **full public URL of that specific deployment** (e.g., `https://your-project.vercel.app`, `https://your-prototype-id.cloudworkstations.dev`, or `https://www.pollitago.com`).
+    *   **Importance:** Critical for redirects, callbacks, and NextAuth.js to know its own address.
+*   **`NEXTAUTH_SECRET`**:
+    *   **Value:** Set to the **EXACT SAME strong, random secret** you generated and used in `.env.local`.
+    *   **Importance:** **Paramount for build success of auth pages (like `/login`, `/signup`).** Double-check for typos or extra spaces when pasting. This is the most common cause of "missing `app-build-manifest.json`" errors.
+*   **`STRIPE_SECRET_KEY`**:
+    *   **Value:** Your actual Stripe Secret Key (e.g., `sk_test_...` or `sk_live_...`).
+    *   **Importance:** Required for backend Stripe API calls like creating checkout sessions.
+*   **`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`**:
+    *   **Value:** Your actual Stripe Publishable Key (e.g., `pk_test_...` or `pk_live_...`).
+    *   **Importance:** Required for client-side Stripe.js to initialize.
+*   **Google Cloud Project (for Genkit/AI):** In deployed Google Cloud environments, the project ID is often automatically available. The service account running your application needs appropriate IAM permissions for Genkit AI features.
+*   **Cleaning Up Old Firebase Variables (if applicable):**
+    *   If you previously used Firebase services and had environment variables like `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, etc., set on Vercel or Google Cloud Build, you can now remove them as they are no longer used by this project. This helps keep your configuration clean. **This step is for tidiness and will not fix NextAuth.js build errors.**
 
-**Consequences of Missing Environment Variables in Deployed/Build Environments:**
+**Consequences of Missing Critical Environment Variables in Deployed/Build Environments:**
 
 *   **Missing `NEXTAUTH_SECRET`:**
-    *   **Build Failure:** Extremely likely to cause `ENOENT ... app-build-manifest.json` errors for pages like `/login` or `/signup`.
-    *   **Runtime Failure:** "Internal Server Error" during login/signup.
-*   **All other consequences as previously listed...**
+    *   **Build Failure:** Extremely likely to cause `ENOENT: no such file or directory, open '...app/login/page/app-build-manifest.json'` (or similar for `/signup`, `/api/auth/...`) errors.
+    *   **Runtime Failure:** "Internal Server Error" or other auth failures during login/signup.
+*   **Missing or Incorrect `NEXTAUTH_URL`:**
+    *   **Runtime Failure:** "Failed to fetch" errors during login/signup, OAuth provider errors, incorrect redirect behavior.
+*   **Missing `STRIPE_SECRET_KEY`:**
+    *   **Build Failure:** Can sometimes cause `[Error: Failed to collect page data for /api/stripe/create-checkout-session]` if the build process deeply analyzes API routes, though the current code is more resilient.
+    *   **Runtime Failure:** Stripe checkout session creation will fail.
+*   **Missing `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`:**
+    *   **Runtime Failure:** Stripe.js will not initialize in the browser; payment forms will break.
 
 ## Authentication with NextAuth.js
 
 This application uses NextAuth.js. The `src/app/api/auth/[...nextauth]/route.ts` file handles authentication requests.
+
+*   **Credentials Provider:** A basic email/password login is set up.
+    *   **Test User:** `test@example.com` / `password`.
+    *   **Simulated Signup:** The `authorize` function currently allows any new email/password to "sign up." This is for demo purposes. A real application needs database integration.
 
 ### Troubleshooting NextAuth.js & Build Errors
 
@@ -96,27 +113,33 @@ This application uses NextAuth.js. The `src/app/api/auth/[...nextauth]/route.ts`
         *   The secret must be a **strong, consistent, random string**.
         *   **Do NOT keep generating new secrets.** Generate one, save it, and use that SAME value everywhere.
 
-    2.  **ACTION (Vercel/Google Cloud Build/Firebase Studio Prototypes):**
-        *   Go to your hosting provider's **Project Settings > Environment Variables**.
-        *   **Verify `NEXTAUTH_SECRET`:**
-            *   Does it exist?
-            *   Is its value the **EXACT, STRONG, RANDOM string** you generated (e.g., via `openssl rand -base64 32`)? Check for typos, extra spaces, or if it's accidentally empty.
-            *   It must be the **SAME VALUE** as in your (correctly configured) `.env.local`.
+    2.  **VERCEL DEPLOYMENT - MOST CRITICAL CHECKLIST:**
+        *   Go to your Vercel Project Dashboard.
+        *   Navigate to **Settings -> Environment Variables**.
+        *   **Meticulously check `NEXTAUTH_SECRET`:**
+            *   **Does the variable `NEXTAUTH_SECRET` exist?**
+            *   **Is its value EXACTLY the strong, random string you generated?**
+                *   Compare it character by character with the one you have in your (correctly configured) `.env.local` or the one you saved.
+                *   **Check for typos.**
+                *   **Check for leading/trailing spaces** (e.g., accidentally copied an extra space).
+                *   **Check if the value is accidentally empty or just a placeholder.**
+            *   Ensure it's applied to the **Production** environment (and Preview/Development if you use those Vercel environments).
         *   **Verify `NEXTAUTH_URL`:**
-            *   Ensure it exists and is the full public URL of that specific deployment.
-        *   **Important:** If you are using a service like Firebase Studio that provisions Google Cloud Build, you need to ensure these variables are correctly passed to that build environment. This might involve settings within Firebase Studio or directly in the Google Cloud Build trigger configuration if accessible.
+            *   Ensure it exists.
+            *   Ensure its value is the **full public URL of THAT SPECIFIC Vercel deployment** (e.g., `https://your-project-name.vercel.app` or `https://www.pollitago.com`).
+        *   If you are using a service like Firebase Studio that provisions Google Cloud Build, you need to ensure these variables are correctly passed to that Google Cloud Build environment. This might involve settings within Firebase Studio or directly in the Google Cloud Build trigger configuration if accessible.
 
-    3.  **ACTION (Local Development - if building locally with `npm run build`):**
+    3.  **LOCAL DEVELOPMENT (if building locally with `npm run build` or seeing issues with `npm run dev`):**
         *   Ensure `NEXTAUTH_SECRET` and `NEXTAUTH_URL` are correctly set in your `.env.local` file.
         *   Stop your development server.
         *   **Delete the `.next` folder** in your project root. This clears any potentially corrupted build cache.
-        *   Run `npm run build` again, or restart your development server (`npm run dev`).
+        *   Run `npm run build` again to test, or restart your development server (`npm run dev`).
 
-    4.  **REDEPLOY (Vercel/Cloud Build):** After confirming/setting environment variables in your hosting provider's settings, **trigger a new build/deployment**. This is crucial for the changes to take effect. On Vercel, use the "Redeploy" option.
+    4.  **REDEPLOY (Vercel/Cloud Build):** After confirming/setting environment variables in your hosting provider's settings, **you MUST trigger a new build/deployment**. This is crucial for the changes to take effect. On Vercel, use the "Redeploy" option (usually from the "Deployments" tab for the specific deployment).
 
 *   **"Internal Server Error" during Login/Signup (especially on Vercel/deployed):**
-    1.  **Verify `NEXTAUTH_SECRET` and `NEXTAUTH_URL` on Vercel/deployment platform.** This is the most common cause.
-    2.  Check **Runtime Logs** on Vercel (or your deployment platform).
+    1.  **Verify `NEXTAUTH_SECRET` and `NEXTAUTH_URL` on Vercel/deployment platform** as described above. This is the most common cause.
+    2.  Check **Runtime Logs** on Vercel (or your deployment platform). Your `/api/auth/[...nextauth]/route.ts` includes specific console errors if `NEXTAUTH_SECRET` is missing at runtime.
 
 *   **"Failed to fetch" errors on Login/Signup:**
     1.  Verify `NEXTAUTH_URL` is correct for your current environment.
@@ -126,4 +149,8 @@ This application uses NextAuth.js. The `src/app/api/auth/[...nextauth]/route.ts`
 (Content for these sections remains largely the same as previously provided, emphasizing the need for corresponding environment variables in deployed settings.)
 
 ## Deprecated: Firebase Usage Notes
-Firebase services have been removed from this project.
+Firebase services have been removed from this project. If you previously had Firebase SDK environment variables (like `NEXT_PUBLIC_FIREBASE_API_KEY`, etc.) configured in your Vercel or Google Cloud Build settings, you can remove them to keep your configuration clean. This project now relies on NextAuth.js for authentication and Stripe for payments.
+This step is for tidiness and **will not fix NextAuth.js build errors like "missing app-build-manifest.json"**.
+Focus on `NEXTAUTH_SECRET` and `NEXTAUTH_URL` for those build errors.
+
+    
