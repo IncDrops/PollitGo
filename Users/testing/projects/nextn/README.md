@@ -138,10 +138,11 @@ When you launch or update a prototype in Firebase Studio, the interface will dis
 Your Cloud Build trigger can be configured in two main ways:
 
 1.  **Buildpacks (Recommended for Firebase App Hosting & Next.js):**
-    *   Set the trigger **"Type"** to **"Buildpacks"**.
+    *   Set the trigger **"Type"** to **"Buildpacks"** in the Google Cloud Console when editing your trigger.
     *   Cloud Build automatically detects your Next.js app and builds it.
     *   You **do not need** a `cloudbuild.yaml` file in your repository with this setting.
     *   The "Builder image" field (e.g., `gcr.io/buildpacks/builder:latest`) will be used.
+    *   **If you are encountering persistent "Failed to trigger build: if 'build.service_account' is specified..." errors with a YAML-based trigger and cannot resolve them with `gcloud` commands, switching to "Buildpacks" type might offer a simpler path, as it could have different default logging behaviors.** Ensure all necessary Substitution Variables (like `_NEXTAUTH_URL`, `_NEXTAUTH_SECRET`, `_STRIPE_SECRET_KEY`, etc.) are still configured in the trigger.
 
 2.  **Cloud Build configuration file (yaml or json):**
     *   Set the trigger **"Type"** to **"Cloud Build configuration file (yaml or json)"**.
@@ -150,7 +151,7 @@ Your Cloud Build trigger can be configured in two main ways:
     *   **Important:** If you use a `cloudbuild.yaml` file, ensure it is **committed and pushed** to your GitHub repository so Cloud Build can find it. (See Troubleshooting E if your pushes are failing).
     *   This file gives you manual control over each build step.
 
-**IMPORTANT: The error "Failed to trigger build: if 'build.service_account' is specified..." (see Troubleshooting D) is related to the trigger's logging configuration when using a user-managed service account. This needs to be resolved at the trigger level, regardless of whether you use Buildpacks or a `cloudbuild.yaml` file.**
+**IMPORTANT: The error "Failed to trigger build: if 'build.service_account' is specified..." (see Troubleshooting D) is related to the trigger's logging configuration when using a user-managed service account. This needs to be resolved at the trigger level. If `gcloud` commands are proving difficult, consider trying the "Buildpacks" trigger type as an alternative.**
 
 ---
 
@@ -217,7 +218,7 @@ The most direct way to resolve this, especially if the UI options in the Cloud C
     *   Go to the [Google Cloud Console](https://console.cloud.google.com/), navigate to **Cloud Build > Triggers**.
     *   Carefully note the **exact Name** (e.g., "PollitGo") and **Region** (e.g., `us-central1`) of your trigger.
     *   **If `gcloud` gives "Invalid choice: 'YourTriggerName'" or "argument TRIGGER: Must be specified.":** This means `gcloud` isn't recognizing the trigger name or ID as you're providing it. This can be due to:
-        *   Typos, case-sensitivity issues, or subtle character misinterpretations (e.g., `o` vs `õ`).
+        *   Typos, case-sensitivity issues, or subtle character misinterpretations (e.g., `o` vs `õ`, or invisible characters if copy-pasted).
         *   The ID not being passed correctly to the `gcloud update` command.
         *   **Most Robust Solution:**
             1.  **Get the exact ID using the display name:** In Cloud Shell, run:
@@ -311,4 +312,3 @@ For local development, Genkit uses Application Default Credentials (`gcloud auth
 ## Vercel Deployment (Currently Not Focused)
 
 This section remains for informational purposes if you decide to deploy to Vercel later. You would configure similar environment variables (using LIVE keys for production) in Vercel Project Settings.
-
