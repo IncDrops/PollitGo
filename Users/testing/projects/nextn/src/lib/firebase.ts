@@ -1,98 +1,110 @@
 
 // src/lib/firebase.ts
 import { initializeApp, getApp, getApps, type FirebaseApp } from 'firebase/app';
-import { getAuth, type Auth } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
-import { getStorage, type FirebaseStorage } from 'firebase/storage';
-// import { getAnalytics, type Analytics } from "firebase/analytics"; // Uncomment if you need Analytics
+// Import other services only if they will be initialized and used
+// import { getAuth, type Auth } from 'firebase/auth';
+// import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getStorage, type FirebaseStorage } from 'firebase/storage'; // Assuming storage might be used
 
-// Explicitly fetch all required environment variables
+// Explicitly fetch all required environment variables for Firebase
 const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
 const authDomain = process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN;
 const projectId = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID;
 const storageBucket = process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET;
 const messagingSenderId = process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID;
 const appId = process.env.NEXT_PUBLIC_FIREBASE_APP_ID;
-const measurementId = process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID; // Optional
+// measurementId is optional for core functionality
+// const measurementId = process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID;
 
 const allRequiredFirebaseKeysPresent =
   apiKey &&
   authDomain &&
   projectId &&
-  storageBucket &&
+  // storageBucket, // storageBucket is now handled conditionally below for initialization
   messagingSenderId &&
   appId;
 
 let app: FirebaseApp | null = null;
-let auth: Auth | null = null;
-let db: Firestore | null = null;
-let storage: FirebaseStorage | null = null;
-// let analytics: Analytics | null = null; // Uncomment if you need Analytics
+// let auth: Auth | null = null;
+let storage: FirebaseStorage | null = null; // Only declare if storage is intended to be used
+// let db: Firestore | null = null;
 
 // Check if all required keys are present. This check can run on server or client.
 if (!allRequiredFirebaseKeysPresent) {
   console.error(
-    'CRITICAL FIREBASE CONFIG ERROR (Pre-check): Firebase initialization will be skipped. ' +
-    'One or more NEXT_PUBLIC_FIREBASE_ environment variables are missing or undefined. ' +
+    'CRITICAL FIREBASE CONFIG ERROR (Pre-check): Core Firebase initialization MAY BE SKIPPED or fail. ' +
+    'One or more essential NEXT_PUBLIC_FIREBASE_ environment variables are missing or undefined. ' +
     'This check runs before attempting client-side initialization. ' +
-    'Please ensure the following are set in your environment for client-side Firebase to work: ' +
-    `NEXT_PUBLIC_FIREBASE_API_KEY (is ${apiKey ? 'set' : 'MISSING'}), ` +
-    `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN (is ${authDomain ? 'set' : 'MISSING'}), ` +
-    `NEXT_PUBLIC_FIREBASE_PROJECT_ID (is ${projectId ? 'set' : 'MISSING'}), ` +
-    `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET (is ${storageBucket ? 'set' : 'MISSING'}), ` +
-    `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID (is ${messagingSenderId ? 'set' : 'MISSING'}), ` +
-    `NEXT_PUBLIC_FIREBASE_APP_ID (is ${appId ? 'set' : 'MISSING'}). ` +
-    'These are critical for Firebase services like Storage if you are using them. ' +
-    'Check your .env.local file (for local development) AND your Google Cloud Build trigger "Substitution variables" (for deployed prototypes, prefixed with _ e.g., _NEXT_PUBLIC_FIREBASE_API_KEY).'
+    'Ensure these are set for client-side Firebase: ' +
+    `API_KEY (is ${apiKey ? 'set' : 'MISSING'}), ` +
+    `AUTH_DOMAIN (is ${authDomain ? 'set' : 'MISSING'}), ` +
+    `PROJECT_ID (is ${projectId ? 'set' : 'MISSING'}), ` +
+    // `STORAGE_BUCKET (is ${storageBucket ? 'set' : 'MISSING'}), ` + // No longer listed as essential for core init
+    `MESSAGING_SENDER_ID (is ${messagingSenderId ? 'set' : 'MISSING'}), ` +
+    `APP_ID (is ${appId ? 'set' : 'MISSING'}). ` +
+    'These are critical if Firebase services are used. ' +
+    'Check .env.local and Google Cloud Build trigger "Substitution variables".'
   );
 }
 
-// Initialize Firebase only on the client-side and if config is present
+// Initialize Firebase only on the client-side and if essential config is present
 if (typeof window !== 'undefined' && allRequiredFirebaseKeysPresent) {
-  if (!getApps().length) { // Initialize only if no app has been initialized yet
-    const firebaseConfig = {
+  if (!getApps().length) {
+    const firebaseConfig: { [key: string]: string | undefined } = { // Define type for firebaseConfig
       apiKey,
       authDomain,
       projectId,
-      storageBucket,
       messagingSenderId,
       appId,
-      measurementId: measurementId || undefined,
+      // measurementId: measurementId || undefined, // Optional
     };
+    // Only add storageBucket to config if it's present
+    if (storageBucket) {
+      firebaseConfig.storageBucket = storageBucket;
+    }
+
     try {
       app = initializeApp(firebaseConfig);
-      auth = getAuth(app);
-      db = getFirestore(app);
-      storage = getStorage(app);
-      // if (firebaseConfig.measurementId) { // Uncomment if you need Analytics
-      //   analytics = getAnalytics(app);
-      // }
-      console.log('Firebase initialized successfully on the client.');
+      // auth = getAuth(app); // Initialize only if auth features are used
+      // db = getFirestore(app); // Initialize only if firestore features are used
+      if (storageBucket) { // Conditionally initialize storage only if bucket is configured
+          storage = getStorage(app);
+      }
+      console.log('Firebase SDK initialized (or attempted) on the client.');
     } catch (error) {
       console.error('Firebase client-side initialization error:', error);
       // app, auth, db, storage will remain null if client-side init fails
     }
-  } else if (getApps().length > 0 && allRequiredFirebaseKeysPresent) { // App already initialized, just get the instance
+  } else { // App already initialized, just get the instance
     app = getApp();
-    auth = getAuth(app);
-    db = getFirestore(app);
-    storage = getStorage(app);
-    // if (measurementId) { // Uncomment if you need Analytics
-    //   // analytics = getAnalytics(app); // Be careful about re-initializing analytics
-    // }
+    // auth = getAuth(app);
+    // db = getFirestore(app);
+    if (storageBucket && !storage) { // Ensure storage is re-assigned if app was already init & bucket configured
+        try {
+            storage = getStorage(app);
+        } catch (error) {
+            console.error('Error getting storage instance from existing app:', error);
+        }
+    }
   }
-  // On the server, or if keys are missing, or if client-side init failed, app/auth/db/storage might be null.
+} else if (typeof window !== 'undefined' && !allRequiredFirebaseKeysPresent) {
+    console.error("Firebase SDK NOT initialized on client due to missing core configuration variables.");
 }
 
+// Export only what's intended to be used and initialized.
+// If you only use storage, only export storage (and app).
+export { app, storage };
+// If using auth and db too, uncomment and export them:
+// export { app, auth, db, storage };
 
-export { app, auth, db, storage /*, analytics */ }; // Uncomment analytics if used
 
 // Example function (not actively used unless you implement it)
 export const fetchUserProfile = async (userId: string) => {
-  if (!db) {
-    console.warn("fetchUserProfile: Firestore is not initialized or Firebase config is missing.");
-    return null;
-  }
-  console.warn("fetchUserProfile: Functionality not fully implemented. Needs Firestore data structure.");
+  // if (!db) { // If using firestore
+  //   console.warn("fetchUserProfile: Firestore is not initialized or Firebase config is missing.");
+  //   return null;
+  // }
+  console.warn("fetchUserProfile: Functionality not fully implemented. Needs backend integration.");
   return null;
 };
+
