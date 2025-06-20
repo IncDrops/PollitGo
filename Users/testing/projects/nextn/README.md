@@ -133,6 +133,25 @@ When you launch or update a prototype in Firebase Studio, the interface will dis
 
 ---
 
+## Build Configuration (Trigger Type)
+
+Your Cloud Build trigger can be configured in two main ways:
+
+1.  **Buildpacks (Recommended for Firebase App Hosting & Next.js):**
+    *   Set the trigger "Type" to "Buildpacks".
+    *   Cloud Build automatically detects your Next.js app and builds it.
+    *   You **do not need** a `cloudbuild.yaml` file in your repository with this setting.
+
+2.  **Cloud Build configuration file (yaml or json):**
+    *   Set the trigger "Type" to "Cloud Build configuration file (yaml or json)".
+    *   You **must** have a `cloudbuild.yaml` (or JSON) file in your repository (e.g., at the root).
+    *   In the trigger settings, under "Location", specify the path to this file (e.g., `cloudbuild.yaml`).
+    *   This file gives you manual control over each build step. A basic one has been provided in `cloudbuild.yaml` in this project.
+
+**IMPORTANT:** The error "Failed to trigger build: if 'build.service\_account' is specified..." is related to the trigger's logging configuration when using a user-managed service account. This needs to be resolved at the trigger level, potentially using `gcloud` commands to set the logging mode (e.g., to `CLOUD_LOGGING_ONLY` or `NONE`), regardless of whether you use Buildpacks or a `cloudbuild.yaml` file.
+
+---
+
 ## TROUBLESHOOTING PROTOTYPE ERRORS
 
 ### A. BUILD ERROR: `ENOENT: no such file or directory, open '...app/login/page/app-build-manifest.json'`
@@ -166,6 +185,17 @@ When you launch or update a prototype in Firebase Studio, the interface will dis
     *   Double-check that the values pasted are **EXACTLY** correct and **DO NOT HAVE QUOTATION MARKS** around them.
     *   The `src/lib/firebase.ts` file attempts to initialize the SDK. If these keys are missing or wrong in the build environment, the build can fail, or the deployed app will have runtime errors when trying to use Firebase services (like Storage).
 3.  **REBUILD/REDEPLOY PROTOTYPE** from Firebase Studio after confirming.
+
+### D. TRIGGER ERROR: "Failed to trigger build: if 'build.service_account' is specified..."
+
+**PRIMARY CAUSE: The Cloud Build trigger's logging configuration is incompatible with the use of a user-managed service account due to organization policy.**
+
+**SOLUTION:**
+1.  Update the trigger's logging mode using the `gcloud` command-line tool. Run one of these from Cloud Shell or your local `gcloud` CLI (replace `YOUR_TRIGGER_REGION`):
+    *   `gcloud beta builds triggers update PollitGo --region=YOUR_TRIGGER_REGION --update-logging=CLOUD_LOGGING_ONLY`
+    *   OR: `gcloud beta builds triggers update PollitGo --region=YOUR_TRIGGER_REGION --update-logging=NONE`
+2.  This modifies the trigger directly to satisfy the logging requirement.
+3.  After successfully running the command, try to **Run** the trigger again from the Cloud Console.
 
 ---
 

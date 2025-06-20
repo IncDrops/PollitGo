@@ -1,0 +1,47 @@
+
+steps:
+  # Step 1: Install npm dependencies
+  # Uses a common cloud builder image for Node.js/npm.
+  # This step will execute 'npm install' in your project root.
+  - name: 'gcr.io/cloud-builders/npm'
+    args: ['install']
+    id: 'npm-install'
+
+  # Step 2: Build the Next.js application
+  # This step will execute 'npm run build' (from your package.json scripts).
+  # Environment variables defined as Substitution Variables in your Cloud Build trigger
+  # (e.g., _NEXT_PUBLIC_FIREBASE_API_KEY) will be available to this build step
+  # (e.g., as NEXT_PUBLIC_FIREBASE_API_KEY).
+  - name: 'gcr.io/cloud-builders/npm'
+    args: ['run', 'build']
+    id: 'npm-build'
+    env:
+      # Explicitly map trigger substitution variables (starting with _)
+      # to the environment variable names your Next.js build process expects.
+      # Next.js 'npm run build' primarily uses NEXT_PUBLIC_ variables and NEXTAUTH_URL.
+      - 'NEXTAUTH_URL=${_NEXTAUTH_URL}'
+      - 'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${_NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}'
+      - 'NEXT_PUBLIC_FIREBASE_API_KEY=${_NEXT_PUBLIC_FIREBASE_API_KEY}'
+      - 'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=${_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN}'
+      - 'NEXT_PUBLIC_FIREBASE_PROJECT_ID=${_NEXT_PUBLIC_FIREBASE_PROJECT_ID}'
+      - 'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=${_NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET}'
+      - 'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=${_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID}'
+      - 'NEXT_PUBLIC_FIREBASE_APP_ID=${_NEXT_PUBLIC_FIREBASE_APP_ID}'
+      - 'NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=${_NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID}'
+      # Server-side secrets like NEXTAUTH_SECRET and STRIPE_SECRET_KEY are generally
+      # needed by the *runtime* environment, not directly by `npm run build`.
+      # However, they are available in the build environment if needed. For this Next.js build,
+      # we are focusing on variables typically consumed by the build process.
+
+# The output of `npm run build` (typically the .next folder) is what Firebase App Hosting
+# expects to deploy. Firebase's integration usually handles picking up this artifact.
+
+# Optional: Specify a timeout for the entire build.
+timeout: '1200s' # 20 minutes
+
+# Note: The 'options.logging' field within cloudbuild.yaml configures logging for
+# this *specific build execution*, not for the trigger's pre-build validation checks.
+# The error "Failed to trigger build: if 'build.service_account' is specified..."
+# must be resolved at the trigger configuration level.
+# options:
+#   logging: CLOUD_LOGGING_ONLY
