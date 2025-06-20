@@ -58,22 +58,26 @@ This application has been configured to use NextAuth.js for authentication.
     1.  Integrate a database.
     2.  Modify the `authorize` function to validate credentials and handle user creation.
 
-### Troubleshooting NextAuth.js
-*   **"Failed to fetch" errors:**
+### Troubleshooting NextAuth.js & Build Errors
+
+*   **"Failed to fetch" errors on Login/Signup:**
     *   Verify `NEXTAUTH_URL` is correct for your current environment (local or deployed).
     *   Restart your dev server if you changed `.env.local`.
-*   **"Internal Server Error" during login/signup (especially on Vercel/deployed):**
+*   **"Internal Server Error" during Login/Signup (especially on Vercel/deployed):**
     *   **Verify `NEXTAUTH_SECRET` on Vercel/deployment platform.** This is the most common cause. It MUST be set and match your intended secret.
     *   Verify `NEXTAUTH_URL` on Vercel/deployment platform.
-    *   Check runtime logs on Vercel for more specific error messages from the `/api/auth/...` route.
-*   **Build Errors (e.g., `ENOENT: no such file or directory, open '...app-build-manifest.json'`):**
-    *   This can indicate a failed or incomplete build.
-    *   **Ensure `NEXTAUTH_SECRET` is correctly set in your build environment.** A misconfigured NextAuth.js (due to a missing secret) can cause instability that leads to build failures.
-    *   **For local development:**
-        *   Stop your development server.
-        *   Delete the `.next` directory in your project root.
-        *   Restart your development server (`npm run dev`). This forces a fresh build.
-    *   **For deployed environments:** Check the build logs for errors. Ensure all required environment variables are available to the build process.
+    *   Check runtime logs on Vercel for more specific error messages from the `/api/auth/...` route. The auth route (`src/app/api/auth/[...nextauth]/route.ts`) includes a check and will log if `NEXTAUTH_SECRET` is missing from the server environment.
+*   **Build Errors: `ENOENT: no such file or directory, open '...app-build-manifest.json'` for `/login`, `/signup`, or other auth-related pages:**
+    *   This error means the Next.js build was incomplete for that page.
+    *   **The MOST COMMON CAUSE is a missing or incorrect `NEXTAUTH_SECRET` environment variable in the build environment** (Vercel, Google Cloud Build, etc.). NextAuth.js instability due to a missing secret can prevent pages related to auth from building correctly.
+    *   **ACTION:**
+        1.  **For Vercel/Google Cloud Build/Firebase Studio Prototypes:** Go to your hosting provider's settings and ensure `NEXTAUTH_SECRET` is set with the correct, strong, random value. Also, ensure `NEXTAUTH_URL` is correctly set to the public URL of that specific deployment.
+        2.  **Redeploy/Rebuild:** After confirming/setting environment variables, trigger a new build/deployment.
+    *   **For Local Development (if this error occurs locally):**
+        1.  Ensure `NEXTAUTH_SECRET` and `NEXTAUTH_URL` are correctly set in your `.env.local` file.
+        2.  Stop your development server.
+        3.  **Delete the `.next` directory** in your project root.
+        4.  Restart your development server (`npm run dev`). This forces a completely fresh build.
 
 ## Stripe Integration
 
@@ -91,8 +95,8 @@ When using Firebase Studio prototypes or deploying directly via Google Cloud Bui
     *   These are typically set via the Google Cloud Build trigger configuration (e.g., substitution variables passed to build steps) or by linking secrets from Google Secret Manager to the build steps and/or the target deployment service (like Cloud Run).
     *   For Cloud Run, environment variables are set in the service's revision settings.
 *   **Error `[Error: Failed to collect page data for /api/stripe/create-checkout-session]` or `ENOENT ... app-build-manifest.json`:**
-    *   These build errors often mean that critical environment variables (like `STRIPE_SECRET_KEY` or `NEXTAUTH_SECRET`) are not available to the build process or the runtime environment.
-    *   Ensure secrets are securely provided to your Google Cloud deployment.
+    *   These build errors often mean that critical environment variables (like `STRIPE_SECRET_KEY` or, more commonly for manifest errors, `NEXTAUTH_SECRET`) are not available to the build process or the runtime environment.
+    *   Ensure secrets are securely provided to your Google Cloud deployment. See the "Troubleshooting NextAuth.js & Build Errors" section above for specific guidance on manifest errors.
 
 ## Testing the Payment Flow
 1.  Set Environment Variables.

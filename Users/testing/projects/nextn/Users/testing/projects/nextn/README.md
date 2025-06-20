@@ -72,6 +72,22 @@ If you encounter "Failed to fetch" errors during login/signup:
 4.  **Check Server Terminal Logs / Deployment Logs:** Look at the terminal where `npm run dev` is running (or your deployed environment's server logs). Errors in the NextAuth.js API route will appear here, especially regarding missing `NEXTAUTH_SECRET` or other misconfigurations. The Stripe API route will also log an error if `STRIPE_SECRET_KEY` is missing.
 5.  **Check Browser Developer Console:** Look for more detailed error messages logged by the login page itself. The login page was updated to show more specific error messages for "Failed to fetch".
 
+### Troubleshooting Build Errors: `ENOENT: no such file or directory, open '...app-build-manifest.json'`
+If you encounter this error (or similar "missing manifest" errors) during build on Vercel, Google Cloud Build, or even locally, for pages like `/login`, `/signup`, or other pages potentially related to authentication:
+1.  **PRIMARY CAUSE: `NEXTAUTH_SECRET` is Missing/Incorrect in the BUILD ENVIRONMENT.**
+    *   NextAuth.js requires `NEXTAUTH_SECRET` to be available not only at runtime but also during the build process for some configurations or when Next.js analyzes auth-related pages.
+    *   **ACTION: Verify `NEXTAUTH_SECRET` is correctly set in the environment where the `next build` command is running.**
+        *   **Vercel:** In your Vercel project settings -> Environment Variables.
+        *   **Google Cloud Build / Firebase Studio Prototypes:** In your Google Cloud Build trigger configuration or linked Secret Manager secrets.
+        *   **Local Development:** In your `.env.local` file.
+2.  **`NEXTAUTH_URL` Might Also Play a Role:** Ensure `NEXTAUTH_URL` is also correctly set in the build environment.
+3.  **Local Development Fix:**
+    *   If this happens locally after setting/fixing `.env.local`:
+        *   Stop your development server (`npm run dev`).
+        *   **Delete the `.next` folder** in your project root. This clears any potentially corrupted build cache.
+        *   Restart your development server (`npm run dev`).
+4.  **Redeploy/Rebuild:** After ensuring environment variables are correct in your deployment platform's settings, trigger a new build/deployment.
+
 ## Stripe Integration
 
 This application uses Stripe for payments.
@@ -80,7 +96,7 @@ This application uses Stripe for payments.
 
 Your Next.js application includes an API route at `src/app/api/stripe/create-checkout-session/route.ts`. This route is responsible for creating Stripe Checkout Sessions.
 
-*   **Environment Variable for Stripe Secret Key:** Ensure `STRIPE_SECRET_KEY` is set in your `.env.local` file (for local development) or in your hosting environment settings (for deployed/built applications). **If this key is missing in the build/deployment environment, the build may fail or the API route will not function correctly at runtime.**
+*   **Environment Variable for Stripe Secret Key:** Ensure `STRIPE_SECRET_KEY` is set in your `.env.local` file (for local development) or in your hosting environment settings (for deployed/built applications). **If this key is missing in the build/deployment environment, the build may fail or the API route will not function correctly at runtime.** The API route has been updated to initialize Stripe inside the handler to make it more resilient to build-time analysis.
 *   **Environment Variable for Stripe Publishable Key:** Ensure `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is set (used on the client-side).
 *   **Restart Dev Server (Local):** After editing `.env.local`, restart your Next.js development server.
 

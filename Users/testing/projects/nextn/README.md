@@ -64,7 +64,7 @@ If you encounter these errors during login/signup on your Vercel deployment:
 1.  **Verify `NEXTAUTH_URL` on Vercel:**
     *   In your Vercel project settings -> Environment Variables, ensure `NEXTAUTH_URL` is set to the **full public URL of your Vercel deployment** (e.g., `https://your-project-name.vercel.app`).
 2.  **Verify `NEXTAUTH_SECRET` on Vercel:**
-    *   In your Vercel project settings -> Environment Variables, ensure `NEXTAUTH_SECRET` is set to the **exact same strong, random secret** you generated for your local `.env.local` file. Any mismatch will cause internal server errors.
+    *   In your Vercel project settings -> Environment Variables, ensure `NEXTAUTH_SECRET` is set to the **exact same strong, random secret** you generated for your local `.env.local` file. Any mismatch will cause internal server errors. The auth route (`src/app/api/auth/[...nextauth]/route.ts`) includes a check and will log if `NEXTAUTH_SECRET` is missing from the server environment.
 3.  **Check Vercel Runtime Logs:**
     *   Go to your Vercel project dashboard -> Logs tab.
     *   Make sure you are viewing **Runtime Logs** (sometimes labeled as Functions Logs).
@@ -72,6 +72,22 @@ If you encounter these errors during login/signup on your Vercel deployment:
     *   When the error occurs, immediately check these logs. They will contain more specific error messages from the NextAuth.js API route (`/api/auth/...`) that can pinpoint the problem (e.g., issues with the secret, errors within the `authorize` function).
 4.  **Restart Dev Server (Local Development Only):** You **MUST restart your Next.js development server** (`npm run dev`) after any changes to `.env.local`. This does not apply to Vercel.
 5.  **Redeploy on Vercel (If Environment Variables Were Changed):** If you modify environment variables in your Vercel project settings, you typically need to **redeploy** your project for those new variables to take effect.
+
+### Troubleshooting Build Errors: `ENOENT: no such file or directory, open '...app-build-manifest.json'`
+If you encounter this error (or similar "missing manifest" errors) during build on Vercel, Google Cloud Build, or even locally, for pages like `/login`, `/signup`, or other pages potentially related to authentication:
+1.  **PRIMARY CAUSE: `NEXTAUTH_SECRET` is Missing/Incorrect in the BUILD ENVIRONMENT.**
+    *   NextAuth.js requires `NEXTAUTH_SECRET` to be available not only at runtime but also during the build process for some configurations or when Next.js analyzes auth-related pages.
+    *   **ACTION: Verify `NEXTAUTH_SECRET` is correctly set in the environment where the `next build` command is running.**
+        *   **Vercel:** In your Vercel project settings -> Environment Variables.
+        *   **Google Cloud Build / Firebase Studio Prototypes:** In your Google Cloud Build trigger configuration or linked Secret Manager secrets.
+        *   **Local Development:** In your `.env.local` file.
+2.  **`NEXTAUTH_URL` Might Also Play a Role:** Ensure `NEXTAUTH_URL` is also correctly set in the build environment.
+3.  **Local Development Fix:**
+    *   If this happens locally after setting/fixing `.env.local`:
+        *   Stop your development server (`npm run dev`).
+        *   **Delete the `.next` folder** in your project root. This clears any potentially corrupted build cache.
+        *   Restart your development server (`npm run dev`).
+4.  **Redeploy/Rebuild:** After ensuring environment variables are correct in your deployment platform's settings, trigger a new build/deployment.
 
 ## Stripe Integration
 
@@ -81,7 +97,7 @@ This application uses Stripe for payments.
 
 Your Next.js application includes an API route at `src/app/api/stripe/create-checkout-session/route.ts`. This route is responsible for creating Stripe Checkout Sessions.
 
-*   **Environment Variable for Stripe Secret Key:** Ensure `STRIPE_SECRET_KEY` is set in your `.env.local` file (for local development) or in your hosting environment settings (for deployed/built applications, e.g., Vercel project settings). **If this key is missing in the build/deployment environment, the build may fail or the API route will not function correctly at runtime.**
+*   **Environment Variable for Stripe Secret Key:** Ensure `STRIPE_SECRET_KEY` is set in your `.env.local` file (for local development) or in your hosting environment settings (for deployed/built applications, e.g., Vercel project settings). **If this key is missing in the build/deployment environment, the build may fail or the API route will not function correctly at runtime.** The API route has been updated to initialize Stripe inside the handler to make it more resilient to build-time analysis.
 *   **Environment Variable for Stripe Publishable Key:** Ensure `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is set (used on the client-side).
 *   **Restart Dev Server (Local):** After editing `.env.local`, restart your Next.js development server.
 
@@ -157,9 +173,9 @@ When using Firebase Studio prototypes or deploying directly via Google Cloud Bui
 *   **Configuration:**
     *   These are typically set via the Google Cloud Build trigger configuration (e.g., substitution variables) or by linking secrets from Google Secret Manager to the build steps and/or the target deployment service (like Cloud Run).
     *   For Cloud Run, environment variables are set in the service's revision settings.
-*   **Error `[Error: Failed to collect page data for /api/stripe/create-checkout-session]`:**
-    *   This build error often means that `STRIPE_SECRET_KEY` (or another critical variable) is not available to the build process or the runtime environment. The Stripe API route (`src/app/api/stripe/create-checkout-session/route.ts`) has been updated to initialize the Stripe client inside the `POST` handler to make it more resilient to build-time analysis, but the runtime still needs the key.
-    *   Ensure secrets are securely provided to your Google Cloud deployment.
+*   **Error `[Error: Failed to collect page data for /api/stripe/create-checkout-session]` or `ENOENT ... app-build-manifest.json`:**
+    *   These build errors often mean that `STRIPE_SECRET_KEY` (or another critical variable like `NEXTAUTH_SECRET`) is not available to the build process or the runtime environment.
+    *   Ensure secrets are securely provided to your Google Cloud deployment. **See the "Troubleshooting Build Errors: `ENOENT ... app-build-manifest.json`" section above for specific guidance on manifest errors.**
 
 ## Custom Webhook Handler (`functions/src/index.ts` - Deprecated)
 The `functions` directory is no longer used for Firebase Functions. Custom backend logic (e.g., for Stripe webhooks) should be implemented using Next.js API routes if needed, separate from any Stripe extension.
