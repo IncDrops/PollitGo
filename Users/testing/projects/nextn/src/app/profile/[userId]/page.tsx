@@ -31,35 +31,7 @@ async function getUserData(userId: string): Promise<{ user: User | null; polls: 
 }
 
 const urlSafeText = (text: string, maxLength: number = 15): string => {
-  const cleanedText = text.replace(/[^a-zA-Z0-9\s]/g, "").substring(0, maxLength);
-  return encodeURIComponent(cleanedText);
-};
-
-export default function UserProfilePage() {
-  const router = useRouter();
-  const routeParams = useParams<{ userId: string }>(); 
-  const userId = routeParams.userId;
-  const { toast } } from "@/hooks/use-toast";
-import PollFeed from '@/components/polls/PollFeed';
-import useAuth from '@/hooks/useAuth';
-import NextLink from 'next/link';
-import { signIn } from 'next-auth/react';
-
-
-async function getUserData(userId: string): Promise<{ user: User | null; polls: Poll[] }> {
-  console.warn(`[UserProfilePage] Using mock data for userId: ${userId}`);
-  const user = mockUsers.find(u => u.id === userId) || null;
-  const freshUser = user ? {...user} : null;
-  
-  let polls: Poll[] = [];
-  if (freshUser) {
-    polls = mockPolls.filter(p => p.creator.id === userId).map(p => ({...p}));
-  }
-  return { user: freshUser, polls };
-}
-
-const urlSafeText = (text: string, maxLength: number = 15): string => {
-  const cleanedText = text.replace(/[^a-zA-Z0-9\s]/g, "").substring(0, maxLength);
+  const cleanedText = text.replace(/[^a-zA-Z0-9\\s]/g, "").substring(0, maxLength);
   return encodeURIComponent(cleanedText);
 };
 
@@ -73,7 +45,7 @@ export default function UserProfilePage() {
   const [profileUser, setProfileUser] = useState<User | null>(null);
   const [userPolls, setUserPolls] = useState<Poll[]>([]);
   const [pageLoading, setPageLoading] = useState(true);
-  const [isFollowing, setIsFollowing] = useState(false); // Client-side simulation
+  const [isFollowing, setIsFollowing] = useState(false); 
 
   useEffect(() => {
     if (userId) {
@@ -83,7 +55,6 @@ export default function UserProfilePage() {
           setProfileUser(data.user);
           setUserPolls(data.polls);
           if (data.user) {
-            // Simulate initial follow state based on mock data for demo
             setIsFollowing(data.user.isFollowedByCurrentUser || false);
           } else {
             toast({
@@ -102,7 +73,6 @@ export default function UserProfilePage() {
         });
     } else {
       setPageLoading(false);
-      // No toast here as userId might be undefined briefly during initial render
     }
   }, [userId, toast]);
 
@@ -117,338 +87,37 @@ export default function UserProfilePage() {
       toast({ title: "Action Not Allowed", description: "You cannot follow yourself.", variant: "default" });
       return;
     }
-    setIsFollowing(prev => !prev); // Optimistically update UI
-    // In a real app, you would call an API to update follow status in the database
+    setIsFollowing(prev => !prev); 
     toast({ title: isFollowing ? `Unfollowed ${profileUser?.name}` : `Followed ${profileUser?.name}`, description: "This action is simulated." });
   };
 
   if (pageLoading || authLoading) {
     return (
-      
-
-                The profile for user ID could not be loaded.
-            
-          
-            
-              Go to Homepage
-            
-          
-        
-      
-    );
-  }
-  
-  const isOwnProfile = isAuthenticated && authUser?.id === profileUser.id;
-
-  const handleShareProfile = async () => {
-    if (typeof window === 'undefined') return;
-    const shareUrl = window.location.href;
-    const shareData = {
-      title: `${profileUser.name}'s Profile on PollitAGo`,
-      text: `Check out ${profileUser.name}'s profile and polls on PollitAGo!`,
-      url: shareUrl,
-    };
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        await navigator.clipboard.writeText(shareUrl);
-        toast({ title: "Link Copied", description: "Profile link copied to clipboard."});
-      }
-    } catch (error) {
-       console.error("Error sharing profile:", error);
-       toast({ title: "Error", description: "Could not share profile link.", variant: "destructive"});
-    }
-  };
-  
-  const coverPhotoUrl = `https://placehold.co/1200x400.png?text=${urlSafeText(profileUser.name + " Cover", 25)}`;
-
-  return (
-    
-      
-        
-          
-            
-              
-            
-            
-              {profileUser.name}
-            
-            
-              
-            
-          
-        
-      
-
-        
-          
-            
-            
-              
-            
-          
-          
-            
-              
-                
-                  
-                  
-                
-              
-            
-          
-        
-
-        
-          
-            {profileUser.name}
-          
-          @{profileUser.username}
-          
-          
-            Lover of polls, opinions, and good conversations. Helping the world make up its mind, one poll at a time! 🚀 #PollMaster
-          
-          
-            Planet Earth
-            Joined {new Date(2023, Math.floor(Math.random()*12), Math.floor(Math.random()*28)+1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-          
-          
-            
-             example.com
-          
-
-          
-            
-              
-                
-                 Edit Profile
-                
-                
-                  Settings
-                
-              
-            
-              
-                
-                   Login to Follow
-                  Unfollow
-                 Follow
-                
-                
-                  Login to Message
-                 Message
-                
-              
-            
-          
-        
-        
-            
-              {userPolls.length.toLocaleString()}
-              Polls
-            
-            
-              {(Math.floor(Math.random() * 5000) + 100).toLocaleString()}
-              Followers
-            
-            
-              {(Math.floor(Math.random() * 1000) + 50).toLocaleString()}
-              Following
-            
-             
-              {(profileUser.pollitPointsBalance || 0).toLocaleString()}
-              PollitPoints
-            
-        
-
-        
-          
-            
-              Created
-              Voted
-              Media
-              Liked
-            
-          
-          
-            {userPolls.length > 0 ? (
-              
-                
-              
-            ) : (
-              
-                
-                  
-                     
-                    No Polls Created Yet
-                    {profileUser.name} hasn't created any polls. Check back later!
-                  
-                
-              
-            )}
-          
-          
-            
-                
-                   
-                    Voted Polls Unavailable
-                    This feature requires database integration to track votes.
-                     Login to see Voted Polls
-                    
-                
-            
-          
-          
-             
-                
-                   
-                    Media Feed Unavailable
-                    This feature requires database integration to show media-specific polls.
-                     Login to see Media Feed
-                    
-                
-            
-          
-           
-             
-                
-                   
-                    Liked Polls Unavailable
-                    This feature requires database integration to track liked polls.
-                     Login to see Liked Polls
-                    
-                
-            
-          
-        
-      
-    
-  );
-}
-
-interface PollCardFeedWrapperProps {
-  initialPolls: Poll[];
-  currentUser: User | null; // Changed from AppUser to User to match PollFeed's expectation
-}
-
-const PollCardFeedWrapper: React.FC = ({ initialPolls, currentUser }) => {
-  const [polls, setPolls] = useState(() => initialPolls.map(p => ({...p})));
-  const { toast } } from "@/hooks/use-toast";
-import PollFeed from '@/components/polls/PollFeed';
-import useAuth from '@/hooks/useAuth';
-import NextLink from 'next/link';
-import { signIn } from 'next-auth/react';
-
-
-async function getUserData(userId: string): Promise<{ user: User | null; polls: Poll[] }> {
-  console.warn(`[UserProfilePage] Using mock data for userId: ${userId}`);
-  const user = mockUsers.find(u => u.id === userId) || null;
-  const freshUser = user ? {...user} : null;
-  
-  let polls: Poll[] = [];
-  if (freshUser) {
-    polls = mockPolls.filter(p => p.creator.id === userId).map(p => ({...p}));
-  }
-  return { user: freshUser, polls };
-}
-
-const urlSafeText = (text: string, maxLength: number = 15): string => {
-  const cleanedText = text.replace(/[^a-zA-Z0-9\s]/g, "").substring(0, maxLength);
-  return encodeURIComponent(cleanedText);
-};
-
-export default function UserProfilePage() {
-  const router = useRouter();
-  const routeParams = useParams<{ userId: string }>(); 
-  const userId = routeParams.userId;
-  const { toast } = useToast();
-  
-  const { user: authUser, loading: authLoading, isAuthenticated } = useAuth();
-  const [profileUser, setProfileUser] = useState(null);
-  const [userPolls, setUserPolls] = useState([]);
-  const [pageLoading, setPageLoading] = useState(true);
-  const [isFollowing, setIsFollowing] = useState(false); // Client-side simulation
-
-  useEffect(() => {
-    if (userId) {
-      setPageLoading(true);
-      getUserData(userId)
-        .then(data => {
-          setProfileUser(data.user);
-          setUserPolls(data.polls);
-          if (data.user) {
-            // Simulate initial follow state based on mock data for demo
-            setIsFollowing(data.user.isFollowedByCurrentUser || false);
-          } else {
-            toast({
-              title: "User Not Found",
-              description: `Profile for ID ${userId} could not be loaded.`,
-              variant: "destructive"
-            });
-          }
-        })
-        .catch(error => {
-          console.error("[UserProfilePage] Error fetching user data:", error);
-          toast({ title: "Error", description: "Could not load user profile.", variant: "destructive" });
-        })
-        .finally(() => {
-          setPageLoading(false);
-        });
-    } else {
-      setPageLoading(false);
-      // No toast here as userId might be undefined briefly during initial render
-    }
-  }, [userId, toast]);
-
-
-  const handleFollowToggle = () => {
-    if (!isAuthenticated) {
-      toast({ title: "Login Required", description: "Please login to follow users.", variant: "destructive" });
-      signIn();
-      return;
-    }
-    if (authUser?.id === profileUser?.id) {
-      toast({ title: "Action Not Allowed", description: "You cannot follow yourself.", variant: "default" });
-      return;
-    }
-    setIsFollowing(prev => !prev); // Optimistically update UI
-    // In a real app, you would call an API to update follow status in the database
-    toast({ title: isFollowing ? `Unfollowed ${profileUser?.name}` : `Followed ${profileUser?.name}`, description: "This action is simulated." });
-  };
-
-  if (pageLoading || authLoading) {
-    return (
-      
-        
-          Loading profile...
-        
-      
+      <div className="container mx-auto px-4 py-8 text-center flex flex-col items-center justify-center min-h-[calc(100vh-150px)]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-2" />
+        Loading profile...
+      </div>
     );
   }
 
   if (!profileUser) {
     return (
-       
-        
-          
-            
-              
-                
-                   
-                    User Not Found
-                    The profile for user ID  could not be loaded.
-                  
-                
-            
-            
-              
-                Go to Homepage
-              
-            
-          
-        
-      
+       <div className="container mx-auto px-4 py-8 flex flex-col items-center justify-center min-h-[calc(100vh-200px)]">
+        <Card className="w-full max-w-md text-center shadow-xl">
+          <CardHeader>
+            <AlertCircle className="mx-auto h-16 w-16 text-destructive mb-4" />
+            <CardTitle className="text-2xl">User Not Found</CardTitle>
+            <CardDescription>
+                The profile for user ID <span className="font-mono bg-muted px-1 rounded">{userId}</span> could not be loaded.
+            </CardDescription>
+          </CardHeader>
+          <CardFooter>
+            <Button asChild className="w-full">
+              <NextLink href="/">Go to Homepage</NextLink>
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
     );
   }
   
@@ -478,178 +147,180 @@ export default function UserProfilePage() {
   const coverPhotoUrl = `https://placehold.co/1200x400.png?text=${urlSafeText(profileUser.name + " Cover", 25)}`;
 
   return (
-    
-      
-        
-          
-            
-              
-            
-            
-              {profileUser.name}
-            
-            
-              
-            
-          
-        
-      
+    <div className="flex flex-col min-h-screen bg-background">
+      <header className="sticky top-[80px] sm:top-0 z-40 bg-background/80 backdrop-blur-sm border-b">
+        <div className="container mx-auto h-14 flex items-center justify-between px-4">
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
+            <ChevronLeft className="h-6 w-6" />
+          </Button>
+          <h1 className="text-lg font-semibold truncate">{profileUser.name}</h1>
+          <Button variant="ghost" size="icon" onClick={handleShareProfile}>
+            <Share2 className="h-5 w-5" />
+          </Button>
+        </div>
+      </header>
 
-        
-          
-            
-            
-              
-            
-          
-          
-            
-              
-                
-                  
-                  
-                
-              
-            
-          
-        
+      <main className="flex-grow pt-0">
+        <div className="relative h-48 w-full bg-muted">
+          <Image
+            src={coverPhotoUrl} 
+            alt={`${profileUser.name}'s cover photo`}
+            fill
+            className="object-cover"
+            priority 
+            data-ai-hint="profile cover"
+          />
+          <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 transform">
+            <Avatar className="h-32 w-32 border-4 border-background ring-2 ring-primary shadow-lg">
+              <AvatarImage src={profileUser.avatarUrl} alt={profileUser.name || ""} data-ai-hint="profile avatar" />
+              <AvatarFallback className="text-4xl">{profileUser.name ? profileUser.name.split(" ").map(n => n[0]).join("").toUpperCase() : "U"}</AvatarFallback>
+            </Avatar>
+          </div>
+        </div>
 
-        
+        <div className="pt-20 pb-8 text-center border-b">
+          <h2 className="text-2xl font-bold text-foreground">{profileUser.name}</h2>
+          <p className="text-sm text-muted-foreground">@{profileUser.username}</p>
           
-            {profileUser.name}
-          
-          @{profileUser.username}
-          
-          
+          <p className="mt-2 text-sm text-foreground max-w-md mx-auto px-4">
             Lover of polls, opinions, and good conversations. Helping the world make up its mind, one poll at a time! 🚀 #PollMaster
-          
-          
-            Planet Earth
-            Joined {new Date(2023, Math.floor(Math.random()*12), Math.floor(Math.random()*28)+1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-          
-          
-            
-             example.com
-          
+          </p>
+          <div className="mt-3 flex justify-center space-x-4 text-sm text-muted-foreground">
+            <span className="flex items-center"><MapPin className="h-4 w-4 mr-1" />Planet Earth</span>
+            <span className="flex items-center"><CalendarDays className="h-4 w-4 mr-1" />Joined {new Date(2023, Math.floor(Math.random()*12), Math.floor(Math.random()*28)+1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
+          </div>
+          <a href="https://example.com" target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center text-xs text-primary hover:underline">
+            <LinkIconLucide className="h-3 w-3 mr-1" /> example.com
+          </a>
 
-          
-            
-              
-                
-                 Edit Profile
-                
-                
-                  Settings
-                
-              
-            
-              
-                
-                   Login to Follow
-                  Unfollow
-                 Follow
-                
-                
-                  Login to Message
-                 Message
-                
-              
-            
-          
-        
-        
-            
-              {userPolls.length.toLocaleString()}
-              Polls
-            
-            
-              {(Math.floor(Math.random() * 5000) + 100).toLocaleString()}
-              Followers
-            
-            
-              {(Math.floor(Math.random() * 1000) + 50).toLocaleString()}
-              Following
-            
-             
-              {(profileUser.pollitPointsBalance || 0).toLocaleString()}
-              PollitPoints
-            
-        
-
-        
-          
-            
-              Created
-              Voted
-              Media
-              Liked
-            
-          
-          
-            {userPolls.length > 0 ? (
-              
-                
-              
+          <div className="mt-4 flex justify-center space-x-2 sm:space-x-4">
+            {isOwnProfile ? (
+              <>
+                <Button variant="outline" onClick={() => router.push('/settings')}>
+                  <Edit3 className="mr-2 h-4 w-4" /> Edit Profile
+                </Button>
+                <Button variant="outline" onClick={() => router.push('/settings')}>
+                  <Settings className="mr-2 h-4 w-4" /> Settings
+                </Button>
+              </>
             ) : (
-              
-                
-                  
-                     
-                    No Polls Created Yet
-                    {profileUser.name} hasn't created any polls. Check back later!
-                  
-                
-              
+              <>
+                <Button 
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground" 
+                  onClick={handleFollowToggle}
+                  disabled={!isAuthenticated && !authLoading}
+                >
+                  {!isAuthenticated && authLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  {!isAuthenticated && !authLoading ? <LogIn className="mr-2 h-4 w-4" /> : (isFollowing ? <UserX className="mr-2 h-4 w-4" /> : <UserPlus className="mr-2 h-4 w-4" />)}
+                  {!isAuthenticated && !authLoading ? 'Login to Follow' : (isFollowing ? 'Unfollow' : 'Follow')}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => isAuthenticated ? toast({ title: "Coming Soon!", description: "Direct messaging will be available in a future update."}) : signIn()}
+                  disabled={!isAuthenticated && !authLoading}
+                >
+                   {!isAuthenticated && authLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                   {!isAuthenticated && !authLoading ? <LogIn className="mr-2 h-4 w-4" /> : <MessageSquare className="mr-2 h-4 w-4" />}
+                   {!isAuthenticated && !authLoading ? 'Login to Message' : 'Message'}
+                </Button>
+              </>
             )}
-          
-          
-            
-                
-                   
-                    Voted Polls Unavailable
-                    This feature requires database integration to track votes.
-                     Login to see Voted Polls
-                    
-                
-            
-          
-          
-             
-                
-                   
-                    Media Feed Unavailable
-                    This feature requires database integration to show media-specific polls.
-                     Login to see Media Feed
-                    
-                
-            
-          
-           
-             
-                
-                   
-                    Liked Polls Unavailable
-                    This feature requires database integration to track liked polls.
-                     Login to see Liked Polls
-                    
-                
-            
-          
+          </div>
+        </div>
         
-      
-    
+        <div className="mt-4 flex justify-around border-b pb-3">
+            <div className="text-center">
+                <p className="font-semibold text-lg text-foreground">{userPolls.length.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">Polls</p>
+            </div>
+            <div className="text-center">
+                <p className="font-semibold text-lg text-foreground">{(Math.floor(Math.random() * 5000) + 100).toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">Followers</p>
+            </div>
+            <div className="text-center">
+                <p className="font-semibold text-lg text-foreground">{(Math.floor(Math.random() * 1000) + 50).toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">Following</p>
+            </div>
+             <div className="text-center">
+                <p className="font-semibold text-lg text-foreground">{(profileUser.pollitPointsBalance || 0).toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">PollitPoints</p>
+            </div>
+        </div>
+
+        <Tabs defaultValue="created" className="w-full mt-0">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-4 rounded-none border-b sticky top-[136px] sm:top-[56px] z-30 bg-background/95 backdrop-blur-sm">
+            <TabsTrigger value="created">Created</TabsTrigger>
+            <TabsTrigger value="voted">Voted</TabsTrigger>
+            <TabsTrigger value="media">Media</TabsTrigger>
+            <TabsTrigger value="liked" className="hidden sm:inline-flex">Liked</TabsTrigger>
+          </TabsList>
+          <TabsContent value="created" className="mt-0">
+            {userPolls.length > 0 ? (
+              <PollCardFeedWrapper 
+                initialPolls={userPolls} 
+                currentUser={authUser} 
+              />
+            ) : (
+              <Card className="shadow-none rounded-none border-0">
+                <CardHeader className="items-center text-center pt-12 pb-8">
+                   <Search className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <CardTitle className="text-xl">No Polls Created Yet</CardTitle>
+                  <CardDescription>{profileUser.name} hasn't created any polls. Check back later!</CardDescription>
+                </CardHeader>
+              </Card>
+            )}
+          </TabsContent>
+          <TabsContent value="voted">
+            <Card className="shadow-none rounded-none border-0 items-center text-center pt-12 pb-8">
+                <AlertCircle className="h-12 w-12 text-muted-foreground/50 mb-4 mx-auto" />
+                <CardTitle className="text-xl">Voted Polls Unavailable</CardTitle>
+                <CardDescription>This feature requires database integration to track votes.</CardDescription>
+                 {!isAuthenticated && (
+                    <Button onClick={() => signIn()} className="mt-4">
+                        <LogIn className="mr-2 h-4 w-4" /> Login to see Voted Polls
+                    </Button>
+                )}
+            </Card>
+          </TabsContent>
+          <TabsContent value="media">
+             <Card className="shadow-none rounded-none border-0 items-center text-center pt-12 pb-8">
+                <AlertCircle className="h-12 w-12 text-muted-foreground/50 mb-4 mx-auto" />
+                <CardTitle className="text-xl">Media Feed Unavailable</CardTitle>
+                <CardDescription>This feature requires database integration to show media-specific polls.</CardDescription>
+                 {!isAuthenticated && (
+                    <Button onClick={() => signIn()} className="mt-4">
+                        <LogIn className="mr-2 h-4 w-4" /> Login to see Media Feed
+                    </Button>
+                )}
+            </Card>
+          </TabsContent>
+           <TabsContent value="liked" className="hidden sm:block">
+             <Card className="shadow-none rounded-none border-0 items-center text-center pt-12 pb-8">
+                <AlertCircle className="h-12 w-12 text-muted-foreground/50 mb-4 mx-auto" />
+                <CardTitle className="text-xl">Liked Polls Unavailable</CardTitle>
+                <CardDescription>This feature requires database integration to track liked polls.</CardDescription>
+                {!isAuthenticated && (
+                    <Button onClick={() => signIn()} className="mt-4">
+                        <LogIn className="mr-2 h-4 w-4" /> Login to see Liked Polls
+                    </Button>
+                )}
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </main>
+    </div>
   );
 }
 
 interface PollCardFeedWrapperProps {
   initialPolls: Poll[];
-  currentUser: User | null; // Changed from AppUser to User to match PollFeed's expectation
+  currentUser: User | null;
 }
 
-const PollCardFeedWrapper: React.FC = ({ initialPolls, currentUser }) => {
+const PollCardFeedWrapper: React.FC<PollCardFeedWrapperProps> = ({ initialPolls, currentUser }) => {
   const [polls, setPolls] = useState(() => initialPolls.map(p => ({...p})));
   const { toast } = useToast();
-  const { isAuthenticated } = useAuth(); // No need to get currentUser again, use prop
+  const { isAuthenticated } = useAuth(); 
 
   const MIN_PAYOUT_PER_VOTER = 0.10;
   const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50;
@@ -732,15 +403,19 @@ const PollCardFeedWrapper: React.FC = ({ initialPolls, currentUser }) => {
   };
 
   return (
-    
-       
-        
-          
-          onPledgeOutcomeCallback={handlePledgeOutcome}
+    <div className="space-y-0 divide-y divide-border"> {/* Changed from PollFeed directly to avoid recursive PollFeed component */}
+      {polls.map(poll => (
+        <PollCard 
+          key={poll.id} 
+          poll={poll} 
+          onVote={handleVote} 
+          onToggleLike={handleToggleLike}
+          onPollActionComplete={handlePollActionComplete}
+          onPledgeOutcome={handlePledgeOutcome}
           currentUser={currentUser}
         />
-      
-    
+      ))}
+    </div>
   );
 };
     

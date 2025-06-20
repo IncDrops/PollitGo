@@ -188,7 +188,7 @@ export default function PollDetailsPage() {
       }
     };
     fetchData();
-  }, [pollId]); // Removed toast from dependencies
+  }, [pollId, toast]); 
 
   const poll = pollData.poll;
   const comments = pollData.comments;
@@ -288,7 +288,6 @@ export default function PollDetailsPage() {
     if (!poll) return;
 
     setIsLiking(true);
-    // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 300)); 
     setPollData(prevData => {
         if (!prevData.poll) return prevData;
@@ -426,7 +425,7 @@ export default function PollDetailsPage() {
                 <div className={cn("grid gap-2", poll.imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2", poll.imageUrls.length > 2 && "md:grid-cols-" + Math.min(poll.imageUrls.length, 4))}>
                     {poll.imageUrls.map((imgUrl, idx) => (
                         <div key={idx} className="relative aspect-video bg-muted rounded-md overflow-hidden shadow-sm">
-                            <Image src={imgUrl} alt={`Poll image ${idx + 1}`} layout="fill" objectFit="cover" data-ai-hint={poll.imageKeywords && poll.imageKeywords[idx] ? poll.imageKeywords[idx] : "poll visual"}/>
+                            <Image src={imgUrl} alt={`Poll image ${idx + 1}`} fill className="object-cover" data-ai-hint={poll.imageKeywords && poll.imageKeywords[idx] ? poll.imageKeywords[idx] : "poll visual"}/>
                         </div>
                     ))}
                 </div>

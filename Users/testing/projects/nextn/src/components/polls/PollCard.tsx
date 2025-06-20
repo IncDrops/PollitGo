@@ -144,7 +144,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const controls = useAnimationControls();
-  const isPollType = currentPoll.postType === 'poll' || !currentPoll.postType; // Default to poll if undefined
+  const isPollType = currentPoll.postType === 'poll' || !currentPoll.postType; 
   const canSwipe = !!currentUser?.id && isPollType && currentPoll.options.length === 2 && !currentPoll.isVoted && !deadlinePassed && !!onVote;
 
   const handleInternalVote = (optionId: string) => {
@@ -207,9 +207,8 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
   });
 
   const handlePointerDown = (e: React.MouseEvent | React.TouchEvent) => {
-    // Prevent long press if swipe is active or if it's a touch event that might lead to scrolling
     if (canSwipe || (e.type === 'touchstart' && swipeHandlers.onTouchStart)) {
-       swipeHandlers.onTouchStart?.(e as any); // Pass to swipe handler if swiping
+       swipeHandlers.onTouchStart?.(e as any); 
        return;
     }
     longPressTimer.current = setTimeout(() => {
@@ -223,7 +222,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
       longPressTimer.current = null;
     }
      if (canSwipe && e && swipeHandlers.onTouchEnd) {
-        swipeHandlers.onTouchEnd?.(e as any); // Pass to swipe handler if swiping
+        swipeHandlers.onTouchEnd?.(e as any); 
     }
   };
 
@@ -270,12 +269,9 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
 
   const onCardClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('button, a')) return;
-     // If a long press was not triggered (i.e., timer cleared before 800ms)
-    if (!longPressTimer.current) { // Check if timer is active, implying no long press
+    if (!longPressTimer.current) { 
        router.push(`/polls/${currentPoll.id}`);
     }
-    // If long press timer IS active, it means it might complete, so don't navigate here.
-    // The pointer up/leave will clear it if it didn't complete.
   };
 
   const onCreatorClick = (e: React.MouseEvent) => {
@@ -399,7 +395,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
                                 currentPoll.imageUrls?.length === 1 ? "aspect-[16/9]" : "aspect-square",
                                 (currentPoll.postType === 'poll' && currentPoll.imageUrls?.length === 3 && idx === 0) ? "col-span-2" : ""
                                 )}>
-                                <Image src={imgUrl} alt={`Post image ${idx + 1}`} layout="fill" objectFit="cover" data-ai-hint={currentPoll.imageKeywords && currentPoll.imageKeywords[idx] ? currentPoll.imageKeywords[idx] : "post visual"}/>
+                                <Image src={imgUrl} alt={`Post image ${idx + 1}`} fill className="object-cover" data-ai-hint={currentPoll.imageKeywords && currentPoll.imageKeywords[idx] ? currentPoll.imageKeywords[idx] : "post visual"}/>
                             </div>
                         ))}
                     </div>
