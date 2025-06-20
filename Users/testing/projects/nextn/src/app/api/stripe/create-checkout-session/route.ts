@@ -66,11 +66,37 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('Error creating Stripe session:', error);
-    // Provide a more generic error message to the client for security
+    let errorMessage = 'Failed to create payment session. Please try again later.';
+    let statusCode = 500;
+    let stripeErrorDetails: { type?: string; code?: string; message?: string } = {};
+
+    if (error instanceof Stripe.errors.StripeError) {
+      // Log more specific Stripe error details
+      console.error(`Stripe Error Type: ${error.type}, Code: ${error.code}, Message: ${error.message}`);
+      errorMessage = error.message || errorMessage; // Use Stripe's message if available
+      stripeErrorDetails = {
+        type: error.type,
+        code: error.code,
+        message: error.message,
+      };
+      // You could set specific status codes based on error.type
+      // For example, for card errors, Stripe might suggest a 402 status.
+      // switch (error.type) {
+      //   case 'StripeCardError':
+      //     statusCode = 402; // Payment Required
+      //     break;
+      //   // Handle other specific Stripe error types
+      // }
+    }
+    
     return NextResponse.json(
-      { error: 'Failed to create payment session. Please try again later.' },
-      { status: 500 }
+      { 
+        error: errorMessage, 
+        stripeErrorType: stripeErrorDetails.type, 
+        stripeErrorCode: stripeErrorDetails.code,
+        stripeErrorMessage: stripeErrorDetails.message
+      },
+      { status: statusCode }
     );
   }
 }
-
