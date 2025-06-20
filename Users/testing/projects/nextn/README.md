@@ -41,11 +41,17 @@ NEXTAUTH_URL=http://localhost:9003
 # 3. This EXACT SAME secret MUST be used in .env.local AND in your deployed environment variables.
 NEXTAUTH_SECRET=REPLACE_THIS_WITH_THE_ONE_STRONG_RANDOM_SECRET_YOU_GENERATED
 
-# Stripe Keys - FOR LOCAL DEVELOPMENT, YOU MUST USE YOUR STRIPE *TEST* KEYS
+# Stripe Keys - TEST vs. LIVE Keys
 # ========================================================================
+# Standard Practice: Use your TEST keys (sk_test_..., pk_test_...) for local development.
 # These keys do NOT process real money.
-STRIPE_SECRET_KEY=sk_test_YOUR_STRIPE_TEST_SECRET_KEY_GOES_HERE
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_test_YOUR_STRIPE_TEST_PUBLISHABLE_KEY_GOES_HERE
+#
+# NOTE for DEMONSTRATION: If you encounter persistent issues with test keys and need to
+# demonstrate a working payment flow, you might temporarily use your LIVE keys locally.
+# Be aware this WILL process real transactions.
+STRIPE_SECRET_KEY=YOUR_STRIPE_KEY_GOES_HERE
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=YOUR_STRIPE_PUBLISHABLE_KEY_GOES_HERE
+
 
 # Firebase Configuration - REQUIRED IF USING FIREBASE SERVICES (Storage, Firestore, etc.)
 # ==================================================================================
@@ -66,7 +72,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID=YOUR_FIREBASE_APP_ID
 **VERY IMPORTANT INSTRUCTIONS FOR `.env.local` (Local Development):**
 1.  **Location:** Ensure this file is at the **project root**.
 2.  **Generate `NEXTAUTH_SECRET` ONCE:** Run `openssl rand -base64 32`. Use this **EXACT SAME SECRET** in `.env.local` AND in your Google Cloud Build trigger settings (and other deployed environments).
-3.  **Stripe Keys:** Use your **TEST** Stripe keys (starting `pk_test_...` and `sk_test_...`).
+3.  **Stripe Keys:** Standard practice is to use your **TEST** Stripe keys locally. For demonstration purposes, if you switch to LIVE keys, remember they will process real charges.
 4.  **Replace Placeholders:** Update with your actual Firebase project config if using Firebase services. **Do NOT wrap values in quotation marks.**
 5.  **Setup Google Cloud ADC (for Genkit local dev):** `gcloud auth application-default login`.
 6.  **Restart Dev Server:** After creating/modifying `.env.local`, restart `npm run dev`.
