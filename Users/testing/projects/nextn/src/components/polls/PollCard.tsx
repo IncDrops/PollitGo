@@ -22,7 +22,7 @@ import { signIn } from 'next-auth/react';
 interface PollCardProps {
   poll: Poll;
   onVote?: (pollId: string, optionId: string) => void;
-  // onPollActionComplete is removed as PollCard now manages its full animation cycle
+  onToggleLike?: (pollId: string) => void;
   onPledgeOutcome?: (pollId: string, outcome: 'accepted' | 'tipped_crowd') => void;
   currentUser?: User | null;
 }
@@ -122,30 +122,23 @@ const PollOptionDisplay: React.FC<{
   );
 };
 
-export default function PollCard({ poll, onVote, onPledgeOutcome, currentUser }: PollCardProps) {
+export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, currentUser }: PollCardProps) {
   const router = useRouter();
   const { toast } = useToast();
   const stripe = useStripe();
   const [deadlinePassed, setDeadlinePassed] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [createdAtFormatted, setCreatedAtFormatted] = useState<string | null>(null);
-  const [currentPoll, setCurrentPoll] = useState<Poll>(poll);
   const [isTipping, setIsTipping] = useState(false);
   const [isLikingInProgress, setIsLikingInProgress] = useState(false);
 
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
-  const cardRef = useRef<HTMLDivElement>(null);
   const controls = useAnimationControls();
-
-  useEffect(() => {
-    setCurrentPoll({...poll});
-  }, [poll]);
 
   const [selectedOptionForModal, setSelectedOptionForModal] = useState<PollOptionType | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const isPollType = currentPoll.postType === 'poll' || !currentPoll.postType;
-  const canSwipe = !!currentUser?.id && isPollType && currentPoll.options.length === 2 && !currentPoll.isVoted && !deadlinePassed && !!onVote;
+  const canSwipe = !!currentUser?.id && poll.options.length === 2 && !poll.isVoted && !deadlinePassed && !!onVote;
 
   const clearLongPressTimer = useCallback(() => {
     if (longPressTimer.current) {
@@ -161,92 +154,75 @@ export default function PollCard({ poll, onVote, onPledgeOutcome, currentUser }:
         signIn();
         return;
     }
-    const pollBeforeUpdate = {...currentPoll};
     
-    // Call the onVote prop to update the state in PollFeed
-    // This will trigger a re-render of PollCard with the updated poll data.
-    onVote(currentPoll.id, optionId);
-    
-    // The actual state update for currentPoll will happen via props when PollFeed re-renders.
-    // For immediate visual feedback if needed before prop update, you could do a local setCurrentPoll here too,
-    // but it's generally better to rely on the single source of truth from the parent.
-    // However, for the low payout warning, we might use the pollBeforeUpdate.
-    const votedOptionAfterUpdate = pollBeforeUpdate.options.find(opt => opt.id === optionId);
-    if (pollBeforeUpdate.pledgeAmount && pollBeforeUpdate.pledgeAmount > 0 && votedOptionAfterUpdate) {
-        const amountToDistributeToVoters = pollBeforeUpdate.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
-        const votesForThisOptionBeforeCurrent = votedOptionAfterUpdate.votes;
-        const votesAfterThisUsersVote = votesForThisOptionBeforeCurrent + 1;
-
-        if ((amountToDistributeToVoters / votesAfterThisUsersVote) < MIN_PAYOUT_PER_VOTER && votesAfterThisUsersVote > 0) {
-            setTimeout(() => {
-              toast({
-                  title: "Low Payout Warning",
-                  description: `Your vote is counted! Potential PollitPoint payout might be low.`,
-                  variant: "default", duration: 7000,
-              });
-            }, 100);
+    if (poll.pledgeAmount && poll.pledgeAmount > 0) {
+        const votedOption = poll.options.find(opt => opt.id === optionId);
+        if (votedOption) {
+            const amountToDistributeToVoters = poll.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
+            const votesAfterThisUsersVote = votedOption.votes + 1;
+            if ((amountToDistributeToVoters / votesAfterThisUsersVote) < MIN_PAYOUT_PER_VOTER && votesAfterThisUsersVote > 0) {
+                setTimeout(() => {
+                  toast({
+                      title: "Low Payout Warning",
+                      description: `Your vote is counted! Potential PollitPoint payout might be low.`,
+                      variant: "default", duration: 7000,
+                  });
+                }, 100);
+            }
         }
     }
+    onVote(poll.id, optionId);
   };
-
+  
   const handleInternalToggleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isLikingInProgress) return;
+    if (isLikingInProgress || !onToggleLike) return;
     if (!currentUser?.id) {
       toast({ title: "Login Required", description: "Please login to like posts.", variant: "destructive" });
       signIn();
       return;
     }
     setIsLikingInProgress(true);
-    // Optimistic update
-    const newIsLiked = !currentPoll.isLiked;
-    const newLikesCount = newIsLiked ? currentPoll.likes + 1 : Math.max(0, currentPoll.likes - 1);
-    setCurrentPoll(prev => ({...prev, isLiked: newIsLiked, likes: newLikesCount}));
-    
-    // Simulate backend call
-    // In a real app, you would call an API here and handle success/failure.
-    // For this example, we'll just use a timeout.
-    // This logic would typically be in PollFeed if likes are persisted.
-    // For now, it's just a local visual change in PollCard.
+    onToggleLike(poll.id);
     await new Promise(resolve => setTimeout(resolve, 300));
-    if (newIsLiked) toast({title: "Poll Liked!"}); else toast({title: "Poll Unliked"});
     setIsLikingInProgress(false);
   };
+  
+  const handleDoubleClick = () => {
+    if (isLikingInProgress || !onToggleLike) return;
+     if (!currentUser?.id) {
+      toast({ title: "Login Required", description: "Please login to like posts.", variant: "destructive" });
+      signIn();
+      return;
+    }
+    setIsLikingInProgress(true);
+    onToggleLike(poll.id);
+    setTimeout(() => setIsLikingInProgress(false), 300); 
+  };
+
 
   const swipeHandlers = useSwipeable({
-    onSwipeStart: () => {
-      clearLongPressTimer();
-    },
     onSwiped: async (eventData) => {
       if (!canSwipe || typeof onVote === 'undefined') return;
-      clearLongPressTimer();
 
       const direction = eventData.dir;
-      const optionToVote = direction === 'Left' ? currentPoll.options[0].id : currentPoll.options[1].id;
+      const optionToVote = direction === 'Left' ? poll.options[0].id : poll.options[1].id;
       
-      handleInternalVote(optionToVote); // This will call onVote, which updates PollFeed state
+      handleInternalVote(optionToVote);
 
-      // Animate Out
       await controls.start({
         x: direction === "Left" ? "-120%" : "120%",
         opacity: 0,
         transition: { duration: 0.3, ease: "easeIn" },
       });
 
-      // Pause off-screen (allows time for PollFeed to re-render PollCard with updated props)
-      await new Promise(resolve => setTimeout(resolve, 400)); // 300ms out + 400ms pause = 700ms total "gone" time
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Snap to opposite side (hidden)
-      // The `currentPoll` state within this component instance is stale here.
-      // The updated poll data comes via props after PollFeed re-renders.
-      // The re-render of PollCard with new props should happen before this point.
       controls.set({
-        x: direction === "Left" ? "120%" : "-120%", // Start from opposite side
+        x: direction === "Left" ? "120%" : "-120%",
         opacity: 0,
       });
       
-      // Animate back in
-      // The card now has new `currentPoll` props reflecting the vote.
       await controls.start({
         x: "0%",
         opacity: 1,
@@ -261,10 +237,10 @@ export default function PollCard({ poll, onVote, onPledgeOutcome, currentUser }:
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     clearLongPressTimer();
     longPressTimer.current = setTimeout(() => {
-      router.push(`/profile/${currentPoll.creator.id}`);
+      router.push(`/profile/${poll.creator.id}`);
       longPressTimer.current = null;
     }, 800);
-  }, [clearLongPressTimer, router, currentPoll.creator.id]);
+  }, [clearLongPressTimer, router, poll.creator.id]);
 
   const handlePointerUp = useCallback(() => {
     clearLongPressTimer();
@@ -272,7 +248,7 @@ export default function PollCard({ poll, onVote, onPledgeOutcome, currentUser }:
 
 
   useEffect(() => {
-    const deadlineDate = parseISO(currentPoll.deadline);
+    const deadlineDate = parseISO(poll.deadline);
     const checkDeadline = () => {
       const now = new Date();
       const remaining = deadlineDate.getTime() - now.getTime();
@@ -287,11 +263,11 @@ export default function PollCard({ poll, onVote, onPledgeOutcome, currentUser }:
     checkDeadline();
     const interval = setInterval(checkDeadline, 60000);
     return () => clearInterval(interval);
-  }, [currentPoll.deadline]);
+  }, [poll.deadline]);
 
   useEffect(() => {
-    setCreatedAtFormatted(formatDistanceToNowStrict(parseISO(currentPoll.createdAt), { addSuffix: true }));
-  }, [currentPoll.createdAt]);
+    setCreatedAtFormatted(formatDistanceToNowStrict(parseISO(poll.createdAt), { addSuffix: true }));
+  }, [poll.createdAt]);
 
   const handleShowOptionDetails = (option: PollOptionType) => {
     setSelectedOptionForModal(option);
@@ -300,21 +276,21 @@ export default function PollCard({ poll, onVote, onPledgeOutcome, currentUser }:
 
   const onCardClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('button, a')) return;
-    router.push(`/polls/${currentPoll.id}`);
+    router.push(`/polls/${poll.id}`);
   };
 
   const onCreatorClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    router.push(`/profile/${currentPoll.creator.id}`);
+    router.push(`/profile/${poll.creator.id}`);
   };
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (typeof window === 'undefined') return;
-    const shareUrl = `${window.location.origin}/polls/${currentPoll.id}`;
+    const shareUrl = `${window.location.origin}/polls/${poll.id}`;
     const shareData = {
-      title: currentPoll.question,
-      text: `Check out this post on PollitAGo: ${currentPoll.question}`,
+      title: poll.question,
+      text: `Check out this post on PollitAGo: ${poll.question}`,
       url: shareUrl,
     };
     try {
@@ -349,8 +325,8 @@ export default function PollCard({ poll, onVote, onPledgeOutcome, currentUser }:
         body: JSON.stringify({
           amount: 500,
           currency: 'usd',
-          itemName: `Tip for ${currentPoll.creator.name}`,
-          metadata: { pollId: currentPoll.id, pollCreatorId: currentPoll.creator.id, tipperUserId: currentUser.id }
+          itemName: `Tip for ${poll.creator.name}`,
+          metadata: { pollId: poll.id, pollCreatorId: poll.creator.id, tipperUserId: currentUser.id }
         }),
       });
       const session = await response.json();
@@ -369,32 +345,32 @@ export default function PollCard({ poll, onVote, onPledgeOutcome, currentUser }:
   };
 
   const handlePledgeOutcomeInternal = (outcome: 'accepted' | 'tipped_crowd') => {
-    if (!currentUser?.id || currentUser.id !== currentPoll.creator.id) {
+    if (!currentUser?.id || currentUser.id !== poll.creator.id) {
         toast({title: "Action Denied", description: "Only the poll creator can decide the pledge outcome.", variant: "destructive"});
         return;
     }
     if (onPledgeOutcome) {
-      onPledgeOutcome(currentPoll.id, outcome);
+      onPledgeOutcome(poll.id, outcome);
     }
   };
 
-  const pollHasTwoOptions = isPollType && currentPoll.options.length === 2;
-  const canCurrentUserVoteOnPoll = !!currentUser?.id && isPollType && !currentPoll.isVoted && !deadlinePassed;
-  const isCreator = currentUser?.id === currentPoll.creator.id;
-  const showPledgeOutcomeButtons = isPollType && isCreator && deadlinePassed && currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0 && (currentPoll.pledgeOutcome === 'pending' || currentPoll.pledgeOutcome === undefined);
+  const pollHasTwoOptions = poll.options.length === 2;
+  const canCurrentUserVoteOnPoll = !!currentUser?.id && !poll.isVoted && !deadlinePassed;
+  const isCreator = currentUser?.id === poll.creator.id;
+  const showPledgeOutcomeButtons = isCreator && deadlinePassed && poll.pledgeAmount && poll.pledgeAmount > 0 && (poll.pledgeOutcome === 'pending' || poll.pledgeOutcome === undefined);
 
   return (
     <>
       <motion.div
-        layout // Handles reordering smoothly if other polls are removed by PollFeed
+        layout
         {...(canSwipe ? swipeHandlers : {})}
-        ref={cardRef}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
+        onDoubleClick={handleDoubleClick}
         className="w-full touch-pan-y"
-        animate={controls} // Controls the swipe-out and pendulum-in animation
-        initial={{ x: "0%", opacity: 1 }} // Initial state of the card
+        animate={controls}
+        initial={{ x: "0%", opacity: 1 }}
         style={{WebkitTapHighlightColor: 'transparent'}}
       >
         <Card
@@ -404,83 +380,81 @@ export default function PollCard({ poll, onVote, onPledgeOutcome, currentUser }:
           <CardHeader className="p-4">
             <div className="flex items-center space-x-3 mb-2">
               <Avatar className="h-10 w-10 border" onClick={onCreatorClick}>
-                <AvatarImage src={currentPoll.creator.avatarUrl} alt={currentPoll.creator.name} data-ai-hint={generateHintFromText(currentPoll.creator.name) || "profile avatar"}/>
-                <AvatarFallback>{currentPoll.creator.name ? currentPoll.creator.name.substring(0,1).toUpperCase() : 'U'}</AvatarFallback>
+                <AvatarImage src={poll.creator.avatarUrl} alt={poll.creator.name} data-ai-hint={generateHintFromText(poll.creator.name) || "profile avatar"}/>
+                <AvatarFallback>{poll.creator.name ? poll.creator.name.substring(0,1).toUpperCase() : 'U'}</AvatarFallback>
               </Avatar>
               <div>
-                <p className="text-sm font-semibold text-foreground hover:underline" onClick={onCreatorClick}>{currentPoll.creator.name}</p>
-                <p className="text-xs text-muted-foreground">@{currentPoll.creator.username} &middot; {createdAtFormatted || 'Just now'}</p>
+                <p className="text-sm font-semibold text-foreground hover:underline" onClick={onCreatorClick}>{poll.creator.name}</p>
+                <p className="text-xs text-muted-foreground">@{poll.creator.username} &middot; {createdAtFormatted || 'Just now'}</p>
               </div>
             </div>
             <CardTitle className="text-md font-semibold text-foreground leading-snug flex items-start">
-               {currentPoll.isSpicy && <Flame className="w-4 h-4 mr-1.5 text-orange-500 flex-shrink-0 mt-0.5" />}
-              <span>{currentPoll.question}</span>
+               {poll.isSpicy && <Flame className="w-4 h-4 mr-1.5 text-orange-500 flex-shrink-0 mt-0.5" />}
+              <span>{poll.question}</span>
             </CardTitle>
-             {currentPoll.imageUrls && currentPoll.imageUrls.length > 0 && (
+             {poll.imageUrls && poll.imageUrls.length > 0 && (
                 <div className="mt-2 -mx-4">
-                    <div className={cn("grid gap-0.5", currentPoll.imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
-                        {currentPoll.imageUrls.slice(0, currentPoll.postType === 'opinion' ? 2 : (currentPoll.imageUrls.length === 3 ? 2 : 4)).map((imgUrl, idx) => (
+                    <div className={cn("grid gap-0.5", poll.imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
+                        {poll.imageUrls.slice(0, poll.postType === 'opinion' ? 2 : (poll.imageUrls.length === 3 ? 2 : 4)).map((imgUrl, idx) => (
                             <div key={idx} className={cn(
                                 "relative bg-muted overflow-hidden",
-                                currentPoll.imageUrls?.length === 1 ? "aspect-[16/9]" : "aspect-square",
-                                (currentPoll.postType === 'poll' && currentPoll.imageUrls?.length === 3 && idx === 0) ? "col-span-2" : ""
+                                poll.imageUrls?.length === 1 ? "aspect-[16/9]" : "aspect-square",
+                                (poll.postType === 'poll' && poll.imageUrls?.length === 3 && idx === 0) ? "col-span-2" : ""
                                 )}>
-                                <Image src={imgUrl} alt={`Post image ${idx + 1}`} fill className="object-cover" sizes="100vw" data-ai-hint={currentPoll.imageKeywords && currentPoll.imageKeywords[idx] ? currentPoll.imageKeywords[idx] : "post visual"}/>
+                                <Image src={imgUrl} alt={`Post image ${idx + 1}`} fill className="object-cover" sizes="100vw" data-ai-hint={poll.imageKeywords && poll.imageKeywords[idx] ? poll.imageKeywords[idx] : "post visual"}/>
                             </div>
                         ))}
                     </div>
                 </div>
             )}
-            {currentPoll.videoUrl && (
+            {poll.videoUrl && (
                 <div className="mt-2 -mx-4">
-                    <video src={currentPoll.videoUrl} controls className="w-full aspect-video rounded-none bg-black" data-ai-hint="post video" onClick={(e) => e.stopPropagation()} />
+                    <video src={poll.videoUrl} controls className="w-full aspect-video rounded-none bg-black" data-ai-hint="post video" onClick={(e) => e.stopPropagation()} />
                 </div>
             )}
           </CardHeader>
 
           <CardContent className="p-4 pt-2">
-            {isPollType && canSwipe && (
+            {canSwipe && (
               <div className="text-center text-muted-foreground text-xs py-2">
                 <Zap className="inline-block w-4 h-4 mr-1 animate-pulse" /> Swipe left or right to vote!
               </div>
             )}
-            {isPollType && !currentUser?.id && !deadlinePassed && (
+            {!currentUser?.id && !deadlinePassed && (
                  <div className="text-center text-destructive text-xs py-2 flex items-center justify-center bg-destructive/10 p-2 rounded-md">
                     <AlertCircle className="w-4 h-4 mr-1.5" /> Please
                     <Button variant="link" className="p-0 h-auto text-destructive hover:text-destructive/80 mx-1 text-xs" onClick={(e) => {e.stopPropagation(); signIn();}}>login</Button>
                     to vote.
                 </div>
             )}
-            {isPollType && (
-              <div className={cn(pollHasTwoOptions ? "flex gap-2" : "space-y-2")}>
-                {currentPoll.options.map((option) => (
-                  <PollOptionDisplay
-                    key={option.id}
-                    option={option}
-                    totalVotes={currentPoll.totalVotes}
-                    onVoteOptionClick={() => {
-                      if (pollHasTwoOptions || !canCurrentUserVoteOnPoll || currentPoll.isVoted || deadlinePassed) {
-                           handleShowOptionDetails(option);
-                      } else {
-                           handleInternalVote(option.id);
-                      }
-                    }}
-                    isVotedByCurrentUser={!!currentPoll.isVoted}
-                    isSelectedOptionByCurrentUser={currentPoll.votedOptionId === option.id}
-                    deadlinePassed={deadlinePassed}
-                    pollHasTwoOptions={pollHasTwoOptions}
-                    canCurrentUserVote={canCurrentUserVoteOnPoll}
-                    onShowDetails={() => handleShowOptionDetails(option)}
-                  />
-                ))}
-              </div>
-            )}
+            <div className={cn(pollHasTwoOptions ? "flex gap-2" : "space-y-2")}>
+              {poll.options.map((option) => (
+                <PollOptionDisplay
+                  key={option.id}
+                  option={option}
+                  totalVotes={poll.totalVotes}
+                  onVoteOptionClick={() => {
+                    if (pollHasTwoOptions || !canCurrentUserVoteOnPoll || poll.isVoted || deadlinePassed) {
+                          handleShowOptionDetails(option);
+                    } else {
+                          handleInternalVote(option.id);
+                    }
+                  }}
+                  isVotedByCurrentUser={!!poll.isVoted}
+                  isSelectedOptionByCurrentUser={poll.votedOptionId === option.id}
+                  deadlinePassed={deadlinePassed}
+                  pollHasTwoOptions={pollHasTwoOptions}
+                  canCurrentUserVote={canCurrentUserVoteOnPoll}
+                  onShowDetails={() => handleShowOptionDetails(option)}
+                />
+              ))}
+            </div>
             <div className="mt-3 flex items-center text-xs text-muted-foreground">
               <Clock className="w-3 h-3 mr-1" />
               <span>{deadlinePassed ? `Ended ${timeRemaining}` : `Ends ${timeRemaining}`}</span>
-              {isPollType && <span className="ml-1">&middot; {currentPoll.totalVotes.toLocaleString()} votes</span>}
-              {currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0 && (
-                 <span className="ml-1 text-green-500 font-medium">&middot; Pledged: ${currentPoll.pledgeAmount.toLocaleString()}</span>
+              <span className="ml-1">&middot; {poll.totalVotes.toLocaleString()} votes</span>
+              {poll.pledgeAmount && poll.pledgeAmount > 0 && (
+                 <span className="ml-1 text-green-500 font-medium">&middot; Pledged: ${poll.pledgeAmount.toLocaleString()}</span>
               )}
             </div>
             {showPledgeOutcomeButtons && (
@@ -494,25 +468,25 @@ export default function PollCard({ poll, onVote, onPledgeOutcome, currentUser }:
                 </Button>
               </div>
             )}
-             {currentPoll.pledgeOutcome === 'accepted' && isCreator && deadlinePassed && (
+             {poll.pledgeOutcome === 'accepted' && isCreator && deadlinePassed && (
                 <p className="mt-1 text-xs text-green-600">You accepted the crowd's vote for this pledge.</p>
             )}
-            {currentPoll.pledgeOutcome === 'tipped_crowd' && isCreator && deadlinePassed && (
+            {poll.pledgeOutcome === 'tipped_crowd' && isCreator && deadlinePassed && (
                 <p className="mt-1 text-xs text-orange-600">You tipped the crowd for this pledge.</p>
             )}
           </CardContent>
 
           <CardFooter className="p-3 border-t flex justify-around">
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary text-xs px-1.5" onClick={handleInternalToggleLike} disabled={isLikingInProgress}>
-              {isLikingInProgress ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Heart className={cn("w-4 h-4 mr-1", currentPoll.isLiked ? "fill-red-500 text-red-500" : "text-muted-foreground")} /> }
-              {currentPoll.likes.toLocaleString()}
+              {isLikingInProgress ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Heart className={cn("w-4 h-4 mr-1", poll.isLiked ? "fill-red-500 text-red-500" : "text-muted-foreground")} /> }
+              {poll.likes.toLocaleString()}
             </Button>
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary text-xs px-1.5" onClick={onCardClick}>
-              <MessageSquare className="w-4 h-4 mr-1" /> {currentPoll.commentsCount.toLocaleString()}
+              <MessageSquare className="w-4 h-4 mr-1" /> {poll.commentsCount.toLocaleString()}
             </Button>
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary text-xs px-1.5" onClick={handleTipCreator} disabled={isTipping || !currentUser?.id}>
               {isTipping ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Gift className="w-4 h-4 mr-1" />}
-               Tip {currentPoll.tipCount && currentPoll.tipCount > 0 ? `(${currentPoll.tipCount.toLocaleString()})` : ''}
+               Tip {poll.tipCount && poll.tipCount > 0 ? `(${poll.tipCount.toLocaleString()})` : ''}
             </Button>
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary text-xs px-1.5" onClick={handleShare}>
               <Share2 className="w-4 h-4" />
@@ -520,7 +494,7 @@ export default function PollCard({ poll, onVote, onPledgeOutcome, currentUser }:
           </CardFooter>
         </Card>
       </motion.div>
-      {selectedOptionForModal && isPollType && (
+      {selectedOptionForModal && (
         <OptionDetailsDialog
           option={selectedOptionForModal}
           isOpen={isModalOpen}
@@ -530,4 +504,3 @@ export default function PollCard({ poll, onVote, onPledgeOutcome, currentUser }:
     </>
   );
 }
-

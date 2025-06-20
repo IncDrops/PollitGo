@@ -62,24 +62,20 @@ const generateCreatedAt = (deadlineString: string): string => {
   return new Date(Date.now() - createdAgoMs).toISOString();
 };
 
-type PollSkeleton = Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'commentsCount' | 'likes' | 'tipCount' | 'pledgeAmount' | 'pledgeOutcome' | 'imageKeywords' | 'isSpicy' | 'isLiked'> & { isSpicy?: boolean };
-
+type PollSkeleton = Omit<Poll, 'totalVotes' | 'isVoted' | 'votedOptionId' | 'commentsCount' | 'likes' | 'tipCount' | 'pledgeAmount' | 'pledgeOutcome' | 'imageKeywords' | 'isSpicy' | 'isLiked' | 'postType'> & { isSpicy?: boolean };
 
 const twoOptionPolls: PollSkeleton[] = [
-  { id: '2opt_cereal_art', postType: 'poll', creator: mockUsers.find(u => u.name === 'Ugly Day Canceller') || getRandomUser(), question: "New cereal box art is weird, stop eating?", imageUrls: [`https://placehold.co/600x400.png?text=${urlSafeText("Cereal Art")}`], options: [{ id: '2opt_cereal_a', text: "Trust gut, ditch it" }, { id: '2opt_cereal_b', text: "It's just a box, chill" }], deadline: new Date(Date.now() + parseTimeRemaining("3 days")).toISOString(), createdAt: generateCreatedAt("3 days"), isSpicy: true },
-  { id: '2opt_sneaky_link', postType: 'poll', creator: getRandomUser(), question: "Bestie's man DMed me twice. Sneaky link?", imageUrls: [`https://placehold.co/600x400.png?text=${urlSafeText("DM Drama")}`], options: [{ id: '2opt_sneaky_a', text: "Slide quietly" }, { id: '2opt_sneaky_b', text: "Therapy, girl" }], deadline: new Date(Date.now() + parseTimeRemaining("1 hour")).toISOString(), createdAt: generateCreatedAt("1 hour"), isSpicy: true },
-  { id: 'opinion_1_cat_stare', postType: 'opinion', creator: mockUsers.find(u => u.name === 'Opinion Haver') || getRandomUser(), question: "My cat just stared at a blank wall for 10 minutes straight. Pretty sure it's seeing ghosts. What do you think? Is my house haunted or is my cat just weird?", imageUrls: [`https://placehold.co/600x400.png?text=${urlSafeText("Cat Stare")}`, `https://placehold.co/600x400.png?text=${urlSafeText("Ghostly Wall")}`], videoUrl: undefined, options: [], deadline: new Date(Date.now() + parseTimeRemaining("5 days")).toISOString(), createdAt: generateCreatedAt("5 days"), isSpicy: false },
-  { id: '2opt_rapper_battle', postType: 'poll', creator: getRandomUser(), question: "Trippie Redd vs Hurricane Wisdom: better rapper?", imageUrls: [`https://placehold.co/600x400.png?text=${urlSafeText("Rap Battle")}`], options: [{ id: '2opt_rap_a', text: "Trippie Redd" }, { id: '2opt_rap_b', text: "Hurricane Wisdom" }], deadline: new Date(Date.now() + parseTimeRemaining("7 minutes")).toISOString(), createdAt: generateCreatedAt("7 minutes") },
+  { id: '2opt_cereal_art', creator: mockUsers.find(u => u.name === 'Ugly Day Canceller') || getRandomUser(), question: "New cereal box art is weird, stop eating?", imageUrls: [`https://placehold.co/600x400.png?text=${urlSafeText("Cereal Art")}`], options: [{ id: '2opt_cereal_a', text: "Trust gut, ditch it" }, { id: '2opt_cereal_b', text: "It's just a box, chill" }], deadline: new Date(Date.now() + parseTimeRemaining("3 days")).toISOString(), createdAt: generateCreatedAt("3 days"), isSpicy: true },
+  { id: '2opt_sneaky_link', creator: getRandomUser(), question: "Bestie's man DMed me twice. Sneaky link?", imageUrls: [`https://placehold.co/600x400.png?text=${urlSafeText("DM Drama")}`], options: [{ id: '2opt_sneaky_a', text: "Slide quietly" }, { id: '2opt_sneaky_b', text: "Therapy, girl" }], deadline: new Date(Date.now() + parseTimeRemaining("1 hour")).toISOString(), createdAt: generateCreatedAt("1 hour"), isSpicy: true },
+  { id: '2opt_rapper_battle', creator: getRandomUser(), question: "Trippie Redd vs Hurricane Wisdom: better rapper?", imageUrls: [`https://placehold.co/600x400.png?text=${urlSafeText("Rap Battle")}`], options: [{ id: '2opt_rap_a', text: "Trippie Redd" }, { id: '2opt_rap_b', text: "Hurricane Wisdom" }], deadline: new Date(Date.now() + parseTimeRemaining("7 minutes")).toISOString(), createdAt: generateCreatedAt("7 minutes") },
 ];
 
-
 const threeOptionPolls: PollSkeleton[] = [
-  { id: '3opt_travel_destination', postType: 'poll', creator: getRandomUser(), question: 'Next summer travel: Paris, Tokyo, or Rome?', imageUrls: [`https://placehold.co/600x400.png?text=${urlSafeText("Summer Travel")}`], videoUrl: 'placeholder-video-url', options: [{ id: '3opt_travel_a', text: 'Paris, France', imageUrl: `https://placehold.co/300x200.png?text=${urlSafeText("Paris")}` , affiliateLink: 'https://example.com/paris-tours' }, { id: '3opt_travel_b', text: 'Tokyo, Japan', imageUrl: `https://placehold.co/300x200.png?text=${urlSafeText("Tokyo")}`, affiliateLink: 'https://example.com/tokyo-hotels' }, { id: '3opt_travel_c', text: 'Rome, Italy', imageUrl: `https://placehold.co/300x200.png?text=${urlSafeText("Rome")}` }], deadline: new Date(Date.now() + parseTimeRemaining("30 days")).toISOString(), createdAt: generateCreatedAt("30 days") },
-  { id: 'opinion_2_dream_job', postType: 'opinion', creator: getRandomUser(), question: "I dreamt I was a professional cloud watcher last night. Woke up feeling like I missed my true calling. Should I quit my accounting job and pursue this? The clouds looked so fluffy and full of potential.", imageUrls: [`https://placehold.co/600x400.png?text=${urlSafeText("Cloud Watching")}`], videoUrl: undefined, options: [], deadline: new Date(Date.now() + parseTimeRemaining("2 days")).toISOString(), createdAt: generateCreatedAt("2 days"), isSpicy: true },
+  { id: '3opt_travel_destination', creator: getRandomUser(), question: 'Next summer travel: Paris, Tokyo, or Rome?', imageUrls: [`https://placehold.co/600x400.png?text=${urlSafeText("Summer Travel")}`], videoUrl: 'placeholder-video-url', options: [{ id: '3opt_travel_a', text: 'Paris, France', imageUrl: `https://placehold.co/300x200.png?text=${urlSafeText("Paris")}` , affiliateLink: 'https://example.com/paris-tours' }, { id: '3opt_travel_b', text: 'Tokyo, Japan', imageUrl: `https://placehold.co/300x200.png?text=${urlSafeText("Tokyo")}`, affiliateLink: 'https://example.com/tokyo-hotels' }, { id: '3opt_travel_c', text: 'Rome, Italy', imageUrl: `https://placehold.co/300x200.png?text=${urlSafeText("Rome")}` }], deadline: new Date(Date.now() + parseTimeRemaining("30 days")).toISOString(), createdAt: generateCreatedAt("30 days") },
 ];
 
 const fourOptionPolls: PollSkeleton[] = [
-  { id: '4opt_seasons_detail', postType: 'poll', creator: getRandomUser(), question: 'What is your favorite season overall?', imageUrls: [`https://placehold.co/600x400.png?text=${urlSafeText("FavoriteSeason")}`, `https://placehold.co/600x400.png?text=${urlSafeText("Seasonal")}`], options: [{ id: '4opt_s1_a', text: 'Spring - new beginnings', imageUrl: `https://placehold.co/300x200.png?text=${urlSafeText("Spring")}`, affiliateLink: 'https://example.com/spring-decor' }, { id: '4opt_s1_b', text: 'Summer - sunny days', imageUrl: `https://placehold.co/300x200.png?text=${urlSafeText("Summer")}`, affiliateLink: 'https://example.com/summer-gear' }, { id: '4opt_s1_c', text: 'Autumn - cozy vibes', imageUrl: `https://placehold.co/300x200.png?text=${urlSafeText("Autumn")}`, affiliateLink: 'https://example.com/autumn-fashion' }, { id: '4opt_s1_d', text: 'Winter - snow & holidays', imageUrl: `https://placehold.co/300x200.png?text=${urlSafeText("Winter")}`, affiliateLink: 'https://example.com/winter-sports' }], deadline: new Date(Date.now() + parseTimeRemaining("7 days")).toISOString(), createdAt: generateCreatedAt("7 days") },
+  { id: '4opt_seasons_detail', creator: getRandomUser(), question: 'What is your favorite season overall?', imageUrls: [`https://placehold.co/600x400.png?text=${urlSafeText("FavoriteSeason")}`, `https://placehold.co/600x400.png?text=${urlSafeText("Seasonal")}`], options: [{ id: '4opt_s1_a', text: 'Spring - new beginnings', imageUrl: `https://placehold.co/300x200.png?text=${urlSafeText("Spring")}`, affiliateLink: 'https://example.com/spring-decor' }, { id: '4opt_s1_b', text: 'Summer - sunny days', imageUrl: `https://placehold.co/300x200.png?text=${urlSafeText("Summer")}`, affiliateLink: 'https://example.com/summer-gear' }, { id: '4opt_s1_c', text: 'Autumn - cozy vibes', imageUrl: `https://placehold.co/300x200.png?text=${urlSafeText("Autumn")}`, affiliateLink: 'https://example.com/autumn-fashion' }, { id: '4opt_s1_d', text: 'Winter - snow & holidays', imageUrl: `https://placehold.co/300x200.png?text=${urlSafeText("Winter")}`, affiliateLink: 'https://example.com/winter-sports' }], deadline: new Date(Date.now() + parseTimeRemaining("7 days")).toISOString(), createdAt: generateCreatedAt("7 days") },
 ];
 
 const basePolls: PollSkeleton[] = [
@@ -93,9 +89,9 @@ const allPollsFull: Poll[] = basePolls.map((pollSkeleton, index) => {
     ...opt,
     votes: opt.votes || generateRandomVotes() 
   }));
-  const totalVotes = pollSkeleton.postType === 'opinion' ? 0 : optionsWithVotes.reduce((sum, option) => sum + option.votes, 0);
+  const totalVotes = optionsWithVotes.reduce((sum, option) => sum + option.votes, 0);
 
-  const shouldBeVoted = (index % 4 === 0 && pollSkeleton.postType === 'poll'); 
+  const shouldBeVoted = (index % 4 === 0); 
   let determinedVotedOptionId: string | undefined = undefined;
   if (shouldBeVoted && optionsWithVotes.length > 0) {
     determinedVotedOptionId = optionsWithVotes[Math.floor(Math.random() * optionsWithVotes.length)].id;
@@ -116,11 +112,11 @@ const allPollsFull: Poll[] = basePolls.map((pollSkeleton, index) => {
 
   return {
     ...pollSkeleton,
-    postType: pollSkeleton.postType || 'poll',
-    options: pollSkeleton.postType === 'opinion' ? [] : optionsWithVotes,
+    postType: 'poll',
+    options: optionsWithVotes,
     totalVotes,
-    isVoted: pollSkeleton.postType === 'opinion' ? undefined : shouldBeVoted,
-    votedOptionId: pollSkeleton.postType === 'opinion' ? undefined : determinedVotedOptionId,
+    isVoted: shouldBeVoted,
+    votedOptionId: determinedVotedOptionId,
     isLiked: Math.random() > 0.7,
     likes: (index * 17 % 250) + 10,
     commentsCount: (index * 7 % 35) + 2,

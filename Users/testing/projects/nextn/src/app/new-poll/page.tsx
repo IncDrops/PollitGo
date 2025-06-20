@@ -11,8 +11,7 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { CalendarIcon, ImagePlus, VideoIcon, X, PlusCircle, ImageIcon as ImageIconLucide, Film, Link as LinkIconLucide, AlertCircle, DollarSign, Info, Flame, Loader2, UserCircle2, LogIn, FileText, MessageSquare as MessageSquareIcon } from 'lucide-react';
+import { CalendarIcon, X, PlusCircle, ImageIcon as ImageIconLucide, Film, Link as LinkIconLucide, AlertCircle, DollarSign, Info, Flame, Loader2, UserCircle2, LogIn } from 'lucide-react';
 import { format } from "date-fns"
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
@@ -26,8 +25,6 @@ import { cn } from '@/lib/utils';
 
 const MAX_POLL_OPTIONS = 4;
 const MAX_POLL_IMAGES = 4;
-const MAX_OPINION_IMAGES = 2;
-const MAX_OPINION_TEXT_LENGTH = 500;
 const MAX_OPTION_TEXT_LENGTH = 365;
 const MIN_PAYOUT_PER_MAJORITY_VOTER = 0.10;
 
@@ -47,8 +44,7 @@ export default function NewPollPage() {
   const { user: currentUser, loading: authLoading, isAuthenticated } = useAuth();
   const router = useRouter();
 
-  const [postType, setPostType] = useState<'poll' | 'opinion'>('poll');
-  const [question, setQuestion] = useState(''); 
+  const [question, setQuestion] = useState('');
   const [options, setOptions] = useState<PollOptionState[]>([
     { id: `option-${Date.now()}`, text: '' },
     { id: `option-${Date.now() + 1}`, text: '' },
@@ -58,16 +54,16 @@ export default function NewPollPage() {
   const [isSpicy, setIsSpicy] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [imageUrls, setImageUrls] = useState<string[]>([]); 
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
-  const [videoUrl, setVideoUrl] = useState<string | undefined>(); 
+  const [videoUrl, setVideoUrl] = useState<string | undefined>();
   const [videoFile, setVideoFile] = useState<File | undefined>();
   const videoInputRef = useRef<HTMLInputElement>(null);
   
   useEffect(() => {
-    const defaultDeadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); 
+    const defaultDeadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     defaultDeadline.setSeconds(0);
     setDeadline(defaultDeadline);
   }, []);
@@ -106,7 +102,7 @@ export default function NewPollPage() {
   const handleMainImageFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       const files = Array.from(event.target.files);
-      const maxImages = postType === 'opinion' ? MAX_OPINION_IMAGES : MAX_POLL_IMAGES;
+      const maxImages = MAX_POLL_IMAGES;
       const newImageFiles = files.slice(0, maxImages - imageFiles.length);
       const newImageUrls = newImageFiles.map(file => URL.createObjectURL(file));
       
@@ -114,7 +110,7 @@ export default function NewPollPage() {
       setImageUrls(prev => [...prev, ...newImageUrls]);
 
       if (files.length + imageFiles.length > maxImages) {
-        toast({ title: "Max Images Reached", description: `You can only upload up to ${maxImages} images for this post type.`, variant: "destructive" });
+        toast({ title: "Max Images Reached", description: `You can only upload up to ${maxImages} images for this post.`, variant: "destructive" });
       }
       if (event.target) event.target.value = '';
     }
@@ -190,19 +186,6 @@ export default function NewPollPage() {
     setOptions(newOptions);
   };
 
-  const handleQuestionChange = (e: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
-    let value = e.target.value;
-    if (postType === 'opinion' && value.length > MAX_OPINION_TEXT_LENGTH) {
-      value = value.substring(0, MAX_OPINION_TEXT_LENGTH);
-      toast({
-        title: "Character Limit Reached",
-        description: `2nd Opinion text cannot exceed ${MAX_OPINION_TEXT_LENGTH} characters.`,
-        variant: "destructive",
-      });
-    }
-    setQuestion(value);
-  }
-
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -214,11 +197,11 @@ export default function NewPollPage() {
     }
 
     if (!question.trim()) {
-      toast({ title: postType === 'poll' ? "Question Required" : "Text Required", description: `Please enter the main ${postType === 'poll' ? 'question' : 'text'} for your post.`, variant: "destructive" });
+      toast({ title: "Question Required", description: `Please enter the main question for your poll.`, variant: "destructive" });
       setIsSubmitting(false);
       return;
     }
-    if (postType === 'poll' && options.some(opt => !opt.text.trim())) {
+    if (options.some(opt => !opt.text.trim())) {
       toast({ title: "Option Text Required", description: "All poll options must have text.", variant: "destructive" });
       setIsSubmitting(false);
       return;
@@ -263,8 +246,8 @@ export default function NewPollPage() {
           body: JSON.stringify({
             amount: Math.round(numericPledgeAmount * 100),
             currency: 'usd',
-            itemName: `Pledge for ${postType}: ${question.substring(0, 50)}...`,
-            metadata: { userId: currentUser.id, action: 'post_pledge', question: question.substring(0,100), postType } 
+            itemName: `Pledge for Poll: ${question.substring(0, 50)}...`,
+            metadata: { userId: currentUser.id, action: 'post_pledge', question: question.substring(0,100), postType: 'poll' } 
           }),
         });
         
@@ -272,8 +255,6 @@ export default function NewPollPage() {
         console.log("Response from /api/stripe/create-checkout-session:", sessionData);
 
         if (!response.ok) {
-          // API returned an error (4xx or 5xx)
-          // sessionData should contain the error object from our API route
           console.error('API error creating Stripe session:', sessionData.error, 'Stripe Error Type:', sessionData.stripeErrorType);
           let apiErrorMessage = sessionData.error || `Server Error: ${response.status}. Please ensure your STRIPE_SECRET_KEY is correctly set in .env.local and your server restarted.`;
           if (sessionData.stripeErrorType) {
@@ -282,19 +263,15 @@ export default function NewPollPage() {
           throw new Error(apiErrorMessage);
         }
         
-        if (sessionData.id) { // Successfully got a session ID
+        if (sessionData.id) {
           console.log("Stripe session ID received:", sessionData.id, "Attempting redirect...");
           const result = await stripe.redirectToCheckout({ sessionId: sessionData.id });
           if (result.error) {
-            // This error is from stripe.redirectToCheckout() itself (e.g., network issue, invalid session ID from Stripe's perspective)
             console.error('Stripe redirectToCheckout error:', result.error);
             throw new Error(result.error.message || "Failed to redirect to Stripe checkout.");
           }
-          // If redirectToCheckout is successful, the user is navigated away.
-          // setIsSubmitting(false) might not be reached if redirect is instant.
           return; 
         } else {
-          // Response was ok, but no session ID (should not happen with current API logic if response.ok is true)
           console.error('Stripe session ID missing in successful API response:', sessionData);
           throw new Error('Failed to retrieve Stripe session ID from server.');
         }
@@ -306,23 +283,18 @@ export default function NewPollPage() {
       }
     }
 
-    // This part is reached if there's no pledge or if pledge processing had an early return due to an error handled above.
-    // If a pledge was attempted and succeeded, the user would have been redirected.
-    // If a pledge was attempted and failed and 'return' was called, this won't run.
-    // So, this effectively handles the "no pledge" case or if pledge failed and we are not returning early.
-    console.log('Simulating post submission (no pledge or pledge failed before redirect). User:', currentUser?.email, 'Data:', {
-      postType, question, options: postType === 'poll' ? options : [], deadline, 
+    console.log('Simulating poll submission (no pledge). User:', currentUser?.email, 'Data:', {
+      question, options, deadline, 
       pledgeAmount: numericPledgeAmount || 0, isSpicy, 
       imageFiles, videoFile
     });
 
     toast({
-      title: `${postType === 'poll' ? 'Poll' : '2nd Opinion'} Creation Simulated (No Pledge)`,
+      title: `Poll Creation Simulated (No Pledge)`,
       description: 'Post data logged to console. Implement backend to save posts.',
     });
 
-    // Reset form fields only if it was a non-pledge submission or pledge failed without redirect
-    setPostType('poll');
+    // Reset form fields
     setQuestion('');
     setOptions([{ id: `option-${Date.now()}`, text: '' }, { id: `option-${Date.now() + 1}`, text: '' }]);
     setDeadline(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
@@ -389,47 +361,29 @@ export default function NewPollPage() {
   const isPledgeActive = numericPledgeAmountFloat > 0;
   const isStripeNotReadyForPledge = isPledgeActive && !stripe;
 
-  const maxImagesForPost = postType === 'opinion' ? MAX_OPINION_IMAGES : MAX_POLL_IMAGES;
+  const maxImagesForPost = MAX_POLL_IMAGES;
 
   return (
     <div className="container mx-auto px-4 py-8">
       <Card className="w-full max-w-2xl mx-auto shadow-xl rounded-lg">
         <CardHeader className="border-b">
-          <CardTitle className="text-2xl font-headline text-center text-foreground">Create New Post</CardTitle>
+          <CardTitle className="text-2xl font-headline text-center text-foreground">Create New Poll</CardTitle>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-6 pt-6">
-            <div>
-              <Label className="text-base font-semibold">Post Type</Label>
-              <RadioGroup defaultValue="poll" onValueChange={(value: 'poll' | 'opinion') => setPostType(value)} className="flex space-x-4 mt-2" disabled={formDisabled}>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="poll" id="type-poll" />
-                  <Label htmlFor="type-poll" className="font-normal flex items-center"><FileText className="mr-2 h-4 w-4"/> Poll</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="opinion" id="type-opinion" />
-                  <Label htmlFor="type-opinion" className="font-normal flex items-center"><MessageSquareIcon className="mr-2 h-4 w-4"/> 2nd Opinion</Label>
-                </div>
-              </RadioGroup>
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="question" className="text-base font-semibold">
-                {postType === 'poll' ? 'Poll Question' : 'Your 2nd Opinion / Story'}
+                Poll Question
               </Label>
               <Textarea
                 id="question"
                 value={question}
-                onChange={handleQuestionChange}
-                placeholder={postType === 'poll' ? "What do you want to ask?" : "Share your story or ask for a 2nd opinion... (max 500 chars)"}
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder="What do you want to ask?"
                 required
                 className="min-h-[100px] text-base rounded-md"
                 disabled={formDisabled}
-                maxLength={postType === 'opinion' ? MAX_OPINION_TEXT_LENGTH : undefined}
               />
-              {postType === 'opinion' && (
-                <p className="text-xs text-muted-foreground text-right">{question.length}/{MAX_OPINION_TEXT_LENGTH}</p>
-              )}
             </div>
 
             <div className="space-y-2">
@@ -437,19 +391,19 @@ export default function NewPollPage() {
               <Alert variant="default" className="bg-accent/20">
                 <Info className="h-4 w-4 !text-accent-foreground" />
                 <AlertDescription className="text-accent-foreground/80">
-                  For a {postType === 'poll' ? 'Poll, you can add up to 4 images OR one video for the main question. Options can also have individual media.' : `2nd Opinion, you can add up to ${MAX_OPINION_IMAGES} images and one video.`}
+                  For a Poll, you can add up to 4 images OR one video for the main question. Options can also have individual media.
                 </AlertDescription>
               </Alert>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <Button type="button" variant="outline" onClick={() => imageInputRef.current?.click()} disabled={imageUrls.length >= maxImagesForPost || (postType === 'opinion' && !!videoUrl && imageUrls.length >= MAX_OPINION_IMAGES) || (postType === 'poll' && !!videoUrl) || formDisabled} className="rounded-md">
+                <Button type="button" variant="outline" onClick={() => imageInputRef.current?.click()} disabled={imageUrls.length >= maxImagesForPost || !!videoUrl || formDisabled} className="rounded-md">
                     <ImageIconLucide className="mr-2 h-4 w-4" /> Add Images ({imageUrls.length}/{maxImagesForPost})
                 </Button>
-                <input type="file" ref={imageInputRef} className="hidden" accept="image/*" multiple onChange={handleMainImageFileChange} disabled={imageUrls.length >= maxImagesForPost || (postType === 'opinion' && !!videoUrl && imageUrls.length >= MAX_OPINION_IMAGES) || (postType === 'poll' && !!videoUrl) || formDisabled}/>
+                <input type="file" ref={imageInputRef} className="hidden" accept="image/*" multiple onChange={handleMainImageFileChange} disabled={imageUrls.length >= maxImagesForPost || !!videoUrl || formDisabled}/>
                 
-                <Button type="button" variant="outline" onClick={() => videoInputRef.current?.click()} disabled={!!videoUrl || (postType === 'poll' && imageUrls.length > 0) || formDisabled} className="rounded-md">
+                <Button type="button" variant="outline" onClick={() => videoInputRef.current?.click()} disabled={!!videoUrl || imageUrls.length > 0 || formDisabled} className="rounded-md">
                     <Film className="mr-2 h-4 w-4" /> {videoUrl ? 'Change Video' : 'Add Video (Max 1)'}
                 </Button>
-                <input type="file" ref={videoInputRef} className="hidden" accept="video/*" onChange={handleMainVideoFileChange} disabled={!!videoUrl || (postType === 'poll' && imageUrls.length > 0) || formDisabled}/>
+                <input type="file" ref={videoInputRef} className="hidden" accept="video/*" onChange={handleMainVideoFileChange} disabled={!!videoUrl || imageUrls.length > 0 || formDisabled}/>
               </div>
 
               {imageUrls.length > 0 && (
@@ -470,140 +424,138 @@ export default function NewPollPage() {
               )}
             </div>
             
-            {postType === 'poll' && (
-              <div className="space-y-2">
-                <Label className="text-base font-semibold">Options ({options.length}/{MAX_POLL_OPTIONS})</Label>
-                {options.map((option, index) => (
-                  <div key={option.id} className="space-y-3 p-4 border rounded-md bg-card shadow-sm">
-                    <div className="flex items-center justify-between">
-                        <Label htmlFor={`option-text-${option.id}`} className="font-medium">Option {index + 1}</Label>
-                        {options.length > 2 && <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveOption(option.id)} className="h-7 w-7 text-destructive hover:bg-destructive/10" disabled={formDisabled}><X className="h-4 w-4" /></Button>}
-                    </div>
-                    <Textarea
-                      id={`option-text-${option.id}`}
-                      value={option.text}
-                      onChange={(e) => handleOptionChange(option.id, 'text', e.target.value)}
-                      placeholder={`Enter text for option ${index + 1}`}
-                      required
-                      className="rounded-md"
-                      disabled={formDisabled}
-                      maxLength={MAX_OPTION_TEXT_LENGTH}
-                    />
-                     <div className="text-xs text-muted-foreground text-right">
-                        {option.text.length}/{MAX_OPTION_TEXT_LENGTH}
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById(`option-image-${option.id}`)?.click()} disabled={!!option.videoUrl || formDisabled} className="rounded-md">
-                            <ImageIconLucide className="mr-2 h-4 w-4" /> {option.imageUrl ? 'Change Image' : 'Add Image'}
-                        </Button>
-                        <input type="file" id={`option-image-${option.id}`} className="hidden" accept="image/*" onChange={(e) => handleOptionMediaChange(option.id, 'image', e)} disabled={!!option.videoUrl || formDisabled}/>
-                        
-                        <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById(`option-video-${option.id}`)?.click()} disabled={!!option.imageUrl || formDisabled} className="rounded-md">
-                            <Film className="mr-2 h-4 w-4" /> {option.videoUrl ? 'Change Video' : 'Add Video'}
-                        </Button>
-                        <input type="file" id={`option-video-${option.id}`} className="hidden" accept="video/*" onChange={(e) => handleOptionMediaChange(option.id, 'video', e)} disabled={!!option.imageUrl || formDisabled}/>
-                    </div>
-                    {option.imageUrl && (
-                        <div className="relative w-full h-32 group mt-2">
-                            <Image src={option.imageUrl} alt={`Option image`} fill className="object-cover rounded-md" sizes="100vw" data-ai-hint="option visual"/>
-                            {!formDisabled && <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeOptionMedia(option.id, 'image')}> <X className="h-4 w-4" /></Button>}
-                        </div>
-                    )}
-                    {option.videoUrl && (
-                         <div className="relative w-full mt-2 group">
-                            <video src={option.videoUrl} controls className="w-full rounded-md max-h-40" data-ai-hint="option video"/>
-                           {!formDisabled && <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeOptionMedia(option.id, 'video')}> <X className="h-4 w-4" /></Button>}
-                        </div>
-                    )}
-                    <div>
-                        <Label htmlFor={`option-affiliate-${option.id}`} className="text-xs font-medium">Affiliate Link (Optional)</Label>
-                         <div className="relative">
-                            <LinkIconLucide className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                            id={`option-affiliate-${option.id}`}
-                            type="url"
-                            value={option.affiliateLink || ''}
-                            onChange={(e) => handleOptionChange(option.id, 'affiliateLink', e.target.value)}
-                            placeholder="https://example.com/product"
-                            className="pl-8 rounded-md"
-                            disabled={formDisabled}
-                            />
-                        </div>
-                    </div>
+            <div className="space-y-2">
+              <Label className="text-base font-semibold">Options ({options.length}/{MAX_POLL_OPTIONS})</Label>
+              {options.map((option, index) => (
+                <div key={option.id} className="space-y-3 p-4 border rounded-md bg-card shadow-sm">
+                  <div className="flex items-center justify-between">
+                      <Label htmlFor={`option-text-${option.id}`} className="font-medium">Option {index + 1}</Label>
+                      {options.length > 2 && <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveOption(option.id)} className="h-7 w-7 text-destructive hover:bg-destructive/10" disabled={formDisabled}><X className="h-4 w-4" /></Button>}
                   </div>
-                ))}
-                {options.length < MAX_POLL_OPTIONS && (
-                  <Button type="button" variant="outline" onClick={handleAddOption} className="w-full rounded-md" disabled={formDisabled}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Option
-                  </Button>
-                )}
-              </div>
-            )}
+                  <Textarea
+                    id={`option-text-${option.id}`}
+                    value={option.text}
+                    onChange={(e) => handleOptionChange(option.id, 'text', e.target.value)}
+                    placeholder={`Enter text for option ${index + 1}`}
+                    required
+                    className="rounded-md"
+                    disabled={formDisabled}
+                    maxLength={MAX_OPTION_TEXT_LENGTH}
+                  />
+                    <div className="text-xs text-muted-foreground text-right">
+                      {option.text.length}/{MAX_OPTION_TEXT_LENGTH}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById(`option-image-${option.id}`)?.click()} disabled={!!option.videoUrl || formDisabled} className="rounded-md">
+                          <ImageIconLucide className="mr-2 h-4 w-4" /> {option.imageUrl ? 'Change Image' : 'Add Image'}
+                      </Button>
+                      <input type="file" id={`option-image-${option.id}`} className="hidden" accept="image/*" onChange={(e) => handleOptionMediaChange(option.id, 'image', e)} disabled={!!option.videoUrl || formDisabled}/>
+                      
+                      <Button type="button" variant="outline" size="sm" onClick={() => document.getElementById(`option-video-${option.id}`)?.click()} disabled={!!option.imageUrl || formDisabled} className="rounded-md">
+                          <Film className="mr-2 h-4 w-4" /> {option.videoUrl ? 'Change Video' : 'Add Video'}
+                      </Button>
+                      <input type="file" id={`option-video-${option.id}`} className="hidden" accept="video/*" onChange={(e) => handleOptionMediaChange(option.id, 'video', e)} disabled={!!option.imageUrl || formDisabled}/>
+                  </div>
+                  {option.imageUrl && (
+                      <div className="relative w-full h-32 group mt-2">
+                          <Image src={option.imageUrl} alt={`Option image`} fill className="object-cover rounded-md" sizes="100vw" data-ai-hint="option visual"/>
+                          {!formDisabled && <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeOptionMedia(option.id, 'image')}> <X className="h-4 w-4" /></Button>}
+                      </div>
+                  )}
+                  {option.videoUrl && (
+                        <div className="relative w-full mt-2 group">
+                          <video src={option.videoUrl} controls className="w-full rounded-md max-h-40" data-ai-hint="option video"/>
+                          {!formDisabled && <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeOptionMedia(option.id, 'video')}> <X className="h-4 w-4" /></Button>}
+                      </div>
+                  )}
+                  <div>
+                      <Label htmlFor={`option-affiliate-${option.id}`} className="text-xs font-medium">Affiliate Link (Optional)</Label>
+                        <div className="relative">
+                          <LinkIconLucide className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
+                          id={`option-affiliate-${option.id}`}
+                          type="url"
+                          value={option.affiliateLink || ''}
+                          onChange={(e) => handleOptionChange(option.id, 'affiliateLink', e.target.value)}
+                          placeholder="https://example.com/product"
+                          className="pl-8 rounded-md"
+                          disabled={formDisabled}
+                          />
+                      </div>
+                  </div>
+                </div>
+              ))}
+              {options.length < MAX_POLL_OPTIONS && (
+                <Button type="button" variant="outline" onClick={handleAddOption} className="w-full rounded-md" disabled={formDisabled}>
+                  <PlusCircle className="mr-2 h-4 w-4" /> Add Option
+                </Button>
+              )}
+            </div>
 
             <div className="space-y-2">
-               <Label htmlFor="deadline" className="text-base font-semibold">Deadline</Label>
-               <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant={"outline"} className="w-full justify-start text-left font-normal rounded-md" disabled={formDisabled}>
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {deadline ? format(deadline, "PPP HH:mm") : <span>Pick a date & time</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={deadline}
-                    onSelect={setDeadline}
-                    initialFocus
-                    disabled={formDisabled || ((date) => date < new Date(new Date().setDate(new Date().getDate() -1)))}
+              <Label htmlFor="deadline" className="text-base font-semibold">Deadline</Label>
+              <Popover>
+              <PopoverTrigger asChild>
+                <Button variant={"outline"} className="w-full justify-start text-left font-normal rounded-md" disabled={formDisabled}>
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {deadline ? format(deadline, "PPP HH:mm") : <span>Pick a date & time</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <Calendar
+                  mode="single"
+                  selected={deadline}
+                  onSelect={setDeadline}
+                  initialFocus
+                  disabled={formDisabled || ((date) => date < new Date(new Date().setDate(new Date().getDate() -1)))}
+                />
+                <div className="p-3 border-t border-border">
+                  <Label htmlFor="deadline-time">Time</Label>
+                  <Input 
+                    type="time" 
+                    id="deadline-time"
+                    defaultValue={deadline ? format(deadline, "HH:mm") : "00:00"}
+                    onChange={(e) => {
+                      const [hours, minutes] = e.target.value.split(':').map(Number);
+                      setDeadline(prev => {
+                        const newDate = prev ? new Date(prev) : new Date();
+                        newDate.setHours(hours, minutes, 0, 0);
+                        return newDate;
+                      });
+                    }}
+                    disabled={formDisabled}
+                    className="rounded-md"
                   />
-                  <div className="p-3 border-t border-border">
-                    <Label htmlFor="deadline-time">Time</Label>
-                    <Input 
-                      type="time" 
-                      id="deadline-time"
-                      defaultValue={deadline ? format(deadline, "HH:mm") : "00:00"}
-                      onChange={(e) => {
-                        const [hours, minutes] = e.target.value.split(':').map(Number);
-                        setDeadline(prev => {
-                          const newDate = prev ? new Date(prev) : new Date();
-                          newDate.setHours(hours, minutes, 0, 0);
-                          return newDate;
-                        });
-                      }}
-                      disabled={formDisabled}
-                      className="rounded-md"
-                    />
-                  </div>
-                </PopoverContent>
-               </Popover>
-               <Select 
-                 onValueChange={(value) => {
-                   const now = new Date();
-                   let newDeadline = new Date(now);
-                   if (value === "1h") newDeadline.setHours(now.getHours() + 1);
-                   else if (value === "6h") newDeadline.setHours(now.getHours() + 6);
-                   else if (value === "1d") newDeadline.setDate(now.getDate() + 1);
-                   else if (value === "7d") newDeadline.setDate(now.getDate() + 7);
-                   else if (value === "custom" && deadline) return;
-                   else newDeadline.setDate(now.getDate() + 7); // Default for custom if none set
-                   newDeadline.setSeconds(0,0);
-                   setDeadline(newDeadline);
-                 }} 
-                 disabled={formDisabled}
-                 value={deadline ? "custom" : ""} 
-                >
-                <SelectTrigger className="w-full rounded-md">
-                  <SelectValue placeholder="Quick Set Deadline" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1h">1 Hour</SelectItem>
-                  <SelectItem value="6h">6 Hours</SelectItem>
-                  <SelectItem value="1d">1 Day</SelectItem>
-                  <SelectItem value="7d">7 Days</SelectItem>
-                  <SelectItem value="custom">Custom (Use Calendar)</SelectItem>
-                </SelectContent>
-              </Select>
+                </div>
+              </PopoverContent>
+              </Popover>
+              <Select 
+                onValueChange={(value) => {
+                  const now = new Date();
+                  let newDeadline = new Date(now);
+                  if (value === "1h") newDeadline.setHours(now.getHours() + 1);
+                  else if (value === "6h") newDeadline.setHours(now.getHours() + 6);
+                  else if (value === "1d") newDeadline.setDate(now.getDate() + 1);
+                  else if (value === "7d") newDeadline.setDate(now.getDate() + 7);
+                  else if (value === "custom" && deadline) return;
+                  else newDeadline.setDate(now.getDate() + 7); // Default for custom if none set
+                  newDeadline.setSeconds(0,0);
+                  setDeadline(newDeadline);
+                }} 
+                disabled={formDisabled}
+                value={deadline ? "custom" : ""} 
+              >
+              <SelectTrigger className="w-full rounded-md">
+                <SelectValue placeholder="Quick Set Deadline" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1h">1 Hour</SelectItem>
+                <SelectItem value="6h">6 Hours</SelectItem>
+                <SelectItem value="1d">1 Day</SelectItem>
+                <SelectItem value="7d">7 Days</SelectItem>
+                <SelectItem value="custom">Custom (Use Calendar)</SelectItem>
+              </SelectContent>
+            </Select>
             </div>
 
             <div className="space-y-3 pt-4 border-t">
@@ -643,11 +595,11 @@ export default function NewPollPage() {
                 <DollarSign className="mr-2 h-5 w-5 text-primary" /> Pre-Commitment Pledge (Optional)
               </Label>
               <Alert variant="default" className="bg-primary/10">
-                 <Info className="h-4 w-4 !text-primary" />
-                 <AlertDescription className="text-primary/80">
-                  Boost your post! A pledge rewards voters if their choice wins (for polls). Minimum $1.00. 
+                  <Info className="h-4 w-4 !text-primary" />
+                  <AlertDescription className="text-primary/80">
+                  Boost your post! A pledge rewards voters if their choice wins. Minimum $1.00. 
                   A portion (e.g., 50%) will be split among voters of the majority option. Max pledge $1,000.
-                 </AlertDescription>
+                  </AlertDescription>
               </Alert>
               <Input
                 id="pledgeAmount"
@@ -661,7 +613,7 @@ export default function NewPollPage() {
                 className="rounded-md"
                 disabled={formDisabled || isStripeNotReadyForPledge}
               />
-              {isPledgeActive && postType === 'poll' && (
+              {isPledgeActive && (
                   <p className="text-xs text-muted-foreground">
                     Potential payout per majority voter based on {MIN_PAYOUT_PER_MAJORITY_VOTER * 100}% of pledge. Actual payout may vary.
                   </p>
@@ -671,7 +623,7 @@ export default function NewPollPage() {
           <CardFooter className="border-t pt-6">
             <Button type="submit" className="w-full text-lg py-6 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md font-semibold" disabled={formDisabled}>
               {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-              {postType === 'poll' ? "Poll it & Go" : "Share Opinion & Go"}
+              Poll it & Go
             </Button>
           </CardFooter>
         </form>
@@ -679,5 +631,3 @@ export default function NewPollPage() {
     </div>
   );
 }
-
-    
