@@ -236,13 +236,14 @@ export default function NewPollPage() {
         setIsSubmitting(false);
         return;
     }
-
+    
+    console.log("Stripe object on client:", stripe ? "Available" : "Not Available");
     if (numericPledgeAmount > 0 && !stripe) {
       toast({ 
         title: "Payment System Error", 
-        description: "Stripe is not available for pledges. This could be due to a missing or invalid Stripe Publishable Key (NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) in your environment variables. Please check console logs for 'CRITICAL STRIPE ERROR'.", 
+        description: "Stripe is not available for pledges. This could be due to a missing or invalid Stripe Publishable Key (NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) in your environment variables. Please check console logs for 'CRITICAL STRIPE ERROR' and ensure your Next.js server was restarted after .env.local changes.", 
         variant: "destructive",
-        duration: 8000
+        duration: 10000
       });
       setIsSubmitting(false);
       return;
@@ -254,7 +255,8 @@ export default function NewPollPage() {
           title: 'Processing Pledge...',
           description: `Your pledge of $${numericPledgeAmount.toFixed(2)} is being prepared. You'll be redirected to Stripe.`,
         });
-
+        
+        console.log("Attempting to create Stripe checkout session with amount:", Math.round(numericPledgeAmount * 100));
         const response = await fetch('/api/stripe/create-checkout-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -266,33 +268,60 @@ export default function NewPollPage() {
           }),
         });
         
-        const session = await response.json();
-        if (response.ok && session.id) {
-          const result = await stripe.redirectToCheckout({ sessionId: session.id });
-          if (result.error) throw new Error(result.error.message);
+        const sessionData = await response.json();
+        console.log("Response from /api/stripe/create-checkout-session:", sessionData);
+
+        if (!response.ok) {
+          // API returned an error (4xx or 5xx)
+          // sessionData should contain the error object from our API route
+          console.error('API error creating Stripe session:', sessionData.error, 'Stripe Error Type:', sessionData.stripeErrorType);
+          let apiErrorMessage = sessionData.error || `Server Error: ${response.status}. Please ensure your STRIPE_SECRET_KEY is correctly set in .env.local and your server restarted.`;
+          if (sessionData.stripeErrorType) {
+            apiErrorMessage += ` (Stripe Type: ${sessionData.stripeErrorType})`;
+          }
+          throw new Error(apiErrorMessage);
+        }
+        
+        if (sessionData.id) { // Successfully got a session ID
+          console.log("Stripe session ID received:", sessionData.id, "Attempting redirect...");
+          const result = await stripe.redirectToCheckout({ sessionId: sessionData.id });
+          if (result.error) {
+            // This error is from stripe.redirectToCheckout() itself (e.g., network issue, invalid session ID from Stripe's perspective)
+            console.error('Stripe redirectToCheckout error:', result.error);
+            throw new Error(result.error.message || "Failed to redirect to Stripe checkout.");
+          }
+          // If redirectToCheckout is successful, the user is navigated away.
+          // setIsSubmitting(false) might not be reached if redirect is instant.
           return; 
         } else {
-          throw new Error(session.error || 'Failed to create Stripe session.');
+          // Response was ok, but no session ID (should not happen with current API logic if response.ok is true)
+          console.error('Stripe session ID missing in successful API response:', sessionData);
+          throw new Error('Failed to retrieve Stripe session ID from server.');
         }
       } catch (error: any) {
-        console.error("Stripe error:", error);
-        toast({ title: "Pledge Failed", description: error.message || "Could not process pledge.", variant: "destructive" });
+        console.error("Stripe pledge processing error in handleSubmit:", error);
+        toast({ title: "Pledge Failed", description: error.message || "Could not process pledge. Check console for details.", variant: "destructive", duration: 7000 });
         setIsSubmitting(false);
         return;
       }
     }
 
-    console.log('Simulating post submission. User:', currentUser?.email, 'Data:', {
+    // This part is reached if there's no pledge or if pledge processing had an early return due to an error handled above.
+    // If a pledge was attempted and succeeded, the user would have been redirected.
+    // If a pledge was attempted and failed and 'return' was called, this won't run.
+    // So, this effectively handles the "no pledge" case or if pledge failed and we are not returning early.
+    console.log('Simulating post submission (no pledge or pledge failed before redirect). User:', currentUser?.email, 'Data:', {
       postType, question, options: postType === 'poll' ? options : [], deadline, 
       pledgeAmount: numericPledgeAmount || 0, isSpicy, 
       imageFiles, videoFile
     });
 
     toast({
-      title: `${postType === 'poll' ? 'Poll' : '2nd Opinion'} Creation Simulated`,
+      title: `${postType === 'poll' ? 'Poll' : '2nd Opinion'} Creation Simulated (No Pledge)`,
       description: 'Post data logged to console. Implement backend to save posts.',
     });
 
+    // Reset form fields only if it was a non-pledge submission or pledge failed without redirect
     setPostType('poll');
     setQuestion('');
     setOptions([{ id: `option-${Date.now()}`, text: '' }, { id: `option-${Date.now() + 1}`, text: '' }]);
@@ -356,8 +385,8 @@ export default function NewPollPage() {
   }
 
   const formDisabled = isSubmitting;
-  const numericPledgeAmount = parseFloat(pledgeAmount);
-  const isPledgeActive = numericPledgeAmount > 0;
+  const numericPledgeAmountFloat = parseFloat(pledgeAmount);
+  const isPledgeActive = numericPledgeAmountFloat > 0;
   const isStripeNotReadyForPledge = isPledgeActive && !stripe;
 
   const maxImagesForPost = postType === 'opinion' ? MAX_OPINION_IMAGES : MAX_POLL_IMAGES;
