@@ -193,7 +193,7 @@ Your Cloud Build trigger can be configured in two main ways:
         *   Verify the "Location" in the trigger settings correctly points to this file (e.g., `cloudbuild.yaml`).
 3.  **REBUILD/REDEPLOY PROTOTYPE** from Firebase Studio after confirming.
 
-### D. TRIGGER ERROR: "Failed to trigger build: if 'build.service\_account' is specified..."
+### D. TRIGGER ERROR: "Failed to trigger build: if 'build.service_account' is specified..."
 
 **This error means the Cloud Build trigger's logging configuration is incompatible with using a user-managed service account, likely due to an organization policy.** This happens *before* Cloud Build tries to read your code or `cloudbuild.yaml`.
 
