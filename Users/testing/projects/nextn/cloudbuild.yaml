@@ -44,3 +44,4 @@ timeout: '1200s' # 20 minutes
 # must be resolved at the trigger configuration level.
 # options:
 #   logging: CLOUD_LOGGING_ONLY
+

@@ -151,7 +151,7 @@ Your Cloud Build trigger can be configured in two main ways:
     *   **Important:** If you use a `cloudbuild.yaml` file, ensure it is **committed and pushed** to your GitHub repository so Cloud Build can find it. (See Troubleshooting E if your pushes are failing).
     *   This file gives you manual control over each build step.
 
-**IMPORTANT: The error "Failed to trigger build: if 'build.service_account' is specified..." (see Troubleshooting D) is related to the trigger's logging configuration when using a user-managed service account. This needs to be resolved at the trigger level. If `gcloud` commands are proving difficult, consider trying the "Buildpacks" trigger type as an alternative.**
+**IMPORTANT: The error "Failed to trigger build: if 'build.service_account' is specified..." (see Troubleshooting D) is related to the trigger's logging configuration when using a user-managed service account. This needs to be resolved at the trigger level, regardless of whether you use Buildpacks or a `cloudbuild.yaml` file.**
 
 ---
 
@@ -246,6 +246,12 @@ The most direct way to resolve this, especially if the UI options in the Cloud C
         ```
 5.  These commands directly modify the trigger's configuration to satisfy the logging storage requirement that the Cloud Console UI might not expose for user-managed service accounts under certain organization policies.
 6.  After successfully running the `gcloud` command, try to **Run** the trigger again from the Cloud Console or redeploy from Firebase Studio. This "Failed to trigger build..." error related to logging should now be resolved. If the build starts but fails later (e.g., with "Firebase is blocking Next" or "Could not find valid build file"), check the build logs for those new errors and address them based on other troubleshooting sections.
+7.  **If `gcloud` commands continue to fail to execute** (e.g., "Invalid choice" even with the correct ID, or "argument TRIGGER: Must be specified" when you are providing an ID):
+    *   This indicates a deeper issue with how `gcloud` CLI is interacting with your project or the trigger's metadata, or a very specific (and unusual) state of the trigger that the CLI isn't handling as expected.
+    *   At this point, if neither the UI nor various `gcloud` command attempts work, you may need to:
+        *   Double-check for any overarching Organization Policies in Google Cloud that might be overly restrictive on Cloud Build or Service Account logging, although the `gcloud --update-logging` command is *meant* to address this.
+        *   Consider creating a **new** Cloud Build trigger from scratch, configuring it carefully (e.g., with Buildpacks first, or with the `cloudbuild.yaml` and ensuring the service account has minimal necessary permissions), and see if a fresh trigger behaves differently.
+        *   If problems persist, this level of CLI/platform misbehavior might require assistance from Google Cloud Support.
 
 ### E. GIT PUSH / SYNC FAILURES ("Red X", Push Rejected)
 
