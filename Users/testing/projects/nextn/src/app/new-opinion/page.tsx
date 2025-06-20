@@ -4,7 +4,7 @@ import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
-import { ImageIcon as ImageIconLucide, Film, X, Loader2, UserCircle2, LogIn, AlertCircle, ThumbsUp } from 'lucide-react';
+import { ImageIcon as ImageIconLucide, Film, X, Loader2, UserCircle2, LogIn, AlertCircle, ThumbsUp, Link as LinkIconLucide, DollarSign, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -12,6 +12,9 @@ import useAuth from '@/hooks/useAuth';
 import NextLink from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useStripe } from '@stripe/react-stripe-js';
 
 const MAX_IMAGES = 2;
 const MAX_TEXT_LENGTH = 500;
@@ -21,8 +24,11 @@ export default function NewOpinionPage() {
   const { toast } = useToast();
   const { user: currentUser, loading: authLoading, isAuthenticated } = useAuth();
   const router = useRouter();
+  const stripe = useStripe();
 
   const [text, setText] = useState('');
+  const [affiliateLink, setAffiliateLink] = useState('');
+  const [pledgeAmount, setPledgeAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [imageUrls, setImageUrls] = useState<string[]>([]);
@@ -94,21 +100,76 @@ export default function NewOpinionPage() {
     setIsSubmitting(true);
     
     if (!isAuthenticated || !currentUser) {
-      toast({ title: "Login Required", description: "You need to be logged in to post a 2nd Opinion.", variant: "destructive" });
+      toast({ title: "Login Required", description: "You need to be logged in to post.", variant: "destructive" });
       setIsSubmitting(false);
       return;
     }
 
     if (!text.trim()) {
-      toast({ title: "Text Required", description: `Please enter your thoughts for your 2nd Opinion.`, variant: "destructive" });
+      toast({ title: "Text Required", description: `Please enter your thoughts.`, variant: "destructive" });
       setIsSubmitting(false);
       return;
+    }
+
+    const numericPledgeAmount = parseFloat(pledgeAmount);
+
+    if (pledgeAmount && (isNaN(numericPledgeAmount) || numericPledgeAmount <= 0)) {
+        toast({ title: "Invalid Pledge", description: "Pledge amount must be a positive number.", variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+    }
+
+    if (numericPledgeAmount > 0 && !stripe) {
+      toast({ 
+        title: "Payment System Error", 
+        description: "Stripe is not available for pledges. This could be due to a missing or invalid configuration. Please check console logs.", 
+        variant: "destructive",
+        duration: 7000
+      });
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (numericPledgeAmount > 0 && stripe && currentUser) {
+      try {
+        toast({
+          title: 'Processing Pledge...',
+          description: `Your pledge of $${numericPledgeAmount.toFixed(2)} is being prepared. You'll be redirected to Stripe.`,
+        });
+
+        const response = await fetch('/api/stripe/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: Math.round(numericPledgeAmount * 100),
+            currency: 'usd',
+            itemName: `Pledge for 2nd Opinion: ${text.substring(0, 50)}...`,
+            metadata: { userId: currentUser.id, action: 'opinion_pledge', text: text.substring(0,100) } 
+          }),
+        });
+        
+        const sessionData = await response.json();
+        if (response.ok && sessionData.id) {
+          const result = await stripe.redirectToCheckout({ sessionId: sessionData.id });
+          if (result.error) throw new Error(result.error.message || "Failed to redirect to Stripe.");
+          return; 
+        } else {
+          throw new Error(sessionData.error || 'Failed to create Stripe session.');
+        }
+      } catch (error: any) {
+        console.error("Stripe error:", error);
+        toast({ title: "Pledge Failed", description: error.message || "Could not process pledge.", variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+      }
     }
 
     console.log('Simulating 2nd Opinion submission. User:', currentUser?.email, 'Data:', {
       text,
       imageFiles,
-      videoFile
+      videoFile,
+      affiliateLink,
+      pledgeAmount: numericPledgeAmount || 0,
     });
 
     toast({
@@ -121,6 +182,8 @@ export default function NewOpinionPage() {
     setImageFiles([]);
     setVideoUrl(undefined);
     setVideoFile(undefined);
+    setAffiliateLink('');
+    setPledgeAmount('');
     
     setIsSubmitting(false);
     router.push('/');
@@ -163,6 +226,7 @@ export default function NewOpinionPage() {
   }
 
   const formDisabled = isSubmitting;
+  const isStripeNotReadyForPledge = parseFloat(pledgeAmount) > 0 && !stripe;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -233,13 +297,67 @@ export default function NewOpinionPage() {
                 </div>
               )}
             </div>
+
+            <div className="space-y-2">
+                <Label htmlFor="affiliate-link" className="text-base font-semibold">Affiliate Link (Optional)</Label>
+                <div className="relative">
+                    <LinkIconLucide className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        id="affiliate-link"
+                        type="url"
+                        value={affiliateLink}
+                        onChange={(e) => setAffiliateLink(e.target.value)}
+                        placeholder="https://example.com/product"
+                        className="pl-8 rounded-md"
+                        disabled={isSubmitting}
+                    />
+                </div>
+            </div>
+
+            {isStripeNotReadyForPledge && (
+              <Alert variant="destructive" className="my-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Stripe Payment System Error</AlertTitle>
+                <AlertDescription>
+                  The payment system (Stripe) is not available for pledges. This could be due to a missing or invalid 
+                  Stripe Publishable Key. You can still create the post without a pledge.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-3 pt-4 border-t">
+              <Label htmlFor="pledgeAmount" className="text-base font-semibold flex items-center">
+                <DollarSign className="mr-2 h-5 w-5 text-primary" /> Pre-Commitment Pledge (Optional)
+              </Label>
+              <Alert variant="default" className="bg-primary/10">
+                  <Info className="h-4 w-4 !text-primary" />
+                  <AlertDescription className="text-primary/80">
+                  Boost your post! A pledge can be used to reward insightful comments or interactions. Minimum $1.00. Max pledge $1,000.
+                  </AlertDescription>
+              </Alert>
+              <Input
+                id="pledgeAmount"
+                type="number"
+                value={pledgeAmount}
+                onChange={(e) => setPledgeAmount(e.target.value)}
+                placeholder="e.g., 5.00 for $5.00 (min $1.00)"
+                min="1"
+                max="1000"
+                step="0.01"
+                className="rounded-md"
+                disabled={formDisabled || isStripeNotReadyForPledge}
+              />
+            </div>
             
           </CardContent>
-          <CardFooter className="border-t pt-6">
+          <CardFooter className="border-t pt-6 flex flex-col items-center gap-4">
             <Button type="submit" className="w-full text-lg py-6 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md font-semibold" disabled={formDisabled}>
               {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-              Post 2nd Opinion
+              Poll it &amp; Go
             </Button>
+            <p className="text-xs text-muted-foreground text-center px-4">
+                Poll responsibly, PollitAgo nor its users are responsible for your ultimate decision.
+            </p>
           </CardFooter>
         </form>
       </Card>
