@@ -8,17 +8,13 @@ import { fetchMorePolls } from '@/lib/mockData';
 import { Loader2, Zap, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
-import useAuth from '@/hooks/useAuth'; 
+import useAuth from '@/hooks/useAuth';
 import { signIn } from 'next-auth/react';
 
 const pollCardVariants = {
   initial: { opacity: 0, y: 50, scale: 0.95 },
   animate: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 400, damping: 30 } },
-  exit: (custom: 'left' | 'right' | 'default') => {
-    if (custom === 'left') return { x: "-100%", opacity: 0, transition: { duration: 0.3 } };
-    if (custom === 'right') return { x: "100%", opacity: 0, transition: { duration: 0.3 } };
-    return { opacity: 0, scale: 0.8, transition: { duration: 0.2 } }; 
-  }
+  exit: { opacity: 0, scale: 0.8, transition: { duration: 0.2 } } // Simplified exit for actual list removal
 };
 
 const MIN_PAYOUT_PER_VOTER = 0.10;
@@ -28,18 +24,16 @@ const BATCH_SIZE = 10;
 interface PollFeedProps {
   staticPolls?: Poll[];
   onVoteCallback?: (pollId: string, optionId: string) => void;
-  // onToggleLikeCallback is not strictly needed if PollFeed handles its own like state for dynamic feeds
-  onPollActionCompleteCallback?: (pollId: string, swipeDirection?: 'left' | 'right') => void;
+  // onPollActionCompleteCallback is removed as PollCard now handles its own animation
   onPledgeOutcomeCallback?: (pollId: string, outcome: 'accepted' | 'tipped_crowd') => void;
-  currentUser?: User | null; 
+  currentUser?: User | null;
 }
 
 export default function PollFeed({
   staticPolls,
   onVoteCallback,
-  onPollActionCompleteCallback,
   onPledgeOutcomeCallback,
-  currentUser: propCurrentUser 
+  currentUser: propCurrentUser
 }: PollFeedProps) {
   const [polls, setPolls] = useState<Poll[]>(() => (staticPolls || []).map(p => ({...p})));
   const [loadingMore, setLoadingMore] = useState(false);
@@ -52,7 +46,7 @@ export default function PollFeed({
   const currentUser = propCurrentUser !== undefined ? propCurrentUser : authHookUser;
 
   const { toast } = useToast();
-  const [exitDirectionMap, setExitDirectionMap] = useState<Record<string, 'left' | 'right' | 'default'>>({});
+  // exitDirectionMap is removed as PollCard manages its own swipe animation direction
 
   const loadMorePolls = useCallback(async (isInitial = false) => {
     if (staticPolls || loadingMore || !hasMore) return;
@@ -60,7 +54,7 @@ export default function PollFeed({
     setLoadingMore(true);
     try {
       const newPollsData = await fetchMorePolls(isInitial ? 0 : polls.length, BATCH_SIZE);
-      const newPolls = newPollsData.map(p => ({...p})); // Ensure fresh copies
+      const newPolls = newPollsData.map(p => ({...p}));
       if (newPolls.length < BATCH_SIZE) {
         setHasMore(false);
       }
@@ -96,7 +90,7 @@ export default function PollFeed({
           loadMorePolls();
         }
       },
-      { threshold: 0.5 } 
+      { threshold: 0.5 }
     );
     observer.current = currentObserver;
     currentObserver.observe(loaderTriggerRef.current);
@@ -109,20 +103,20 @@ export default function PollFeed({
   }, [staticPolls, hasMore, loadingMore, loadMorePolls]);
 
   const handleVote = (pollId: string, optionId: string) => {
-    if (!isAuthenticated) { 
+    if (!isAuthenticated) {
         setTimeout(() => {
           toast({title: "Login Required", description: "Please login to vote.", variant: "destructive"});
         }, 0);
-        signIn(); 
+        signIn();
         return;
     }
     if (onVoteCallback) {
-      onVoteCallback(pollId, optionId); 
+      onVoteCallback(pollId, optionId);
       return;
     }
     setPolls(prevPolls =>
       prevPolls.map(p => {
-        if (p.id === pollId && !p.isVoted) { 
+        if (p.id === pollId && !p.isVoted) {
           const newTotalVotes = p.totalVotes + 1;
           const updatedOptions = p.options.map(opt =>
             opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
@@ -135,7 +129,7 @@ export default function PollFeed({
               setTimeout(() => {
                 toast({
                   title: "Low Payout Warning",
-                  description: `Your vote is counted! However, due to the current pledge and number of voters for this option, your potential PollitPoint payout might be below $${MIN_PAYOUT_PER_VOTER.toFixed(2)}.`,
+                  description: `Your vote is counted! Potential PollitPoint payout might be low.`,
                   variant: "default", duration: 7000,
                 });
               }, 0);
@@ -156,50 +150,8 @@ export default function PollFeed({
     );
   };
 
-  const handleToggleLike = (pollId: string) => {
-    if (!isAuthenticated) {
-        setTimeout(() => {
-          toast({ title: "Login Required", description: "Please login to like polls.", variant: "destructive" });
-        }, 0);
-        signIn();
-        return;
-    }
-    
-    setPolls(prevPolls =>
-        prevPolls.map(p => {
-            if (p.id === pollId) {
-                const newIsLiked = !p.isLiked;
-                const newLikesCount = newIsLiked ? p.likes + 1 : Math.max(0, p.likes - 1);
-                setTimeout(() => {
-                  if (newIsLiked) {
-                      toast({ title: "Poll Liked!" });
-                  } else {
-                      toast({ title: "Poll Unliked" });
-                  }
-                }, 0);
-                return { ...p, isLiked: newIsLiked, likes: newLikesCount };
-            }
-            return p;
-        })
-    );
-  };
-
-
-  const handlePollActionComplete = (pollIdToRemove: string, swipeDirection?: 'left' | 'right') => {
-     setExitDirectionMap(prev => ({ ...prev, [pollIdToRemove]: swipeDirection || 'default' }));
-     setTimeout(() => {
-        if (onPollActionCompleteCallback) {
-            onPollActionCompleteCallback(pollIdToRemove, swipeDirection);
-        } else {
-            setPolls(prevPolls => prevPolls.filter(p => p.id !== pollIdToRemove));
-        }
-        setExitDirectionMap(prev => {
-            const newMap = {...prev};
-            delete newMap[pollIdToRemove];
-            return newMap;
-        });
-     }, 300); // Animation duration
-  };
+  // handleToggleLike is removed as PollCard will manage its local like state visually for now
+  // If likes need to be persistent, this logic should be in PollFeed and update the 'polls' state
 
   const handlePledgeOutcome = (pollId: string, outcome: 'accepted' | 'tipped_crowd') => {
     if (!isAuthenticated || !currentUser || polls.find(p => p.id === pollId)?.creator.id !== currentUser.id) {
@@ -230,7 +182,7 @@ export default function PollFeed({
       </div>
     );
   }
-  
+
   if (polls.length === 0 && (initialLoadComplete || staticPolls)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[calc(100vh-200px)] text-center">
@@ -243,23 +195,21 @@ export default function PollFeed({
 
   return (
     <div className="w-full space-y-0 relative">
-      <AnimatePresence initial={false} custom={exitDirectionMap}>
+      <AnimatePresence initial={false}>
         {polls.map((poll) => (
           <motion.div
             key={poll.id}
-            layout
-            custom={exitDirectionMap[poll.id] || 'default'}
-            variants={pollCardVariants}
+            layout // Handles smooth reordering when other items in the list change
+            variants={pollCardVariants} // Uses simplified variants for add/remove from list
             initial="initial"
             animate="animate"
-            exit="exit"
-            className="min-h-[1px]" 
+            exit="exit" // Standard exit for list removal (e.g. if a poll is deleted)
+            className="min-h-[1px]"
           >
             <PollCard
               poll={poll}
-              onVote={handleVote}
-              onToggleLike={handleToggleLike} // Pass the new handler
-              onPollActionComplete={handlePollActionComplete}
+              onVote={handleVote} // Passed to PollCard to update PollFeed's state
+              // onPollActionComplete is removed
               currentUser={currentUser}
               onPledgeOutcome={handlePledgeOutcome}
             />

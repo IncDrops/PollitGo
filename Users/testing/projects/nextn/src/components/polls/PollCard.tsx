@@ -17,15 +17,14 @@ import OptionDetailsDialog from './OptionDetailsDialog';
 import { motion, useAnimationControls } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { useStripe } from '@stripe/react-stripe-js';
-import { signIn } from 'next-auth/react'; 
+import { signIn } from 'next-auth/react';
 
 interface PollCardProps {
   poll: Poll;
   onVote?: (pollId: string, optionId: string) => void;
-  onToggleLike?: (pollId: string) => void;
-  onPollActionComplete?: (pollId: string, swipeDirection?: 'left' | 'right') => void;
+  // onPollActionComplete is removed as PollCard now manages its full animation cycle
   onPledgeOutcome?: (pollId: string, outcome: 'accepted' | 'tipped_crowd') => void;
-  currentUser?: User | null; 
+  currentUser?: User | null;
 }
 
 const OPTION_TEXT_TRUNCATE_LENGTH = 100;
@@ -36,7 +35,7 @@ const generateHintFromText = (text: string = ""): string => {
   return text.split(' ').slice(0, 2).join(' ').toLowerCase();
 };
 
-const PollOptionDisplay: React.FC<{ 
+const PollOptionDisplay: React.FC<{
   option: PollOptionType;
   totalVotes: number;
   onVoteOptionClick: () => void;
@@ -91,6 +90,7 @@ const PollOptionDisplay: React.FC<{
               height={pollHasTwoOptions ? 60 : 40}
               className={cn("rounded-md object-cover shadow-sm", pollHasTwoOptions ? "mb-2" : "mr-2")}
               data-ai-hint={generateHintFromText(option.text) || "option visual"}
+              sizes="(max-width: 768px) 20vw, 10vw"
             />
           )}
           {option.videoUrl && !option.imageUrl && <VideoIconLucide className={cn("text-muted-foreground", pollHasTwoOptions ? "mb-2 h-10 w-10" : "w-5 h-5 mr-2")} />}
@@ -122,7 +122,7 @@ const PollOptionDisplay: React.FC<{
   );
 };
 
-export default function PollCard({ poll, onVote, onToggleLike, onPollActionComplete, onPledgeOutcome, currentUser }: PollCardProps) {
+export default function PollCard({ poll, onVote, onPledgeOutcome, currentUser }: PollCardProps) {
   const router = useRouter();
   const { toast } = useToast();
   const stripe = useStripe();
@@ -158,30 +158,27 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
     if (!onVote) return;
     if (!currentUser?.id) {
         toast({title: "Login Required", description: "Please login to vote.", variant:"destructive"});
-        signIn(); 
+        signIn();
         return;
     }
     const pollBeforeUpdate = {...currentPoll};
-    onVote(currentPoll.id, optionId); 
     
-    setCurrentPoll(prevPoll => {
-      if (prevPoll.isVoted && prevPoll.votedOptionId === optionId) return prevPoll; 
-      const newTotalVotes = prevPoll.isVoted ? prevPoll.totalVotes : prevPoll.totalVotes + 1; 
-      const updatedOptions = prevPoll.options.map(opt =>
-        opt.id === optionId ? { ...opt, votes: (prevPoll.options.find(o=>o.id===optionId)?.votes || 0) + (prevPoll.votedOptionId === optionId ? 0 : 1) } : opt 
-      );
-      return { ...prevPoll, options: updatedOptions, totalVotes: newTotalVotes, isVoted: true, votedOptionId: optionId };
-    });
-
-
+    // Call the onVote prop to update the state in PollFeed
+    // This will trigger a re-render of PollCard with the updated poll data.
+    onVote(currentPoll.id, optionId);
+    
+    // The actual state update for currentPoll will happen via props when PollFeed re-renders.
+    // For immediate visual feedback if needed before prop update, you could do a local setCurrentPoll here too,
+    // but it's generally better to rely on the single source of truth from the parent.
+    // However, for the low payout warning, we might use the pollBeforeUpdate.
     const votedOptionAfterUpdate = pollBeforeUpdate.options.find(opt => opt.id === optionId);
     if (pollBeforeUpdate.pledgeAmount && pollBeforeUpdate.pledgeAmount > 0 && votedOptionAfterUpdate) {
         const amountToDistributeToVoters = pollBeforeUpdate.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
-        const votesForThisOptionBeforeCurrent = votedOptionAfterUpdate.votes; 
+        const votesForThisOptionBeforeCurrent = votedOptionAfterUpdate.votes;
         const votesAfterThisUsersVote = votesForThisOptionBeforeCurrent + 1;
 
         if ((amountToDistributeToVoters / votesAfterThisUsersVote) < MIN_PAYOUT_PER_VOTER && votesAfterThisUsersVote > 0) {
-            setTimeout(() => { 
+            setTimeout(() => {
               toast({
                   title: "Low Payout Warning",
                   description: `Your vote is counted! Potential PollitPoint payout might be low.`,
@@ -194,16 +191,25 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
 
   const handleInternalToggleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!onToggleLike || isLikingInProgress) return;
+    if (isLikingInProgress) return;
     if (!currentUser?.id) {
       toast({ title: "Login Required", description: "Please login to like posts.", variant: "destructive" });
       signIn();
       return;
     }
     setIsLikingInProgress(true);
-    onToggleLike(currentPoll.id); 
-    setCurrentPoll(prev => ({...prev, isLiked: !prev.isLiked, likes: prev.isLiked ? prev.likes -1 : prev.likes + 1}));
-    await new Promise(resolve => setTimeout(resolve, 300)); 
+    // Optimistic update
+    const newIsLiked = !currentPoll.isLiked;
+    const newLikesCount = newIsLiked ? currentPoll.likes + 1 : Math.max(0, currentPoll.likes - 1);
+    setCurrentPoll(prev => ({...prev, isLiked: newIsLiked, likes: newLikesCount}));
+    
+    // Simulate backend call
+    // In a real app, you would call an API here and handle success/failure.
+    // For this example, we'll just use a timeout.
+    // This logic would typically be in PollFeed if likes are persisted.
+    // For now, it's just a local visual change in PollCard.
+    await new Promise(resolve => setTimeout(resolve, 300));
+    if (newIsLiked) toast({title: "Poll Liked!"}); else toast({title: "Poll Unliked"});
     setIsLikingInProgress(false);
   };
 
@@ -213,32 +219,50 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
     },
     onSwiped: async (eventData) => {
       if (!canSwipe || typeof onVote === 'undefined') return;
-      clearLongPressTimer(); 
+      clearLongPressTimer();
 
       const direction = eventData.dir;
       const optionToVote = direction === 'Left' ? currentPoll.options[0].id : currentPoll.options[1].id;
       
-      controls.start({
-        x: direction === "Left" ? "-100%" : "100%",
+      handleInternalVote(optionToVote); // This will call onVote, which updates PollFeed state
+
+      // Animate Out
+      await controls.start({
+        x: direction === "Left" ? "-120%" : "120%",
         opacity: 0,
-        transition: { duration: 0.3 },
-      }).then(() => {
-        if (onPollActionComplete) {
-          onPollActionComplete(currentPoll.id, direction.toLowerCase() as 'left' | 'right');
-        }
+        transition: { duration: 0.3, ease: "easeIn" },
       });
-      handleInternalVote(optionToVote);
+
+      // Pause off-screen (allows time for PollFeed to re-render PollCard with updated props)
+      await new Promise(resolve => setTimeout(resolve, 400)); // 300ms out + 400ms pause = 700ms total "gone" time
+
+      // Snap to opposite side (hidden)
+      // The `currentPoll` state within this component instance is stale here.
+      // The updated poll data comes via props after PollFeed re-renders.
+      // The re-render of PollCard with new props should happen before this point.
+      controls.set({
+        x: direction === "Left" ? "120%" : "-120%", // Start from opposite side
+        opacity: 0,
+      });
+      
+      // Animate back in
+      // The card now has new `currentPoll` props reflecting the vote.
+      await controls.start({
+        x: "0%",
+        opacity: 1,
+        transition: { type: "spring", stiffness: 120, damping: 18, duration: 0.4 },
+      });
     },
     trackMouse: true,
     preventScrollOnSwipe: true,
   });
 
   const handlePointerDown = useCallback((event: React.PointerEvent) => {
-    if (event.pointerType === 'mouse' && event.button !== 0) return; 
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
     clearLongPressTimer();
     longPressTimer.current = setTimeout(() => {
       router.push(`/profile/${currentPoll.creator.id}`);
-      longPressTimer.current = null; 
+      longPressTimer.current = null;
     }, 800);
   }, [clearLongPressTimer, router, currentPoll.creator.id]);
 
@@ -323,7 +347,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: 500, 
+          amount: 500,
           currency: 'usd',
           itemName: `Tip for ${currentPoll.creator.name}`,
           metadata: { pollId: currentPoll.id, pollCreatorId: currentPoll.creator.id, tipperUserId: currentUser.id }
@@ -362,13 +386,15 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
   return (
     <>
       <motion.div
+        layout // Handles reordering smoothly if other polls are removed by PollFeed
         {...(canSwipe ? swipeHandlers : {})}
         ref={cardRef}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp} 
+        onPointerLeave={handlePointerUp}
         className="w-full touch-pan-y"
-        animate={controls}
+        animate={controls} // Controls the swipe-out and pendulum-in animation
+        initial={{ x: "0%", opacity: 1 }} // Initial state of the card
         style={{WebkitTapHighlightColor: 'transparent'}}
       >
         <Card
@@ -391,7 +417,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
               <span>{currentPoll.question}</span>
             </CardTitle>
              {currentPoll.imageUrls && currentPoll.imageUrls.length > 0 && (
-                <div className="mt-2 -mx-4"> 
+                <div className="mt-2 -mx-4">
                     <div className={cn("grid gap-0.5", currentPoll.imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
                         {currentPoll.imageUrls.slice(0, currentPoll.postType === 'opinion' ? 2 : (currentPoll.imageUrls.length === 3 ? 2 : 4)).map((imgUrl, idx) => (
                             <div key={idx} className={cn(
@@ -420,8 +446,8 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
             )}
             {isPollType && !currentUser?.id && !deadlinePassed && (
                  <div className="text-center text-destructive text-xs py-2 flex items-center justify-center bg-destructive/10 p-2 rounded-md">
-                    <AlertCircle className="w-4 h-4 mr-1.5" /> Please 
-                    <Button variant="link" className="p-0 h-auto text-destructive hover:text-destructive/80 mx-1 text-xs" onClick={(e) => {e.stopPropagation(); signIn();}}>login</Button> 
+                    <AlertCircle className="w-4 h-4 mr-1.5" /> Please
+                    <Button variant="link" className="p-0 h-auto text-destructive hover:text-destructive/80 mx-1 text-xs" onClick={(e) => {e.stopPropagation(); signIn();}}>login</Button>
                     to vote.
                 </div>
             )}
