@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card'; // Added CardDescription
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from '@/components/ui/card';
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -66,19 +66,11 @@ export default function NewPollPage() {
   const [videoFile, setVideoFile] = useState<File | undefined>();
   const videoInputRef = useRef<HTMLInputElement>(null);
   
-  const [isStripeChecked, setIsStripeChecked] = useState(false);
-
   useEffect(() => {
     const defaultDeadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
     defaultDeadline.setSeconds(0);
     setDeadline(defaultDeadline);
   }, []);
-
-  useEffect(() => {
-    if (!authLoading && stripe !== undefined) {
-      setIsStripeChecked(true);
-    }
-  }, [stripe, authLoading]);
 
   const handleAddOption = () => {
     if (options.length < MAX_POLL_OPTIONS) {
@@ -248,9 +240,9 @@ export default function NewPollPage() {
     if (numericPledgeAmount > 0 && !stripe) {
       toast({ 
         title: "Payment System Error", 
-        description: "The payment system (Stripe) is not available. This might be due to a missing or invalid configuration (e.g., Stripe Publishable Key). You cannot make a pledge at this time. Please check console for details.", 
+        description: "Stripe is not available for pledges. This could be due to a missing or invalid Stripe Publishable Key (NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) in your environment variables. Please check console logs for 'CRITICAL STRIPE ERROR'.", 
         variant: "destructive",
-        duration: 7000
+        duration: 8000
       });
       setIsSubmitting(false);
       return;
@@ -278,8 +270,6 @@ export default function NewPollPage() {
         if (response.ok && session.id) {
           const result = await stripe.redirectToCheckout({ sessionId: session.id });
           if (result.error) throw new Error(result.error.message);
-          // If redirectToCheckout is successful, the user is redirected, so we don't proceed further here.
-          // If it fails client-side before redirect, the error is caught.
           return; 
         } else {
           throw new Error(session.error || 'Failed to create Stripe session.');
@@ -292,7 +282,6 @@ export default function NewPollPage() {
       }
     }
 
-    // Simulate submission without pledge or if pledge processing already returned
     console.log('Simulating post submission. User:', currentUser?.email, 'Data:', {
       postType, question, options: postType === 'poll' ? options : [], deadline, 
       pledgeAmount: numericPledgeAmount || 0, isSpicy, 
@@ -304,7 +293,6 @@ export default function NewPollPage() {
       description: 'Post data logged to console. Implement backend to save posts.',
     });
 
-    // Reset form
     setPostType('poll');
     setQuestion('');
     setOptions([{ id: `option-${Date.now()}`, text: '' }, { id: `option-${Date.now() + 1}`, text: '' }]);
@@ -315,7 +303,7 @@ export default function NewPollPage() {
     setImageFiles([]);
     setVideoUrl(undefined);
     setVideoFile(undefined);
-    options.forEach(opt => { // Clean up option media object URLs
+    options.forEach(opt => { 
       if(opt.imageUrl) URL.revokeObjectURL(opt.imageUrl);
       if(opt.videoUrl) URL.revokeObjectURL(opt.videoUrl);
     });
@@ -361,7 +349,10 @@ export default function NewPollPage() {
   }
 
   const formDisabled = isSubmitting;
-  const showStripeNotReadyAlert = isStripeChecked && parseFloat(pledgeAmount) > 0 && !stripe;
+  const numericPledgeAmount = parseFloat(pledgeAmount);
+  const isPledgeActive = numericPledgeAmount > 0;
+  const isStripeNotReadyForPledge = isPledgeActive && !stripe;
+
   const maxImagesForPost = postType === 'opinion' ? MAX_OPINION_IMAGES : MAX_POLL_IMAGES;
 
   return (
@@ -564,7 +555,7 @@ export default function NewPollPage() {
                    setDeadline(newDeadline);
                  }} 
                  disabled={formDisabled}
-                 value={deadline ? "custom" : ""} // Reflect current deadline state better
+                 value={deadline ? "custom" : ""} 
                 >
                 <SelectTrigger className="w-full rounded-md">
                   <SelectValue placeholder="Quick Set Deadline" />
@@ -598,13 +589,14 @@ export default function NewPollPage() {
               </Alert>
             </div>
             
-            {showStripeNotReadyAlert && (
+            {isStripeNotReadyForPledge && (
               <Alert variant="destructive" className="my-4">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Stripe Payment System Error</AlertTitle>
                 <AlertDescription>
                   The payment system (Stripe) is not available for pledges. This could be due to a missing or invalid 
-                  Stripe Publishable Key configuration for this website. Please check the browser console for a "CRITICAL STRIPE ERROR" message.
+                  Stripe Publishable Key (NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) in your environment variables. 
+                  Please check the browser console for a "CRITICAL STRIPE ERROR" message.
                   You can still create the post without a pledge, or an administrator needs to resolve the Stripe configuration.
                 </AlertDescription>
               </Alert>
@@ -631,9 +623,9 @@ export default function NewPollPage() {
                 max="1000"
                 step="0.01"
                 className="rounded-md"
-                disabled={formDisabled || showStripeNotReadyAlert}
+                disabled={formDisabled || isStripeNotReadyForPledge}
               />
-              {parseFloat(pledgeAmount) > 0 && postType === 'poll' && (
+              {isPledgeActive && postType === 'poll' && (
                   <p className="text-xs text-muted-foreground">
                     Potential payout per majority voter based on {MIN_PAYOUT_PER_MAJORITY_VOTER * 100}% of pledge. Actual payout may vary.
                   </p>

@@ -70,7 +70,8 @@ The `.env.local` file is **NOT** used in deployed environments. You **MUST** con
     *   **Value:** Set to the **full public URL of that specific deployment**.
         *   **For Vercel (e.g., `www.pollitago.com`):** This **MUST BE** `https://www.pollitago.com` (or your actual Vercel domain, e.g., `https://your-project-name.vercel.app`).
         *   **It CANNOT BE `http://localhost:9003` on Vercel.** This is a common mistake and will cause build failures or runtime errors.
-    *   **Importance:** Critical for redirects, callbacks, and NextAuth.js to know its own address. **An incorrect `NEXTAUTH_URL` on Vercel can lead to build errors like "missing `app-build-manifest.json`".**
+        *   **For Firebase Studio Prototypes (Google Cloud Build):** This **MUST BE** the full public URL of your prototype (e.g., `https://your-prototype-id.cloudworkstations.dev`).
+    *   **Importance:** Critical for redirects, callbacks, and NextAuth.js to know its own address. **An incorrect `NEXTAUTH_URL` in the build environment can lead to build errors like "missing `app-build-manifest.json`".**
 *   **`NEXTAUTH_SECRET`**:
     *   **Value:** Set to the **EXACT SAME strong, random secret** you generated and used in `.env.local`.
     *   **Importance:** **Paramount for build success of auth pages (like `/login`, `/signup`).** Double-check for typos or extra spaces when pasting. This is the most common cause of "missing `app-build-manifest.json`" errors.
@@ -79,7 +80,7 @@ The `.env.local` file is **NOT** used in deployed environments. You **MUST** con
     *   **Importance:** Required for backend Stripe API calls like creating checkout sessions.
 *   **`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`**:
     *   **Value:** Your actual Stripe Publishable Key (e.g., `pk_test_...` or `pk_live_...`).
-    *   **Importance:** Required for client-side Stripe.js to initialize.
+    *   **Importance:** Required for client-side Stripe.js to initialize. If this is missing or incorrect, the Stripe integration on pages like "New Poll" will not work, and might lead to client-side errors.
 
 **Google Cloud Project (for Genkit/AI):** In deployed Google Cloud environments (like Google Cloud Run, which might be used by Firebase Studio Prototypes), the project ID is often automatically available. The service account running your application needs appropriate IAM permissions for Genkit AI features. You typically **do not** need to set Google Cloud service account keys as environment variables on Vercel for Genkit if it's running within Google Cloud infrastructure that provides identity via a service account.
 
@@ -91,14 +92,14 @@ If you previously used Firebase services and had environment variables like `NEX
 *   **Missing or Incorrect `NEXTAUTH_SECRET`:**
     *   **Build Failure:** Extremely likely to cause `ENOENT: no such file or directory, open '...app/login/page/app-build-manifest.json'` (or similar for `/signup`, `/api/auth/...`) errors.
     *   **Runtime Failure:** "Internal Server Error" or other auth failures during login/signup.
-*   **Missing or Incorrect `NEXTAUTH_URL` (e.g., set to `localhost` on Vercel):**
+*   **Missing or Incorrect `NEXTAUTH_URL` (e.g., set to `localhost` on Vercel/Prototypes):**
     *   **Build Failure:** Can contribute to NextAuth.js instability during the build, leading to missing manifest files.
     *   **Runtime Failure:** "Failed to fetch" errors during login/signup, OAuth provider errors, incorrect redirect behavior.
 *   **Missing `STRIPE_SECRET_KEY`:**
-    *   **Build Failure:** Can sometimes cause `[Error: Failed to collect page data for /api/stripe/create-checkout-session]` if the build process deeply analyzes API routes, though the current code is more resilient.
+    *   **Build Failure:** Can sometimes cause `[Error: Failed to collect page data for /api/stripe/create-checkout-session]` if the build process deeply analyzes API routes.
     *   **Runtime Failure:** Stripe checkout session creation will fail.
 *   **Missing `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`:**
-    *   **Runtime Failure:** Stripe.js will not initialize in the browser; payment forms will break.
+    *   **Runtime Failure:** Stripe.js will not initialize in the browser; payment forms (like on the "New Poll" page) will break, potentially causing client-side errors if not handled gracefully. The app currently logs a "CRITICAL STRIPE ERROR" to the browser console if this is missing.
 
 ## Authentication with NextAuth.js
 
@@ -118,9 +119,9 @@ This application uses NextAuth.js. The `src/app/api/auth/[...nextauth]/route.ts`
         *   The secret must be a **strong, consistent, random string**.
         *   **Do NOT keep generating new secrets.** Generate one, save it, and use that SAME value everywhere.
 
-    2.  **SECONDARY CAUSE (Especially on Vercel): `NEXTAUTH_URL` is INCORRECT in the BUILD ENVIRONMENT.**
-        *   For Vercel deployments, `NEXTAUTH_URL` **MUST** be the full public URL of your Vercel deployment (e.g., `https://www.pollitago.com` or `https://your-project.vercel.app`).
-        *   **It CANNOT be `http://localhost:9003` on Vercel.** If it is, this can destabilize NextAuth.js during the build.
+    2.  **SECONDARY CAUSE: `NEXTAUTH_URL` is INCORRECT in the BUILD ENVIRONMENT.**
+        *   For **Vercel deployments**, `NEXTAUTH_URL` **MUST** be the full public URL of your Vercel deployment (e.g., `https://www.pollitago.com` or `https://your-project.vercel.app`). **It CANNOT be `http://localhost:9003` on Vercel.**
+        *   For **Firebase Studio Prototypes (Google Cloud Build)**, `NEXTAUTH_URL` **MUST** be the full public URL of that specific prototype (e.g., `https://your-prototype-id.cloudworkstations.dev`). **It CANNOT be `http://localhost:9003` during the prototype's cloud build.**
 
     3.  **VERCEL DEPLOYMENT - MOST CRITICAL CHECKLIST:**
         *   Go to your Vercel Project Dashboard.
@@ -136,15 +137,24 @@ This application uses NextAuth.js. The `src/app/api/auth/[...nextauth]/route.ts`
         *   **Meticulously check `NEXTAUTH_URL`:**
             *   Ensure it exists.
             *   Ensure its value is the **full public URL of THAT SPECIFIC Vercel deployment** (e.g., `https://your-project-name.vercel.app` or `https://www.pollitago.com`). **It should NOT be `http://localhost:9003` for your Vercel deployment.**
-        *   If you are using a service like Firebase Studio that provisions Google Cloud Build, you need to ensure these variables are correctly passed to that Google Cloud Build environment. This might involve settings within Firebase Studio or directly in the Google Cloud Build trigger configuration if accessible.
 
-    4.  **LOCAL DEVELOPMENT (if building locally with `npm run build` or seeing issues with `npm run dev`):**
+    4.  **FIREBASE STUDIO PROTOTYPES / GOOGLE CLOUD BUILD - MOST CRITICAL CHECKLIST:**
+        *   Firebase Studio prototypes are typically built using **Google Cloud Build**. The environment variables **MUST** be available to this Google Cloud Build process.
+        *   **How to set them:** This depends on how Firebase Studio configures its build triggers.
+            *   Look for settings within Firebase Studio related to "Environment Variables" for prototypes or builds.
+            *   Alternatively, you might need to go to the **Google Cloud Console -> Cloud Build -> Triggers**. Find the trigger associated with your Firebase Studio project/repository. Edit the trigger, and under "Advanced" or "Substitution variables" / "Environment variables," you need to add:
+                *   `_NEXTAUTH_SECRET` (Note: Cloud Build often requires secret variables to be prefixed with `_` if they are not directly from Secret Manager, or you'd link it to a Secret Manager secret). Value: Your strong, random secret.
+                *   `_NEXTAUTH_URL` (or `NEXTAUTH_URL`). Value: The **full public URL of your prototype** (e.g., `https://your-prototype-id.cloudworkstations.dev`).
+            *   It's crucial that these variables are available *at build time*.
+        *   **Verify `NEXTAUTH_SECRET` and `NEXTAUTH_URL` are reaching the build.**
+
+    5.  **LOCAL DEVELOPMENT (if building locally with `npm run build` or seeing issues with `npm run dev`):**
         *   Ensure `NEXTAUTH_SECRET` and `NEXTAUTH_URL` are correctly set in your `.env.local` file (`NEXTAUTH_URL` should be `http://localhost:9003` locally).
         *   Stop your development server.
         *   **Delete the `.next` folder** in your project root. This clears any potentially corrupted build cache.
         *   Run `npm run build` again to test, or restart your development server (`npm run dev`).
 
-    5.  **REDEPLOY (Vercel/Cloud Build):** After confirming/setting environment variables in your hosting provider's settings, **you MUST trigger a new build/deployment**. This is crucial for the changes to take effect. On Vercel, use the "Redeploy" option (usually from the "Deployments" tab for the specific deployment).
+    6.  **REDEPLOY (Vercel/Cloud Build):** After confirming/setting environment variables in your hosting provider's settings or build trigger, **you MUST trigger a new build/deployment**. This is crucial for the changes to take effect. On Vercel, use the "Redeploy" option. For Firebase Studio prototypes, pushing a change to your repository usually triggers a new build.
 
 *   **"Internal Server Error" during Login/Signup (especially on Vercel/deployed):**
     1.  **Verify `NEXTAUTH_SECRET` and `NEXTAUTH_URL` on Vercel/deployment platform** as described above. This is the most common cause. An incorrect `NEXTAUTH_URL` (like `localhost`) will also cause this.
@@ -154,6 +164,20 @@ This application uses NextAuth.js. The `src/app/api/auth/[...nextauth]/route.ts`
     1.  Verify `NEXTAUTH_URL` is correct for your current environment (local vs. deployed).
     2.  Restart your dev server if you changed `.env.local`.
 
+## Client-Side Exception on "New Poll" Page (`pollitago is not defined` or similar)
+
+If you see "Application error: a client-side exception has occurred" on the "New Poll" page:
+
+1.  **Open Browser Developer Tools:**
+    *   Right-click on the page -> "Inspect" -> "Console" tab.
+    *   Look for red error messages.
+2.  **Check `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`**:
+    *   Ensure this is correctly set in your `.env.local` (for local) AND in your Vercel / Google Cloud Build environment variables for the deployed version.
+    *   The `src/app/layout.tsx` file logs a "CRITICAL STRIPE ERROR" to the browser console if this key is not found.
+    *   If Stripe.js fails to load due to a missing key, other JavaScript on the page that might (indirectly) depend on it could fail.
+3.  **Test in Incognito/Private Browsing Mode:** This disables most browser extensions. If the error disappears, an extension is the cause. Disable extensions one by one to find the culprit.
+4.  **Share the Console Error:** The exact error message from the console is crucial for diagnosing further.
+
 ## Stripe Integration, Genkit, Deploying to Vercel, Google Cloud Build Sections
 (Content for these sections remains largely the same as previously provided, emphasizing the need for corresponding environment variables in deployed settings.)
 
@@ -161,5 +185,3 @@ This application uses NextAuth.js. The `src/app/api/auth/[...nextauth]/route.ts`
 Firebase services have been removed from this project. If you previously had Firebase SDK environment variables (like `NEXT_PUBLIC_FIREBASE_API_KEY`, etc.) configured in your Vercel or Google Cloud Build settings, you can remove them to keep your configuration clean. This project now relies on NextAuth.js for authentication and Stripe for payments.
 This step is for tidiness and **will not fix NextAuth.js build errors like "missing app-build-manifest.json"**.
 Focus on `NEXTAUTH_SECRET` and `NEXTAUTH_URL` for those build errors.
-
-    
