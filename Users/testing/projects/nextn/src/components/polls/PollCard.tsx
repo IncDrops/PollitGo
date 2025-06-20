@@ -500,3 +500,4 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
     </>
   );
 }
+
