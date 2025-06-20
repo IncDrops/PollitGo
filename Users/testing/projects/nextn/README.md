@@ -41,6 +41,7 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=YOUR_ACTUAL_STRIPE_TEST_PUBLISHABLE_KEY_GOES_
 # Get these values from your Firebase project settings:
 # Firebase Console > Project Overview (click the gear icon) > Project settings > General tab > Your apps > SDK setup and configuration (select "Config" radio button).
 # Prefix with NEXT_PUBLIC_ to make them available to the client-side browser environment.
+# IMPORTANT: Do NOT wrap these values in quotation marks.
 NEXT_PUBLIC_FIREBASE_API_KEY=YOUR_FIREBASE_API_KEY
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=YOUR_FIREBASE_AUTH_DOMAIN
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=YOUR_FIREBASE_PROJECT_ID
@@ -67,6 +68,7 @@ NEXT_PUBLIC_FIREBASE_APP_ID=YOUR_FIREBASE_APP_ID
 2.  **Replace Placeholders in `.env.local`:**
     *   Update `NEXTAUTH_SECRET` in `.env.local` with the value you just generated.
     *   Substitute **ALL** other placeholder values (e.g., `YOUR_ACTUAL_STRIPE_TEST_SECRET_KEY_GOES_HERE`, `YOUR_FIREBASE_API_KEY`) with your **actual TEST keys and Firebase project configuration values**.
+    *   **Crucially, do NOT wrap these values in quotation marks.** For example, `NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSy...` is correct, not `NEXT_PUBLIC_FIREBASE_API_KEY="AIzaSy..."`.
 3.  **Setup Google Cloud ADC (for Genkit local dev):** If you haven't already, run `gcloud auth application-default login` in your terminal and follow the prompts.
 4.  **Restart Dev Server:** After creating or modifying `.env.local`, you **MUST** restart your Next.js development server (`npm run dev` with `Ctrl+C` and run `npm run dev` again) for changes to take effect.
 
@@ -86,7 +88,8 @@ When you launch or update a prototype in Firebase Studio, the interface will dis
 2.  Navigate to **Cloud Build > Triggers**.
 3.  Find and **Edit** the trigger associated with your Firebase Studio prototype.
 4.  Scroll down to the **"Advanced"** section and find **"Substitution variables"**.
-5.  Click **"Add variable"** for each of the following (ensure variable names start with an underscore `_` as per Cloud Build convention for user-defined substitutions that are then mapped to runtime environment variables):
+5.  Click **"Add variable"** for each of the following (ensure variable names start with an underscore `_` as per Cloud Build convention for user-defined substitutions that are then mapped to runtime environment variables).
+    *   **IMPORTANT:** When pasting values, do **NOT** wrap them in quotation marks unless the value itself intrinsically contains quotes (which is rare for these types of keys).
 
     *   **Variable Name:** `_NEXTAUTH_URL`
         *   **Value:** Paste the **full public URL of THIS Firebase Studio prototype** you copied earlier.
@@ -106,19 +109,19 @@ When you launch or update a prototype in Firebase Studio, the interface will dis
 
     *   **Firebase Variables:** Add each of your Firebase project config keys here, prefixed with `_NEXT_PUBLIC_FIREBASE_`. For example:
         *   **Variable Name:** `_NEXT_PUBLIC_FIREBASE_API_KEY`
-            *   **Value:** YOUR_FIREBASE_API_KEY
+            *   **Value:** YOUR_FIREBASE_API_KEY (no quotes)
         *   **Variable Name:** `_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
-            *   **Value:** YOUR_FIREBASE_AUTH_DOMAIN
+            *   **Value:** YOUR_FIREBASE_AUTH_DOMAIN (no quotes)
         *   **Variable Name:** `_NEXT_PUBLIC_FIREBASE_PROJECT_ID`
-            *   **Value:** YOUR_FIREBASE_PROJECT_ID
+            *   **Value:** YOUR_FIREBASE_PROJECT_ID (no quotes)
         *   **Variable Name:** `_NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
-            *   **Value:** YOUR_FIREBASE_STORAGE_BUCKET
+            *   **Value:** YOUR_FIREBASE_STORAGE_BUCKET (no quotes)
         *   **Variable Name:** `_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
-            *   **Value:** YOUR_FIREBASE_MESSAGING_SENDER_ID
+            *   **Value:** YOUR_FIREBASE_MESSAGING_SENDER_ID (no quotes)
         *   **Variable Name:** `_NEXT_PUBLIC_FIREBASE_APP_ID`
-            *   **Value:** YOUR_FIREBASE_APP_ID
+            *   **Value:** YOUR_FIREBASE_APP_ID (no quotes)
         *   **Variable Name:** `_NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`  (Optional)
-            *   **Value:** YOUR_FIREBASE_MEASUREMENT_ID
+            *   **Value:** YOUR_FIREBASE_MEASUREMENT_ID (no quotes, if you use it)
         *   **Importance:** Required for Firebase SDK to connect to your project.
 
 6.  **Service Account (in the same Trigger settings):**
@@ -135,12 +138,12 @@ When you launch or update a prototype in Firebase Studio, the interface will dis
 ### A. CRITICAL BUILD ERROR: `ENOENT: no such file or directory, open '...app/login/page/app-build-manifest.json'`
 ### OR RUNTIME ERROR: `{"error": "Server misconfiguration: NEXTAUTH_SECRET is missing."}`
 
-**PRIMARY CAUSE: `_NEXTAUTH_SECRET` is MISSING, EMPTY, or INCORRECT in the Google Cloud Build Trigger.**
+**PRIMARY CAUSE: `_NEXTAUTH_SECRET` is MISSING, EMPTY, or INCORRECT in the Google Cloud Build Trigger.** (Or `_NEXTAUTH_URL` is missing/incorrect, also impacting builds).
 
 **SOLUTION: GENERATE A NEW `NEXTAUTH_SECRET` AND APPLY IT EVERYWHERE (Local and Cloud Build)**
 1.  **Generate ONE Strong Secret:** `openssl rand -base64 32`
-2.  **Update in `.env.local`**.
-3.  **Update in Google Cloud Build Trigger (`_NEXTAUTH_SECRET`)**. Ensure `_NEXTAUTH_URL` is also correct.
+2.  **Update in `.env.local`** (no quotes).
+3.  **Update in Google Cloud Build Trigger (`_NEXTAUTH_SECRET`)** (no quotes). Ensure `_NEXTAUTH_URL` is also correct (full public URL of the prototype, no quotes).
 4.  **REBUILD/REDEPLOY PROTOTYPE** from Firebase Studio.
 
 ### B. "Application error: a client-side exception has occurred" (Often on "New Poll" page or when Stripe should load)
@@ -148,9 +151,9 @@ When you launch or update a prototype in Firebase Studio, the interface will dis
 **PRIMARY CAUSES & SOLUTIONS:**
 1.  **`_NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` is MISSING or INCORRECT in the Cloud Build Trigger.**
     *   Check Browser Console for "CRITICAL STRIPE ERROR".
-    *   Verify the key in Cloud Build Trigger and Redeploy.
+    *   Verify the key in Cloud Build Trigger (no quotes) and Redeploy.
 2.  **Firebase SDK Initialization Failure (if using Firebase features on the client):**
-    *   Ensure all `_NEXT_PUBLIC_FIREBASE_...` variables are correctly set in the Cloud Build Trigger.
+    *   Ensure all `_NEXT_PUBLIC_FIREBASE_...` variables are correctly set in the Cloud Build Trigger (no quotes).
     *   Check Browser Console for Firebase-related errors (e.g., "Firebase: Error (auth/invalid-api-key)" or issues connecting to Firestore/Storage). The file `src/lib/firebase.ts` logs specific errors if core Firebase config keys are missing.
 
 ---
@@ -175,7 +178,7 @@ Firebase SDK is initialized in `src/lib/firebase.ts`. To use Firebase services (
     *   Find the "SDK setup and configuration" section and select the **"Config"** radio button.
     *   You will see an object like `const firebaseConfig = { apiKey: "...", authDomain: "...", ... };`. These are the values you need.
 2.  **Set Environment Variables:**
-    *   Add these values to your `.env.local` file (for local development) and to your Google Cloud Build trigger's "Substitution variables" (for prototype deployment), ensuring you use the correct prefixes as detailed in the sections above (`NEXT_PUBLIC_FIREBASE_...` for `.env.local`, and `_NEXT_PUBLIC_FIREBASE_...` for Cloud Build).
+    *   Add these values to your `.env.local` file (for local development) and to your Google Cloud Build trigger's "Substitution variables" (for prototype deployment), ensuring you use the correct prefixes as detailed in the sections above (`NEXT_PUBLIC_FIREBASE_...` for `.env.local`, and `_NEXT_PUBLIC_FIREBASE_...` for Cloud Build). **Do not use quotation marks around these values.**
 
 ## Genkit (AI Features)
 
@@ -194,5 +197,5 @@ The Vercel environment variable names would typically be:
 - `NEXT_PUBLIC_FIREBASE_API_KEY`
 - `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
 - ... and so on for all Firebase config keys.
-Ensure they are set in Vercel Project Settings > Environment Variables and that you redeploy after any changes.
+Ensure they are set in Vercel Project Settings > Environment Variables (without quotes) and that you redeploy after any changes.
 ```
