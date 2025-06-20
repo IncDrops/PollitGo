@@ -1,0 +1,45 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Default deny all reads and writes on any path.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+
+    // User Profile Pictures
+    // Path: users/{userId}/profilePicture.<ext> (App should manage specific file name and extension)
+    // - Authenticated user can write/update/delete their own profile picture.
+    // - Anyone can read profile pictures.
+    match /users/{userId}/profilePicture {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId
+                   && request.resource.size < 2 * 1024 * 1024 // Max 2MB
+                   && request.resource.contentType.matches('image/.*'); // Only images
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Poll Media (Images/Videos for Poll Questions or Options)
+    // Path: polls/{pollId}/{fileName}
+    // - Anyone can read poll media.
+    // - Authenticated users can write (upload) media.
+    //   (Note: For enhanced security, you'd typically verify that request.auth.uid is the creator of pollId,
+    //    often by checking a corresponding Firestore document or using custom claims.
+    //    This rule allows any authenticated user to upload to any poll path, relying on app logic for correctness.)
+    // - Poll creators (or admins) should be able to delete.
+    match /polls/{pollId}/{fileName} {
+      allow read: if true;
+      allow write: if request.auth != null
+                   && request.resource.size < 10 * 1024 * 1024 // Max 10MB (adjust as needed)
+                   && (request.resource.contentType.matches('image/.*') || request.resource.contentType.matches('video/.*'));
+      // allow delete: if request.auth != null && (/* logic to check if user is creator or admin */);
+    }
+
+    // Optional: User-specific general files, if needed for other features (e.g., direct message attachments)
+    // Path: userData/{userId}/{allUserDataPaths=**}
+    // - Only the authenticated user can read/write/delete their own files.
+    match /userData/{userId}/{allUserDataPaths=**} {
+      allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
