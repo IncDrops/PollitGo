@@ -381,9 +381,9 @@ export default function NewPollPage() {
 
             <div className="space-y-2">
               <Label className="text-base font-semibold">Attach Media (Optional)</Label>
-              <Alert variant="default" className="bg-accent/20">
-                <Info className="h-4 w-4 !text-accent-foreground" />
-                <AlertDescription className="text-accent-foreground/80">
+              <Alert variant="default">
+                <Info className="h-4 w-4" />
+                <AlertDescription>
                   For a Poll, you can add up to 4 images OR one video for the main question. Options can also have individual media.
                 </AlertDescription>
               </Alert>
@@ -558,10 +558,10 @@ export default function NewPollPage() {
                   <Flame className="mr-2 h-5 w-5 text-orange-500" /> Spicy Content (18+)
                 </Label>
               </div>
-              <Alert variant={isSpicy ? "destructive" : "default"} className={isSpicy ? "border-orange-500/50" : ""}>
-                <AlertCircle className={cn("h-4 w-4", isSpicy ? "!text-orange-500" : "!text-muted-foreground")} />
-                <AlertTitle className={isSpicy ? "text-orange-600" : ""}>{isSpicy ? "Heads Up!" : "Content Note"}</AlertTitle>
-                <AlertDescription className={isSpicy ? "text-orange-600/80" : ""}>
+              <Alert variant={isSpicy ? "destructive" : "default"}>
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>{isSpicy ? "Heads Up!" : "Content Note"}</AlertTitle>
+                <AlertDescription>
                   {isSpicy 
                     ? "Spicy posts are subject to stricter content moderation. Ensure compliance with community guidelines."
                     : "Mark this if your post contains mature themes or sensitive topics."
@@ -587,9 +587,9 @@ export default function NewPollPage() {
               <Label htmlFor="pledgeAmount" className="text-base font-semibold flex items-center">
                 <DollarSign className="mr-2 h-5 w-5 text-primary" /> Pre-Commitment Pledge (Optional)
               </Label>
-              <Alert variant="default" className="bg-primary/10">
-                  <Info className="h-4 w-4 !text-primary" />
-                  <AlertDescription className="text-primary/80">
+              <Alert variant="default">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
                   Boost your post! A pledge rewards voters if their choice wins. Minimum $1.00. 
                   A portion (e.g., 50%) will be split among voters of the majority option. Max pledge $1,000.
                   </AlertDescription>

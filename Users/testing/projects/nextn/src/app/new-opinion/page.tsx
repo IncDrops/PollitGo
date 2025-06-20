@@ -262,9 +262,9 @@ export default function NewOpinionPage() {
 
             <div className="space-y-2">
               <Label className="text-base font-semibold">Attach Media (Optional)</Label>
-              <Alert variant="default" className="bg-accent/20">
-                <AlertCircle className="h-4 w-4 !text-accent-foreground" />
-                <AlertDescription className="text-accent-foreground/80">
+              <Alert variant="default">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
                   You can add up to {MAX_IMAGES} images OR one video to your post.
                 </AlertDescription>
               </Alert>
@@ -329,9 +329,9 @@ export default function NewOpinionPage() {
               <Label htmlFor="pledgeAmount" className="text-base font-semibold flex items-center">
                 <DollarSign className="mr-2 h-5 w-5 text-primary" /> Pre-Commitment Pledge (Optional)
               </Label>
-              <Alert variant="default" className="bg-primary/10">
-                  <Info className="h-4 w-4 !text-primary" />
-                  <AlertDescription className="text-primary/80">
+              <Alert variant="default">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
                   Boost your post! A pledge can be used to reward insightful comments or interactions. Minimum $1.00. Max pledge $1,000.
                   </AlertDescription>
               </Alert>
