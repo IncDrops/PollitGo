@@ -145,7 +145,7 @@ Your Cloud Build trigger can be configured in two main ways:
 
 2.  **Cloud Build configuration file (yaml or json):**
     *   Set the trigger **"Type"** to **"Cloud Build configuration file (yaml or json)"**.
-    *   You **must** have a `cloudbuild.yaml` (or JSON) file in your repository (e.g., at the root). A basic one has been created for you in `cloudbuild.yaml`.
+    *   You **must** have a `cloudbuild.yaml` (or JSON) file in your repository (e.g., at the root). A basic one has been provided in `cloudbuild.yaml`.
     *   In the trigger settings, under "Location", specify the path to this file (e.g., `cloudbuild.yaml`).
     *   **Important:** If you use a `cloudbuild.yaml` file, ensure it is **committed and pushed** to your GitHub repository so Cloud Build can find it. (See Troubleshooting E if your pushes are failing).
     *   This file gives you manual control over each build step.
