@@ -93,7 +93,7 @@ When you launch or update a prototype in Firebase Studio, the interface will dis
 2.  Navigate to **Cloud Build > Triggers**.
 3.  Find and **Edit** the trigger associated with your Firebase Studio prototype.
 4.  Scroll down to the **"Advanced"** section and find **"Substitution variables"**.
-5.  Click **"Add variable"** for each of the following (ensure variable names start with an underscore `_` as per Cloud Build convention).
+5.  Click **"Add variable"** for each of a_logging=CLOUD_LOGGING_ONLYthe following (ensure variable names start with an underscore `_` as per Cloud Build convention).
     *   **IMPORTANT: When pasting values, do NOT wrap them in quotation marks.**
 
     *   **Variable Name:** `_NEXTAUTH_URL`
@@ -216,9 +216,17 @@ The most direct way to resolve this, especially if the UI options in the Cloud C
 3.  **Identify your trigger's EXACT name and region.**
     *   Go to the [Google Cloud Console](https://console.cloud.google.com/), navigate to **Cloud Build > Triggers**.
     *   Carefully note the **exact Name** (it's case-sensitive) and **Region** of your trigger (e.g., `us-central1`).
-    *   The error `Invalid choice: 'PollitGo'` (or a similar name) means the name you used in the command didn't match the actual trigger name in Cloud Build. **You MUST use the exact name as listed in the Cloud Build Triggers page.**
+    *   **CRITICAL FOR "Invalid choice" ERRORS:**
+        *   If `gcloud` gives an "Invalid choice: 'YourTriggerName'" error, it means the name you typed in the command doesn't match the actual trigger name *as `gcloud` sees it*. This can happen due to:
+            *   Typos or case-sensitivity.
+            *   **Character Misinterpretation:** Sometimes, a character you type (e.g., 'o') might be misinterpreted by the terminal or `gcloud` as a different character (e.g., 'ão'), especially if there are subtle encoding or locale issues. The `gcloud` error message will show you how *it* interpreted the name.
+        *   **Solution for "Invalid choice":**
+            1.  Run `gcloud beta builds triggers list --region=YOUR_TRIGGER_REGION` (replace `YOUR_TRIGGER_REGION` with your actual region like `us-central1`).
+            2.  Find your trigger in the list.
+            3.  **Carefully select and copy the trigger name *directly from the output of the list command* in your Cloud Shell.**
+            4.  Paste *that copied name* into the `gcloud beta builds triggers update ...` command. Using quotes around the name can also help: `gcloud beta builds triggers update "COPIED_NAME_HERE" ...`
 
-4.  Run one of the following commands to update the logging mode for your trigger (replace `YOUR_EXACT_TRIGGER_NAME` and `YOUR_TRIGGER_REGION` with the actual values you just verified):
+4.  Run one of the following commands to update the logging mode for your trigger (replace `YOUR_EXACT_TRIGGER_NAME` and `YOUR_TRIGGER_REGION` with the actual values you just verified, ideally copied from the `list` command):
     *   **Recommended first try:**
         ```bash
         gcloud beta builds triggers update YOUR_EXACT_TRIGGER_NAME --region=YOUR_TRIGGER_REGION --update-logging=CLOUD_LOGGING_ONLY
