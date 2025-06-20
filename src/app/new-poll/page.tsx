@@ -11,13 +11,13 @@ import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch";
-import { CalendarIcon, ImagePlus, VideoIcon, X, PlusCircle, ImageIcon as ImageIconLucide, Film, LinkIcon, AlertCircle, DollarSign, Info, Flame, Loader2, UserCircle2, LogIn } from 'lucide-react';
+import { CalendarIcon, ImagePlus, VideoIcon, X, PlusCircle, ImageIcon as ImageIconLucide, Film, Link as LinkIconLucide, AlertCircle, DollarSign, Info, Flame, Loader2, UserCircle2, LogIn } from 'lucide-react';
 import { format } from "date-fns"
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useStripe } from '@stripe/react-stripe-js';
-import useAuth from '@/hooks/useAuth'; // Updated to NextAuth useAuth
+import useAuth from '@/hooks/useAuth';
 import NextLink from 'next/link';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
@@ -25,7 +25,7 @@ import { signIn } from 'next-auth/react';
 
 const MAX_OPTIONS = 4;
 const MAX_POLL_IMAGES = 4;
-const MAX_OPTION_TEXT_LENGTH = 365; // Example length
+const MAX_OPTION_TEXT_LENGTH = 365;
 const MIN_PAYOUT_PER_MAJORITY_VOTER = 0.10;
 
 
@@ -51,7 +51,7 @@ export default function NewPollPage() {
     { id: `option-${Date.now() + 1}`, text: '' },
   ]);
   const [deadline, setDeadline] = useState<Date | undefined>(undefined);
-  const [pledgeAmount, setPledgeAmount] = useState<string>(''); // Store as string for input
+  const [pledgeAmount, setPledgeAmount] = useState<string>('');
   const [isSpicy, setIsSpicy] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -62,12 +62,20 @@ export default function NewPollPage() {
   const [pollVideoUrl, setPollVideoUrl] = useState<string | undefined>();
   const [pollVideoFile, setPollVideoFile] = useState<File | undefined>();
   const pollVideoInputRef = useRef<HTMLInputElement>(null);
+  
+  const [isStripeChecked, setIsStripeChecked] = useState(false);
 
   useEffect(() => {
     const defaultDeadline = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days from now
-    defaultDeadline.setSeconds(0); // Set seconds to 0 for cleaner display
+    defaultDeadline.setSeconds(0);
     setDeadline(defaultDeadline);
   }, []);
+
+  useEffect(() => {
+    if (!authLoading && stripe !== undefined) {
+      setIsStripeChecked(true);
+    }
+  }, [stripe, authLoading]);
 
 
   const handleAddOption = () => {
@@ -113,6 +121,7 @@ export default function NewPollPage() {
       if (files.length + pollImageFiles.length > MAX_POLL_IMAGES) {
         toast({ title: "Max Images Reached", description: `You can only upload up to ${MAX_POLL_IMAGES} images for the poll.`, variant: "destructive" });
       }
+      if (event.target) event.target.value = '';
     }
   };
 
@@ -120,7 +129,7 @@ export default function NewPollPage() {
     setPollImageFiles(prev => prev.filter((_, i) => i !== index));
     setPollImageUrls(prev => {
       const urlToRemove = prev[index];
-      URL.revokeObjectURL(urlToRemove); // Clean up object URL
+      URL.revokeObjectURL(urlToRemove);
       return prev.filter((_, i) => i !== index);
     });
   };
@@ -132,12 +141,14 @@ export default function NewPollPage() {
         toast({ title: "Invalid File Type", description: "Please select a video file.", variant: "destructive" });
         return;
       }
-      if (file.size > 50 * 1024 * 1024) { // Example: 50MB limit
+      if (file.size > 50 * 1024 * 1024) {
         toast({ title: "File Too Large", description: "Video size should be less than 50MB.", variant: "destructive" });
         return;
       }
+      if (pollVideoUrl) URL.revokeObjectURL(pollVideoUrl);
       setPollVideoFile(file);
       setPollVideoUrl(URL.createObjectURL(file));
+      if (event.target) event.target.value = '';
     }
   };
 
@@ -153,16 +164,17 @@ export default function NewPollPage() {
       const newOptions = options.map(opt => {
         if (opt.id === optionId) {
           if (type === 'image') {
-            if (opt.imageUrl) URL.revokeObjectURL(opt.imageUrl); // Clean up old
+            if (opt.imageUrl) URL.revokeObjectURL(opt.imageUrl);
             return { ...opt, imageFile: file, imageUrl: URL.createObjectURL(file), videoFile: undefined, videoUrl: undefined };
           } else {
-            if (opt.videoUrl) URL.revokeObjectURL(opt.videoUrl); // Clean up old
+            if (opt.videoUrl) URL.revokeObjectURL(opt.videoUrl);
             return { ...opt, videoFile: file, videoUrl: URL.createObjectURL(file), imageFile: undefined, imageUrl: undefined };
           }
         }
         return opt;
       });
       setOptions(newOptions);
+      if (event.target) event.target.value = '';
     }
   };
 
@@ -185,13 +197,13 @@ export default function NewPollPage() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
     
     if (!isAuthenticated || !currentUser) {
       toast({ title: "Login Required", description: "You need to be logged in to create a poll.", variant: "destructive", duration: 5000 });
-      setIsSubmitting(false); // Ensure this is set even if early return
+      setIsSubmitting(false);
       return;
     }
-    setIsSubmitting(true);
 
     if (!question.trim()) {
       toast({ title: "Question Required", description: "Please enter a poll question.", variant: "destructive" });
@@ -217,9 +229,13 @@ export default function NewPollPage() {
         return;
     }
 
-
-    if (numericPledgeAmount > 0 && (!stripe || !currentUser)) {
-      toast({ title: "Stripe Error", description: "Stripe is not available or user not logged in for pledge.", variant: "destructive" });
+    if (numericPledgeAmount > 0 && !stripe) {
+      toast({ 
+        title: "Payment System Error", 
+        description: "The payment system (Stripe) is not available. This might be due to a missing or invalid configuration (e.g., Stripe Publishable Key). You cannot make a pledge at this time. Please check console for details.", 
+        variant: "destructive",
+        duration: 7000
+      });
       setIsSubmitting(false);
       return;
     }
@@ -235,30 +251,17 @@ export default function NewPollPage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            amount: Math.round(numericPledgeAmount * 100), // Stripe expects cents
+            amount: Math.round(numericPledgeAmount * 100),
             currency: 'usd',
             itemName: `Pledge for Poll: ${question.substring(0, 50)}...`,
-            metadata: { 
-              userId: currentUser.id, 
-              action: 'poll_pledge',
-              question: question.substring(0,100)
-              // You might want to store poll details here to link payment to poll creation later
-            } 
+            metadata: { userId: currentUser.id, action: 'poll_pledge', question: question.substring(0,100) } 
           }),
         });
         
         const session = await response.json();
         if (response.ok && session.id) {
-          // Store poll data temporarily (e.g., localStorage or state management)
-          // so it can be retrieved after Stripe redirect.
-          // For simplicity here, we'll assume success for the demo if Stripe session is created.
-          // In a real app, you'd save poll data to DB *after* successful payment webhook.
           const result = await stripe.redirectToCheckout({ sessionId: session.id });
-          if (result.error) {
-            throw new Error(result.error.message);
-          }
-          // If redirectToCheckout is successful, user is redirected.
-          // If it fails (e.g. network error before redirect), isSubmitting will be false in finally
+          if (result.error) throw new Error(result.error.message);
           return; 
         } else {
           throw new Error(session.error || 'Failed to create Stripe session.');
@@ -271,11 +274,8 @@ export default function NewPollPage() {
       }
     }
 
-    // If no pledge, or if pledge processing had an issue handled above and returned.
-    // Simulate poll creation as DB is not yet integrated.
     console.log('Simulating poll submission. User:', currentUser?.email, 'Data:', {
       question, options, deadline, pledgeAmount: numericPledgeAmount || 0, isSpicy, pollImageFiles, pollVideoFile
-      // In real app: save poll data to your database here
     });
 
     toast({
@@ -283,7 +283,6 @@ export default function NewPollPage() {
       description: 'Poll data logged to console. Implement backend to save polls.',
     });
 
-    // Reset form
     setQuestion('');
     setOptions([{ id: `option-${Date.now()}`, text: '' }, { id: `option-${Date.now() + 1}`, text: '' }]);
     setDeadline(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
@@ -293,16 +292,14 @@ export default function NewPollPage() {
     setPollImageFiles([]);
     setPollVideoUrl(undefined);
     setPollVideoFile(undefined);
-    // Clean up any option media URLs
     options.forEach(opt => {
       if(opt.imageUrl) URL.revokeObjectURL(opt.imageUrl);
       if(opt.videoUrl) URL.revokeObjectURL(opt.videoUrl);
     });
     
     setIsSubmitting(false);
-    router.push('/'); // Redirect to home page after simulated creation
+    router.push('/');
   };
-
 
   if (authLoading) {
     return (
@@ -341,6 +338,8 @@ export default function NewPollPage() {
   }
 
   const formDisabled = isSubmitting;
+  const showStripeNotReadyAlert = isStripeChecked && parseFloat(pledgeAmount) > 0 && !stripe;
+
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -388,7 +387,7 @@ export default function NewPollPage() {
                   {pollImageUrls.map((url, index) => (
                     <div key={index} className="relative aspect-square group">
                       <Image src={url} alt={`Poll image ${index + 1}`} layout="fill" objectFit="cover" className="rounded-md" data-ai-hint="poll visual" />
-                      <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removePollImage(index)} disabled={formDisabled}> <X className="h-4 w-4" /></Button>
+                      {!formDisabled && <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removePollImage(index)}> <X className="h-4 w-4" /></Button>}
                     </div>
                   ))}
                 </div>
@@ -396,7 +395,7 @@ export default function NewPollPage() {
               {pollVideoUrl && (
                 <div className="mt-3 relative group">
                   <video src={pollVideoUrl} controls className="w-full rounded-md max-h-60" data-ai-hint="poll video" />
-                  <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={removePollVideo} disabled={formDisabled}> <X className="h-4 w-4" /></Button>
+                  {!formDisabled && <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={removePollVideo}> <X className="h-4 w-4" /></Button>}
                 </div>
               )}
             </div>
@@ -441,19 +440,19 @@ export default function NewPollPage() {
                     {option.imageUrl && (
                         <div className="relative w-full h-32 group mt-2">
                             <Image src={option.imageUrl} alt={`Option image`} layout="fill" objectFit="cover" className="rounded-md" data-ai-hint="option visual"/>
-                            <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeOptionMedia(option.id, 'image')} disabled={formDisabled}> <X className="h-4 w-4" /></Button>
+                            {!formDisabled && <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeOptionMedia(option.id, 'image')}> <X className="h-4 w-4" /></Button>}
                         </div>
                     )}
                     {option.videoUrl && (
                          <div className="relative w-full mt-2 group">
                             <video src={option.videoUrl} controls className="w-full rounded-md max-h-40" data-ai-hint="option video"/>
-                            <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeOptionMedia(option.id, 'video')} disabled={formDisabled}> <X className="h-4 w-4" /></Button>
+                           {!formDisabled && <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeOptionMedia(option.id, 'video')}> <X className="h-4 w-4" /></Button>}
                         </div>
                     )}
                     <div>
                         <Label htmlFor={`option-affiliate-${option.id}`} className="text-xs font-medium">Affiliate Link (Optional)</Label>
                          <div className="relative">
-                            <LinkIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <LinkIconLucide className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
                             id={`option-affiliate-${option.id}`}
                             type="url"
@@ -490,7 +489,7 @@ export default function NewPollPage() {
                     selected={deadline}
                     onSelect={setDeadline}
                     initialFocus
-                    disabled={formDisabled || ((date) => date < new Date(new Date().setDate(new Date().getDate() -1)))} // Disable past dates
+                    disabled={formDisabled || ((date) => date < new Date(new Date().setDate(new Date().getDate() -1)))}
                   />
                   <div className="p-3 border-t border-border">
                     <Label htmlFor="deadline-time">Time</Label>
@@ -502,7 +501,7 @@ export default function NewPollPage() {
                         const [hours, minutes] = e.target.value.split(':').map(Number);
                         setDeadline(prev => {
                           const newDate = prev ? new Date(prev) : new Date();
-                          newDate.setHours(hours, minutes);
+                          newDate.setHours(hours, minutes, 0, 0);
                           return newDate;
                         });
                       }}
@@ -520,9 +519,9 @@ export default function NewPollPage() {
                    else if (value === "6h") newDeadline.setHours(now.getHours() + 6);
                    else if (value === "1d") newDeadline.setDate(now.getDate() + 1);
                    else if (value === "7d") newDeadline.setDate(now.getDate() + 7);
-                   else if (value === "custom" && deadline) return; // Do nothing if custom and already set
-                   else newDeadline.setDate(now.getDate() + 7); // Default if something unexpected
-                   newDeadline.setSeconds(0);
+                   else if (value === "custom" && deadline) return;
+                   else newDeadline.setDate(now.getDate() + 7);
+                   newDeadline.setSeconds(0,0);
                    setDeadline(newDeadline);
                  }} 
                  disabled={formDisabled}
@@ -558,6 +557,18 @@ export default function NewPollPage() {
                 </AlertDescription>
               </Alert>
             </div>
+            
+            {showStripeNotReadyAlert && (
+              <Alert variant="destructive" className="my-4">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Stripe Payment System Error</AlertTitle>
+                <AlertDescription>
+                  The payment system (Stripe) is not available for pledges. This could be due to a missing or invalid 
+                  Stripe Publishable Key configuration for this website. Please check the browser console for a "CRITICAL STRIPE ERROR" message.
+                  You can still create the poll without a pledge, or an administrator needs to resolve the Stripe configuration.
+                </AlertDescription>
+              </Alert>
+            )}
 
             <div className="space-y-3 pt-4 border-t">
               <Label htmlFor="pledgeAmount" className="text-base font-semibold flex items-center">
@@ -581,7 +592,7 @@ export default function NewPollPage() {
                 max="1000"
                 step="0.01"
                 className="rounded-md"
-                disabled={formDisabled}
+                disabled={formDisabled || showStripeNotReadyAlert}
               />
               {parseFloat(pledgeAmount) > 0 && (
                   <p className="text-xs text-muted-foreground">
@@ -603,5 +614,3 @@ export default function NewPollPage() {
   );
 }
 
-
-    
