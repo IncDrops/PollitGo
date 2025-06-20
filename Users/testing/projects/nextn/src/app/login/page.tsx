@@ -75,7 +75,7 @@ export default function LoginPage() {
       let errorMessage = 'Login failed. Please try again.';
       
       if (error.message && error.message.toLowerCase().includes('failed to fetch')) {
-          errorMessage = "Could not connect to authentication service. Please ensure NEXTAUTH_URL in .env.local is correct (e.g. http://localhost:9003) and that your server was restarted after setting it. Check terminal for more specific errors.";
+          errorMessage = "Could not connect to the authentication service. This often happens if `NEXTAUTH_URL` or `NEXTAUTH_SECRET` environment variables are missing or incorrect. Please: 1. Verify these in your `.env.local` file (e.g., `NEXTAUTH_URL=http://localhost:9003`). 2. Ensure your development server was **restarted** after any changes to `.env.local`. 3. Check the server terminal for specific NextAuth initialization errors.";
       } else if (error.message === "CredentialsSignin") {
          errorMessage = 'Invalid email or password provided.';
       } else if (error.message) {
@@ -158,3 +158,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
