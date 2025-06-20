@@ -162,14 +162,13 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
         return;
     }
     const pollBeforeUpdate = {...currentPoll};
-    onVote(currentPoll.id, optionId); // Call parent immediately
+    onVote(currentPoll.id, optionId); 
     
-    // Optimistic UI update (currentPoll will be updated by prop change from parent, but this can make UI feel faster)
     setCurrentPoll(prevPoll => {
-      if (prevPoll.isVoted && prevPoll.votedOptionId === optionId) return prevPoll; // Already voted for this
-      const newTotalVotes = prevPoll.isVoted ? prevPoll.totalVotes : prevPoll.totalVotes + 1; // Only increment if first vote
+      if (prevPoll.isVoted && prevPoll.votedOptionId === optionId) return prevPoll; 
+      const newTotalVotes = prevPoll.isVoted ? prevPoll.totalVotes : prevPoll.totalVotes + 1; 
       const updatedOptions = prevPoll.options.map(opt =>
-        opt.id === optionId ? { ...opt, votes: (prevPoll.options.find(o=>o.id===optionId)?.votes || 0) + (prevPoll.votedOptionId === optionId ? 0 : 1) } : opt // Adjust vote count
+        opt.id === optionId ? { ...opt, votes: (prevPoll.options.find(o=>o.id===optionId)?.votes || 0) + (prevPoll.votedOptionId === optionId ? 0 : 1) } : opt 
       );
       return { ...prevPoll, options: updatedOptions, totalVotes: newTotalVotes, isVoted: true, votedOptionId: optionId };
     });
@@ -178,12 +177,11 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
     const votedOptionAfterUpdate = pollBeforeUpdate.options.find(opt => opt.id === optionId);
     if (pollBeforeUpdate.pledgeAmount && pollBeforeUpdate.pledgeAmount > 0 && votedOptionAfterUpdate) {
         const amountToDistributeToVoters = pollBeforeUpdate.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
-        // Use votes from *before* this user's vote for the calculation if it's their first vote
         const votesForThisOptionBeforeCurrent = votedOptionAfterUpdate.votes; 
         const votesAfterThisUsersVote = votesForThisOptionBeforeCurrent + 1;
 
         if ((amountToDistributeToVoters / votesAfterThisUsersVote) < MIN_PAYOUT_PER_VOTER && votesAfterThisUsersVote > 0) {
-            setTimeout(() => { // setTimeout to ensure toast appears after potential animation
+            setTimeout(() => { 
               toast({
                   title: "Low Payout Warning",
                   description: `Your vote is counted! Potential PollitPoint payout might be low.`,
@@ -204,10 +202,8 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
     }
     setIsLikingInProgress(true);
     onToggleLike(currentPoll.id); 
-    // Parent (PollFeed) will update the poll prop, which will re-render currentPoll
-    // Optimistic update for immediate feedback:
     setCurrentPoll(prev => ({...prev, isLiked: !prev.isLiked, likes: prev.isLiked ? prev.likes -1 : prev.likes + 1}));
-    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate network latency
+    await new Promise(resolve => setTimeout(resolve, 300)); 
     setIsLikingInProgress(false);
   };
 
@@ -238,7 +234,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
   });
 
   const handlePointerDown = useCallback((event: React.PointerEvent) => {
-    if (event.pointerType === 'mouse' && event.button !== 0) return; // Ignore right-clicks for long-press
+    if (event.pointerType === 'mouse' && event.button !== 0) return; 
     clearLongPressTimer();
     longPressTimer.current = setTimeout(() => {
       router.push(`/profile/${currentPoll.creator.id}`);
@@ -280,10 +276,6 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
 
   const onCardClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('button, a')) return;
-    // If a swipe didn't occur (longPressTimer would be cleared by onSwipeStart if it did)
-    // and it wasn't a long press (timer would be nullified after firing or cleared on pointer up)
-    // This logic means a simple click navigates.
-    // The long-press check is implicitly handled by the timer logic.
     router.push(`/polls/${currentPoll.id}`);
   };
 
@@ -374,10 +366,10 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
         ref={cardRef}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
-        onPointerLeave={handlePointerUp} // Clear timer if pointer leaves element during press
+        onPointerLeave={handlePointerUp} 
         className="w-full touch-pan-y"
         animate={controls}
-        style={{WebkitTapHighlightColor: 'transparent'}} // Prevent flash on tap for iOS
+        style={{WebkitTapHighlightColor: 'transparent'}}
       >
         <Card
           onClick={onCardClick}
@@ -407,7 +399,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
                                 currentPoll.imageUrls?.length === 1 ? "aspect-[16/9]" : "aspect-square",
                                 (currentPoll.postType === 'poll' && currentPoll.imageUrls?.length === 3 && idx === 0) ? "col-span-2" : ""
                                 )}>
-                                <Image src={imgUrl} alt={`Post image ${idx + 1}`} fill className="object-cover" data-ai-hint={currentPoll.imageKeywords && currentPoll.imageKeywords[idx] ? currentPoll.imageKeywords[idx] : "post visual"}/>
+                                <Image src={imgUrl} alt={`Post image ${idx + 1}`} fill className="object-cover" sizes="100vw" data-ai-hint={currentPoll.imageKeywords && currentPoll.imageKeywords[idx] ? currentPoll.imageKeywords[idx] : "post visual"}/>
                             </div>
                         ))}
                     </div>

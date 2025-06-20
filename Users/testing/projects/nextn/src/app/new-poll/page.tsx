@@ -427,7 +427,7 @@ export default function NewPollPage() {
                 <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {imageUrls.map((url, index) => (
                     <div key={index} className="relative aspect-square group">
-                      <Image src={url} alt={`Post image ${index + 1}`} fill className="object-cover rounded-md" data-ai-hint="post visual" />
+                      <Image src={url} alt={`Post image ${index + 1}`} fill className="object-cover rounded-md" sizes="50vw" data-ai-hint="post visual" />
                       {!formDisabled && <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeMainImage(index)}> <X className="h-4 w-4" /></Button>}
                     </div>
                   ))}
@@ -476,7 +476,7 @@ export default function NewPollPage() {
                     </div>
                     {option.imageUrl && (
                         <div className="relative w-full h-32 group mt-2">
-                            <Image src={option.imageUrl} alt={`Option image`} fill className="object-cover rounded-md" data-ai-hint="option visual"/>
+                            <Image src={option.imageUrl} alt={`Option image`} fill className="object-cover rounded-md" sizes="100vw" data-ai-hint="option visual"/>
                             {!formDisabled && <Button variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100" onClick={() => removeOptionMedia(option.id, 'image')}> <X className="h-4 w-4" /></Button>}
                         </div>
                     )}

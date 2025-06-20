@@ -168,6 +168,7 @@ export default function UserProfilePage() {
             fill
             className="object-cover"
             priority 
+            sizes="100vw"
             data-ai-hint="profile cover"
           />
           <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 transform">
@@ -391,7 +392,7 @@ const PollCardFeedWrapper: React.FC<PollCardFeedWrapperProps> = ({ initialPolls,
   
   const handlePledgeOutcome = (pollId: string, outcome: 'accepted' | 'tipped_crowd') => {
      if (!isAuthenticated || !currentUser || polls.find(p=>p.id === pollId)?.creator.id !== currentUser.id) {
-        toast({title: "Action Denied", description: "Only the poll creator can decide this.", variant: "destructive"});
+        toast({title: "Action Denied", description: "Only the poll creator can decide the pledge outcome.", variant: "destructive"});
         return;
     }
     setPolls(prevPolls =>
