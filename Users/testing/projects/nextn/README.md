@@ -141,6 +141,7 @@ Your Cloud Build trigger can be configured in two main ways:
     *   Set the trigger **"Type"** to **"Buildpacks"**.
     *   Cloud Build automatically detects your Next.js app and builds it.
     *   You **do not need** a `cloudbuild.yaml` file in your repository with this setting.
+    *   The "Builder image" field (e.g., `gcr.io/buildpacks/builder:latest`) will be used.
 
 2.  **Cloud Build configuration file (yaml or json):**
     *   Set the trigger **"Type"** to **"Cloud Build configuration file (yaml or json)"**.
@@ -188,11 +189,11 @@ Your Cloud Build trigger can be configured in two main ways:
     *   This means your trigger is set to "Type: Cloud Build configuration file (yaml or json)" and Cloud Build cannot find the specified YAML file (e.g., `cloudbuild.yaml`) in your GitHub repository at the specified "Location" path.
     *   **Solution:**
         *   Ensure your `cloudbuild.yaml` file exists at the root of your repository (or the path specified in the trigger).
-        *   Ensure the `cloudbuild.yaml` file has been **committed and pushed** to your GitHub repository.
+        *   Ensure the `cloudbuild.yaml` file has been **committed and pushed** to your GitHub repository. (See Troubleshooting E)
         *   Verify the "Location" in the trigger settings correctly points to this file (e.g., `cloudbuild.yaml`).
 3.  **REBUILD/REDEPLOY PROTOTYPE** from Firebase Studio after confirming.
 
-### D. TRIGGER ERROR: "Failed to trigger build: if 'build.service_account' is specified..."
+### D. TRIGGER ERROR: "Failed to trigger build: if 'build.service\_account' is specified..."
 
 **This error means the Cloud Build trigger's logging configuration is incompatible with using a user-managed service account, likely due to an organization policy.** This happens *before* Cloud Build tries to read your code or `cloudbuild.yaml`.
 
@@ -210,6 +211,43 @@ Your Cloud Build trigger can be configured in two main ways:
         ```
 4.  These commands directly modify the trigger's configuration to satisfy the logging requirement that the UI might not expose.
 5.  After successfully running the `gcloud` command, try to **Run** the trigger again from the Cloud Console or redeploy from Firebase Studio. This "Failed to trigger build..." error should now be resolved. If the build starts but fails later, check the build logs for new errors.
+
+### E. GIT PUSH / SYNC FAILURES ("Red X", Push Rejected)
+
+If your `git push` or "Sync" operation in your Git client (like VS Code) fails, especially with a "red x", it means the remote server (GitHub) rejected the push. Cloud Build will not see your latest changes until the push is successful.
+
+**CAUSES & SOLUTIONS:**
+1.  **Find the Exact Error Message:**
+    *   **VS Code:** Open the "Output" panel (View > Output), and select "Git" from the dropdown. The detailed error message will be there.
+    *   **Command Line:** The error is printed directly in the terminal.
+    *   **GitHub Desktop / Other GUIs:** Look for a log, console, or error notification area.
+    *   **Common errors include:**
+        *   `remote: error: File ... is ...MB; this exceeds GitHub's file size limit of 100.00 MB` -> You've committed a file that's too large.
+        *   `remote: error: GH007: Your push would publish a private email address.` -> Check your Git email configuration.
+        *   `pre-receive hook declined` -> A server-side check failed.
+        *   `Permission to <repo> denied to <user>.` -> Authentication or permission issue.
+
+2.  **Check for Large Files:**
+    *   If the error mentions file size, use `git status` to see what's staged.
+    *   Use `git log --stat` or your Git client's history to find commits that might have added large files.
+    *   If you accidentally committed a large file (e.g., from `node_modules` or a log file):
+        *   Ensure the file/folder is in your `.gitignore` (a comprehensive one has been added to this project).
+        *   To remove the last commit if it's the problem: `git reset --soft HEAD~1` (this keeps changes staged), then `git rm --cached <path_to_large_file>`, amend the `.gitignore` if needed, then re-commit `git commit -m "Remove large file and update .gitignore"`.
+        *   If the large file is in an older commit, it's more complex (may need `git filter-branch` or BFG Repo-Cleaner, which are advanced).
+
+3.  **Ensure `.gitignore` is Effective:** A `.gitignore` file at the root of your project (`Users/testing/projects/nextn/.gitignore`) should list files and folders to ignore (e.g., `node_modules/`, `.next/`, `*.log`, `.env.local`). If you added/updated `.gitignore` *after* files were already tracked, you need to tell Git to stop tracking them:
+    ```bash
+    git rm -r --cached .
+    git add .
+    git commit -m "Apply .gitignore to already tracked files"
+    ```
+    Then try pushing again. **Be careful with this command if you have uncommitted changes you want to keep separate.**
+
+4.  **Local Pre-push Hooks:** If your local Git setup has pre-push hooks (in `.git/hooks/pre-push`), they might be failing. The error message from Git should indicate this.
+
+5.  **"Sync" vs. `git push`:**
+    *   If your Git client's "Sync" command is trying to push multiple local commits and one is bad, it can block everything.
+    *   Try to use more granular Git commands if possible (`git add <file>`, `git commit`, `git push`) or use your GUI's features to commit and push specific changes/commits selectively, if available.
 
 ---
 
@@ -239,5 +277,3 @@ For local development, Genkit uses Application Default Credentials (`gcloud auth
 ## Vercel Deployment (Currently Not Focused)
 
 This section remains for informational purposes if you decide to deploy to Vercel later. You would configure similar environment variables (using LIVE keys for production) in Vercel Project Settings.
-
-    
