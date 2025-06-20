@@ -64,7 +64,7 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=YOUR_ACTUAL_STRIPE_PUBLISHABLE_KEY_GOES_HERE
 
 ### For Deployed Environments (Vercel, Google Cloud Build / Firebase Studio Prototypes)
 
-The `.env.local` file is **NOT** used in deployed environments. You **MUST** configure these environment variables directly through your hosting provider's settings dashboard or build configuration:
+The `.env.local` file is **NOT** used in deployed environments. You **MUST** configure these environment variables directly through your hosting provider's settings dashboard or build configuration. The **FOUR CRUCIAL** variables are:
 
 *   **`NEXTAUTH_URL`**:
     *   **Value:** Set to the **full public URL of that specific deployment** (e.g., `https://your-project.vercel.app`, `https://your-prototype-id.cloudworkstations.dev`, or `https://www.pollitago.com`).
@@ -78,9 +78,11 @@ The `.env.local` file is **NOT** used in deployed environments. You **MUST** con
 *   **`NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`**:
     *   **Value:** Your actual Stripe Publishable Key (e.g., `pk_test_...` or `pk_live_...`).
     *   **Importance:** Required for client-side Stripe.js to initialize.
-*   **Google Cloud Project (for Genkit/AI):** In deployed Google Cloud environments, the project ID is often automatically available. The service account running your application needs appropriate IAM permissions for Genkit AI features.
-*   **Cleaning Up Old Firebase Variables (if applicable):**
-    *   If you previously used Firebase services and had environment variables like `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, etc., set on Vercel or Google Cloud Build, you can now remove them as they are no longer used by this project. This helps keep your configuration clean. **This step is for tidiness and will not fix NextAuth.js build errors.**
+
+**Google Cloud Project (for Genkit/AI):** In deployed Google Cloud environments (like Google Cloud Run, which might be used by Firebase Studio Prototypes), the project ID is often automatically available. The service account running your application needs appropriate IAM permissions for Genkit AI features. You typically **do not** need to set Google Cloud service account keys as environment variables on Vercel for Genkit if it's running within Google Cloud infrastructure that provides identity via a service account.
+
+**Cleaning Up Old Firebase Variables (if applicable):**
+If you previously used Firebase services and had environment variables like `NEXT_PUBLIC_FIREBASE_API_KEY`, `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`, etc., set on Vercel or Google Cloud Build, you can now remove them as they are no longer used by this project. This helps keep your configuration clean. **This step is for tidiness and will not fix NextAuth.js build errors.**
 
 **Consequences of Missing Critical Environment Variables in Deployed/Build Environments:**
 
