@@ -81,7 +81,9 @@ NEXT_PUBLIC_FIREBASE_APP_ID=YOUR_FIREBASE_APP_ID
 
 ## PRIMARY DEPLOYMENT: Firebase Studio Prototype (via Google Cloud Build)
 
-This is the current focus for deploying and testing the application. The `.env.local` file is **NOT** used for these deployed prototypes. You **MUST** configure environment variables directly through the Google Cloud Build trigger associated with your Firebase Studio prototype.
+When you deploy a prototype from Firebase Studio, it uses **Google Cloud Build** and a **Cloud Build Trigger** behind the scenes. The trigger automates the process of taking your application code, building it for production, and deploying it to a shareable URL. Correctly configuring this trigger and its environment variables is essential for successful prototype deployments.
+
+The `.env.local` file is **NOT** used for these deployed prototypes. You **MUST** configure environment variables directly through the Google Cloud Build trigger associated with your Firebase Studio prototype.
 
 **Finding Your Prototype URL (Crucial for `_NEXTAUTH_URL`):**
 When you launch or update a prototype in Firebase Studio, the interface will display its public URL. This URL typically ends in `.cloudworkstations.dev` or a similar Google Cloud domain.
@@ -194,22 +196,29 @@ Your Cloud Build trigger can be configured in two main ways:
 
 ### D. TRIGGER ERROR: "Failed to trigger build: if 'build.service_account' is specified..."
 
-This critical error indicates that your Cloud Build **trigger's** logging configuration is incompatible with using a **user-managed service account** (like `firebase-app-hosting-compute@...`), often due to an organization policy. This happens *before* Cloud Build attempts to read your code or `cloudbuild.yaml`.
+This critical error indicates that your Cloud Build **trigger's** logging configuration is incompatible with using a **user-managed service account** (like `firebase-app-hosting-compute@pollitago.iam.gserviceaccount.com`), often due to an organization policy. This happens *before* Cloud Build attempts to read your code or `cloudbuild.yaml`.
 
 **SOLUTION OPTIONS:**
 
 1.  **PREFERRED: Update Trigger Logging Mode via `gcloud` (if `gcloud` commands work for you):**
-    *   Use Google Cloud Shell or a local `gcloud` CLI authenticated to your project (`pollitago`).
+    *   Use **Google Cloud Shell** (recommended if local `gcloud` fails or is "not found") or a local `gcloud` CLI authenticated to your project (`pollitago`).
     *   **Get your trigger's exact ID and Region:**
-        *   Go to Cloud Build > Triggers in the Google Cloud Console. Note the Region.
+        *   Go to Cloud Build > Triggers in the Google Cloud Console. Note the Region (e.g., `us-central1`).
         *   To get the exact ID, run: `gcloud beta builds triggers describe YOUR_TRIGGER_DISPLAY_NAME --region=YOUR_TRIGGER_REGION --format='value(id)'` (e.g., `gcloud beta builds triggers describe PollitGo --region=us-central1 --format='value(id)'`).
-        *   Copy the output ID carefully.
-    *   **Run the update command:**
+        *   **If `describe` fails with "Invalid choice" for the display name:**
+            *   Run `gcloud beta builds triggers list --region=YOUR_TRIGGER_REGION`.
+            *   Carefully find your trigger in the list and copy its unique **ID** (a long string of letters, numbers, and hyphens).
+        *   Copy the exact ID carefully.
+    *   **Run the update command using the TRIGGER ID:**
         ```bash
         gcloud beta builds triggers update YOUR_COPIED_TRIGGER_ID --region=YOUR_TRIGGER_REGION --update-logging=CLOUD_LOGGING_ONLY
         ```
         (Replace `YOUR_COPIED_TRIGGER_ID` and `YOUR_TRIGGER_REGION`).
-    *   If `CLOUD_LOGGING_ONLY` causes issues or the command still fails on the name, try `NONE` or ensure the trigger name/ID is character-perfect. If `gcloud` commands themselves are consistently failing (e.g., "Invalid choice", "TRIGGER: Must be specified"), proceed to UI-based options.
+    *   If `CLOUD_LOGGING_ONLY` doesn't resolve the issue after a new build attempt, or if the command itself still fails with "argument TRIGGER: Must be specified" (even with the ID), try `NONE`:
+        ```bash
+        gcloud beta builds triggers update YOUR_COPIED_TRIGGER_ID --region=YOUR_TRIGGER_REGION --update-logging=NONE
+        ```
+    *   **If `gcloud` consistently fails to recognize the trigger name/ID or errors with "argument TRIGGER: Must be specified":** This indicates a persistent issue with `gcloud` interaction. Consider UI-based alternatives below.
 
 2.  **ALTERNATIVE (If `gcloud` is unusable): Delete and Recreate the Trigger via Google Cloud Console UI:**
     *   Go to Cloud Build > Triggers.
