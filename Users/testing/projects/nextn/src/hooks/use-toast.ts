@@ -188,7 +188,7 @@ function useToast() {
         listeners.splice(index, 1);
       }
     };
-  }, []); // Corrected: Empty dependency array
+  }, []); // Empty dependency array ensures this runs only once on mount and unmount
 
   return {
     ...state,
@@ -198,3 +198,4 @@ function useToast() {
 }
 
 export { useToast, toast }
+
