@@ -36,7 +36,7 @@ const generateHintFromText = (text: string = ""): string => {
   return text.split(' ').slice(0, 2).join(' ').toLowerCase();
 };
 
-const PollOptionDisplay: React.FC<{ // Renamed from PollOption to avoid conflict in this file scope
+const PollOptionDisplay: React.FC<{ 
   option: PollOptionType;
   totalVotes: number;
   onVoteOptionClick: () => void;
@@ -135,6 +135,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
 
   const longPressTimer = useRef<NodeJS.Timeout | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const controls = useAnimationControls();
 
   useEffect(() => {
     setCurrentPoll({...poll});
@@ -143,31 +144,52 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
   const [selectedOptionForModal, setSelectedOptionForModal] = useState<PollOptionType | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const controls = useAnimationControls();
-  const isPollType = currentPoll.postType === 'poll' || !currentPoll.postType; 
+  const isPollType = currentPoll.postType === 'poll' || !currentPoll.postType;
   const canSwipe = !!currentUser?.id && isPollType && currentPoll.options.length === 2 && !currentPoll.isVoted && !deadlinePassed && !!onVote;
+
+  const clearLongPressTimer = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
 
   const handleInternalVote = (optionId: string) => {
     if (!onVote) return;
     if (!currentUser?.id) {
         toast({title: "Login Required", description: "Please login to vote.", variant:"destructive"});
-        signIn();
+        signIn(); 
         return;
     }
     const pollBeforeUpdate = {...currentPoll};
-    onVote(currentPoll.id, optionId);
-    const updatedOption = currentPoll.options.find(opt => opt.id === optionId);
-    if (currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0 && updatedOption) {
-        const amountToDistributeToVoters = currentPoll.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
-        const votesForThisOptionAfterCurrentVote = (pollBeforeUpdate.options.find(o => o.id === optionId)?.votes || 0) + 1;
-        if ((amountToDistributeToVoters / votesForThisOptionAfterCurrentVote) < MIN_PAYOUT_PER_VOTER && votesForThisOptionAfterCurrentVote > 0) {
-            setTimeout(() => {
+    onVote(currentPoll.id, optionId); // Call parent immediately
+    
+    // Optimistic UI update (currentPoll will be updated by prop change from parent, but this can make UI feel faster)
+    setCurrentPoll(prevPoll => {
+      if (prevPoll.isVoted && prevPoll.votedOptionId === optionId) return prevPoll; // Already voted for this
+      const newTotalVotes = prevPoll.isVoted ? prevPoll.totalVotes : prevPoll.totalVotes + 1; // Only increment if first vote
+      const updatedOptions = prevPoll.options.map(opt =>
+        opt.id === optionId ? { ...opt, votes: (prevPoll.options.find(o=>o.id===optionId)?.votes || 0) + (prevPoll.votedOptionId === optionId ? 0 : 1) } : opt // Adjust vote count
+      );
+      return { ...prevPoll, options: updatedOptions, totalVotes: newTotalVotes, isVoted: true, votedOptionId: optionId };
+    });
+
+
+    const votedOptionAfterUpdate = pollBeforeUpdate.options.find(opt => opt.id === optionId);
+    if (pollBeforeUpdate.pledgeAmount && pollBeforeUpdate.pledgeAmount > 0 && votedOptionAfterUpdate) {
+        const amountToDistributeToVoters = pollBeforeUpdate.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
+        // Use votes from *before* this user's vote for the calculation if it's their first vote
+        const votesForThisOptionBeforeCurrent = votedOptionAfterUpdate.votes; 
+        const votesAfterThisUsersVote = votesForThisOptionBeforeCurrent + 1;
+
+        if ((amountToDistributeToVoters / votesAfterThisUsersVote) < MIN_PAYOUT_PER_VOTER && votesAfterThisUsersVote > 0) {
+            setTimeout(() => { // setTimeout to ensure toast appears after potential animation
               toast({
                   title: "Low Payout Warning",
                   description: `Your vote is counted! Potential PollitPoint payout might be low.`,
                   variant: "default", duration: 7000,
               });
-            }, 0);
+            }, 100);
         }
     }
   };
@@ -182,15 +204,24 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
     }
     setIsLikingInProgress(true);
     onToggleLike(currentPoll.id); 
-    await new Promise(resolve => setTimeout(resolve, 100)); 
+    // Parent (PollFeed) will update the poll prop, which will re-render currentPoll
+    // Optimistic update for immediate feedback:
+    setCurrentPoll(prev => ({...prev, isLiked: !prev.isLiked, likes: prev.isLiked ? prev.likes -1 : prev.likes + 1}));
+    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate network latency
     setIsLikingInProgress(false);
   };
 
   const swipeHandlers = useSwipeable({
+    onSwipeStart: () => {
+      clearLongPressTimer();
+    },
     onSwiped: async (eventData) => {
       if (!canSwipe || typeof onVote === 'undefined') return;
+      clearLongPressTimer(); 
+
       const direction = eventData.dir;
       const optionToVote = direction === 'Left' ? currentPoll.options[0].id : currentPoll.options[1].id;
+      
       controls.start({
         x: direction === "Left" ? "-100%" : "100%",
         opacity: 0,
@@ -206,38 +237,18 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
     preventScrollOnSwipe: true,
   });
 
-  const handlePointerDown = (e: React.MouseEvent | React.TouchEvent) => {
-    if (canSwipe || (e.type === 'touchstart' && swipeHandlers.onTouchStart)) {
-       swipeHandlers.onTouchStart?.(e as any); 
-       return;
-    }
+  const handlePointerDown = useCallback((event: React.PointerEvent) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return; // Ignore right-clicks for long-press
+    clearLongPressTimer();
     longPressTimer.current = setTimeout(() => {
       router.push(`/profile/${currentPoll.creator.id}`);
+      longPressTimer.current = null; 
     }, 800);
-  };
+  }, [clearLongPressTimer, router, currentPoll.creator.id]);
 
-  const handlePointerUpOrLeave = (e?: React.MouseEvent | React.TouchEvent) => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-     if (canSwipe && e && swipeHandlers.onTouchEnd) {
-        swipeHandlers.onTouchEnd?.(e as any); 
-    }
-  };
-
-  useEffect(() => {
-    const cardElement = cardRef.current;
-    if (cardElement) {
-      cardElement.addEventListener('mouseleave', handlePointerUpOrLeave as EventListener);
-      return () => {
-        cardElement.removeEventListener('mouseleave', handlePointerUpOrLeave as EventListener);
-        if (longPressTimer.current) {
-          clearTimeout(longPressTimer.current);
-        }
-      };
-    }
-  }, [cardRef]);
+  const handlePointerUp = useCallback(() => {
+    clearLongPressTimer();
+  }, [clearLongPressTimer]);
 
 
   useEffect(() => {
@@ -269,9 +280,11 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
 
   const onCardClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('button, a')) return;
-    if (!longPressTimer.current) { 
-       router.push(`/polls/${currentPoll.id}`);
-    }
+    // If a swipe didn't occur (longPressTimer would be cleared by onSwipeStart if it did)
+    // and it wasn't a long press (timer would be nullified after firing or cleared on pointer up)
+    // This logic means a simple click navigates.
+    // The long-press check is implicitly handled by the timer logic.
+    router.push(`/polls/${currentPoll.id}`);
   };
 
   const onCreatorClick = (e: React.MouseEvent) => {
@@ -321,7 +334,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
           amount: 500, 
           currency: 'usd',
           itemName: `Tip for ${currentPoll.creator.name}`,
-          metadata: { pollId: currentPoll.id, tipperUserId: currentUser.id }
+          metadata: { pollId: currentPoll.id, pollCreatorId: currentPoll.creator.id, tipperUserId: currentUser.id }
         }),
       });
       const session = await response.json();
@@ -359,13 +372,12 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
       <motion.div
         {...(canSwipe ? swipeHandlers : {})}
         ref={cardRef}
-        onMouseDown={handlePointerDown}
-        onMouseUp={handlePointerUpOrLeave}
-        onTouchStart={handlePointerDown}
-        onTouchEnd={handlePointerUpOrLeave}
-        data-swipe-handler={canSwipe ? "true" : undefined}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp} // Clear timer if pointer leaves element during press
         className="w-full touch-pan-y"
         animate={controls}
+        style={{WebkitTapHighlightColor: 'transparent'}} // Prevent flash on tap for iOS
       >
         <Card
           onClick={onCardClick}
@@ -387,7 +399,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
               <span>{currentPoll.question}</span>
             </CardTitle>
              {currentPoll.imageUrls && currentPoll.imageUrls.length > 0 && (
-                <div className="mt-2 -mx-4">
+                <div className="mt-2 -mx-4"> 
                     <div className={cn("grid gap-0.5", currentPoll.imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
                         {currentPoll.imageUrls.slice(0, currentPoll.postType === 'opinion' ? 2 : (currentPoll.imageUrls.length === 3 ? 2 : 4)).map((imgUrl, idx) => (
                             <div key={idx} className={cn(
