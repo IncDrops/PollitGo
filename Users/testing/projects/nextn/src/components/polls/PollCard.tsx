@@ -10,19 +10,19 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Clock, MessageSquare, Heart, Share2, Gift, CheckCircle2, Film, Video as VideoIconLucide, Info, Zap, Check, Users, Flame, Loader2, AlertCircle } from 'lucide-react';
 import { formatDistanceToNowStrict, parseISO, isPast } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { useSwipeable } from 'react-swipeable';
 import OptionDetailsDialog from './OptionDetailsDialog';
 import { motion, useAnimationControls } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { useStripe } from '@stripe/react-stripe-js';
-import { signIn } from 'next-auth/react'; // For prompting login
+import { signIn } from 'next-auth/react'; 
 
 interface PollCardProps {
   poll: Poll;
   onVote?: (pollId: string, optionId: string) => void;
-  onToggleLike?: (pollId: string) => void; // Prop for toggling like
+  onToggleLike?: (pollId: string) => void;
   onPollActionComplete?: (pollId: string, swipeDirection?: 'left' | 'right') => void;
   onPledgeOutcome?: (pollId: string, outcome: 'accepted' | 'tipped_crowd') => void;
   currentUser?: User | null; 
@@ -36,7 +36,7 @@ const generateHintFromText = (text: string = ""): string => {
   return text.split(' ').slice(0, 2).join(' ').toLowerCase();
 };
 
-const PollOption: React.FC<{
+const PollOptionDisplay: React.FC<{ // Renamed from PollOption to avoid conflict in this file scope
   option: PollOptionType;
   totalVotes: number;
   onVoteOptionClick: () => void;
@@ -129,20 +129,23 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
   const [deadlinePassed, setDeadlinePassed] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
   const [createdAtFormatted, setCreatedAtFormatted] = useState<string | null>(null);
-  // currentPoll state to reflect immediate optimistic updates from props
   const [currentPoll, setCurrentPoll] = useState<Poll>(poll);
   const [isTipping, setIsTipping] = useState(false);
-  const [isLikingInProgress, setIsLikingInProgress] = useState(false); // Local state for like button loading
+  const [isLikingInProgress, setIsLikingInProgress] = useState(false);
+
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setCurrentPoll({...poll}); // Sync with external poll prop changes
+    setCurrentPoll({...poll});
   }, [poll]);
 
   const [selectedOptionForModal, setSelectedOptionForModal] = useState<PollOptionType | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const controls = useAnimationControls();
-  const canSwipe = !!currentUser?.id && currentPoll.options.length === 2 && !currentPoll.isVoted && !deadlinePassed && !!onVote;
+  const isPollType = currentPoll.postType === 'poll' || !currentPoll.postType; // Default to poll if undefined
+  const canSwipe = !!currentUser?.id && isPollType && currentPoll.options.length === 2 && !currentPoll.isVoted && !deadlinePassed && !!onVote;
 
   const handleInternalVote = (optionId: string) => {
     if (!onVote) return;
@@ -151,20 +154,12 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
         signIn();
         return;
     }
-
     const pollBeforeUpdate = {...currentPoll};
-
-    // Optimistic UI update for currentPoll is handled by parent via prop update.
-    // If PollCard were to manage its own complete poll state independently, you'd update here.
-    // Since PollFeed manages the source array, we just call the callback.
-
     onVote(currentPoll.id, optionId);
-
-    const updatedOption = pollBeforeUpdate.options.find(opt => opt.id === optionId); // Use pollBeforeUpdate for accurate calculation
-    if (pollBeforeUpdate.pledgeAmount && pollBeforeUpdate.pledgeAmount > 0 && updatedOption) {
-        const amountToDistributeToVoters = pollBeforeUpdate.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
+    const updatedOption = currentPoll.options.find(opt => opt.id === optionId);
+    if (currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0 && updatedOption) {
+        const amountToDistributeToVoters = currentPoll.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
         const votesForThisOptionAfterCurrentVote = (pollBeforeUpdate.options.find(o => o.id === optionId)?.votes || 0) + 1;
-
         if ((amountToDistributeToVoters / votesForThisOptionAfterCurrentVote) < MIN_PAYOUT_PER_VOTER && votesForThisOptionAfterCurrentVote > 0) {
             setTimeout(() => {
               toast({
@@ -180,30 +175,22 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
   const handleInternalToggleLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!onToggleLike || isLikingInProgress) return;
-
     if (!currentUser?.id) {
-      toast({ title: "Login Required", description: "Please login to like polls.", variant: "destructive" });
+      toast({ title: "Login Required", description: "Please login to like posts.", variant: "destructive" });
       signIn();
       return;
     }
-
     setIsLikingInProgress(true);
-    // Call the parent handler (from PollFeed) to update the source of truth
     onToggleLike(currentPoll.id); 
-    // Simulate async operation; actual update will come via prop re-render
     await new Promise(resolve => setTimeout(resolve, 100)); 
     setIsLikingInProgress(false);
   };
 
-  const handlers = useSwipeable({
+  const swipeHandlers = useSwipeable({
     onSwiped: async (eventData) => {
       if (!canSwipe || typeof onVote === 'undefined') return;
       const direction = eventData.dir;
       const optionToVote = direction === 'Left' ? currentPoll.options[0].id : currentPoll.options[1].id;
-      
-      // Call vote *before* animation starts so the state is updated by parent
-      handleInternalVote(optionToVote);
-
       controls.start({
         x: direction === "Left" ? "-100%" : "100%",
         opacity: 0,
@@ -213,10 +200,46 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
           onPollActionComplete(currentPoll.id, direction.toLowerCase() as 'left' | 'right');
         }
       });
+      handleInternalVote(optionToVote);
     },
     trackMouse: true,
     preventScrollOnSwipe: true,
   });
+
+  const handlePointerDown = (e: React.MouseEvent | React.TouchEvent) => {
+    // Prevent long press if swipe is active or if it's a touch event that might lead to scrolling
+    if (canSwipe || (e.type === 'touchstart' && swipeHandlers.onTouchStart)) {
+       swipeHandlers.onTouchStart?.(e as any); // Pass to swipe handler if swiping
+       return;
+    }
+    longPressTimer.current = setTimeout(() => {
+      router.push(`/profile/${currentPoll.creator.id}`);
+    }, 800);
+  };
+
+  const handlePointerUpOrLeave = (e?: React.MouseEvent | React.TouchEvent) => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+     if (canSwipe && e && swipeHandlers.onTouchEnd) {
+        swipeHandlers.onTouchEnd?.(e as any); // Pass to swipe handler if swiping
+    }
+  };
+
+  useEffect(() => {
+    const cardElement = cardRef.current;
+    if (cardElement) {
+      cardElement.addEventListener('mouseleave', handlePointerUpOrLeave as EventListener);
+      return () => {
+        cardElement.removeEventListener('mouseleave', handlePointerUpOrLeave as EventListener);
+        if (longPressTimer.current) {
+          clearTimeout(longPressTimer.current);
+        }
+      };
+    }
+  }, [cardRef]);
+
 
   useEffect(() => {
     const deadlineDate = parseISO(currentPoll.deadline);
@@ -246,10 +269,13 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
   };
 
   const onCardClick = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).closest('button, a')) {
-      return;
+    if ((e.target as HTMLElement).closest('button, a')) return;
+     // If a long press was not triggered (i.e., timer cleared before 800ms)
+    if (!longPressTimer.current) { // Check if timer is active, implying no long press
+       router.push(`/polls/${currentPoll.id}`);
     }
-    router.push(`/polls/${currentPoll.id}`);
+    // If long press timer IS active, it means it might complete, so don't navigate here.
+    // The pointer up/leave will clear it if it didn't complete.
   };
 
   const onCreatorClick = (e: React.MouseEvent) => {
@@ -263,7 +289,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
     const shareUrl = `${window.location.origin}/polls/${currentPoll.id}`;
     const shareData = {
       title: currentPoll.question,
-      text: `Check out this poll on PollitAGo: ${currentPoll.question}`,
+      text: `Check out this post on PollitAGo: ${currentPoll.question}`,
       url: shareUrl,
     };
     try {
@@ -271,11 +297,11 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
         await navigator.share(shareData);
       } else {
         await navigator.clipboard.writeText(shareUrl);
-        toast({ title: "Link Copied", description: "Poll link copied to clipboard."});
+        toast({ title: "Link Copied", description: "Post link copied to clipboard."});
       }
     } catch (error) {
-       console.error("Error sharing poll:", error);
-       toast({ title: "Error", description: "Could not share poll link.", variant: "destructive"});
+       console.error("Error sharing post:", error);
+       toast({ title: "Error", description: "Could not share post link.", variant: "destructive"});
     }
   };
 
@@ -287,7 +313,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
       return;
     }
     if (!stripe) {
-      toast({ title: "Stripe Error", description: "Stripe is not available. Please try again later.", variant: "destructive" });
+      toast({ title: "Stripe Error", description: "Stripe is not available.", variant: "destructive" });
       return;
     }
     setIsTipping(true);
@@ -305,9 +331,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
       const session = await response.json();
       if (response.ok && session.id) {
         const result = await stripe.redirectToCheckout({ sessionId: session.id });
-        if (result.error) {
-          throw new Error(result.error.message);
-        }
+        if (result.error) throw new Error(result.error.message);
       } else {
         throw new Error(session.error || 'Failed to create Stripe session for tip.');
       }
@@ -329,15 +353,20 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
     }
   };
 
-  const pollHasTwoOptions = currentPoll.options.length === 2;
-  const canCurrentUserVoteOnPoll = !!currentUser?.id && !currentPoll.isVoted && !deadlinePassed;
+  const pollHasTwoOptions = isPollType && currentPoll.options.length === 2;
+  const canCurrentUserVoteOnPoll = !!currentUser?.id && isPollType && !currentPoll.isVoted && !deadlinePassed;
   const isCreator = currentUser?.id === currentPoll.creator.id;
-  const showPledgeOutcomeButtons = isCreator && deadlinePassed && currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0 && (currentPoll.pledgeOutcome === 'pending' || currentPoll.pledgeOutcome === undefined);
+  const showPledgeOutcomeButtons = isPollType && isCreator && deadlinePassed && currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0 && (currentPoll.pledgeOutcome === 'pending' || currentPoll.pledgeOutcome === undefined);
 
   return (
     <>
       <motion.div
-        {...(canSwipe ? handlers : {})}
+        {...(canSwipe ? swipeHandlers : {})}
+        ref={cardRef}
+        onMouseDown={handlePointerDown}
+        onMouseUp={handlePointerUpOrLeave}
+        onTouchStart={handlePointerDown}
+        onTouchEnd={handlePointerUpOrLeave}
         data-swipe-handler={canSwipe ? "true" : undefined}
         className="w-full touch-pan-y"
         animate={controls}
@@ -364,13 +393,13 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
              {currentPoll.imageUrls && currentPoll.imageUrls.length > 0 && (
                 <div className="mt-2 -mx-4">
                     <div className={cn("grid gap-0.5", currentPoll.imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
-                        {currentPoll.imageUrls.slice(0, currentPoll.imageUrls.length === 3 ? 2 : 4).map((imgUrl, idx) => (
+                        {currentPoll.imageUrls.slice(0, currentPoll.postType === 'opinion' ? 2 : (currentPoll.imageUrls.length === 3 ? 2 : 4)).map((imgUrl, idx) => (
                             <div key={idx} className={cn(
                                 "relative bg-muted overflow-hidden",
                                 currentPoll.imageUrls?.length === 1 ? "aspect-[16/9]" : "aspect-square",
-                                currentPoll.imageUrls?.length === 3 && idx === 0 ? "col-span-2" : ""
+                                (currentPoll.postType === 'poll' && currentPoll.imageUrls?.length === 3 && idx === 0) ? "col-span-2" : ""
                                 )}>
-                                <Image src={imgUrl} alt={`Poll image ${idx + 1}`} layout="fill" objectFit="cover" data-ai-hint={currentPoll.imageKeywords && currentPoll.imageKeywords[idx] ? currentPoll.imageKeywords[idx] : "poll visual"}/>
+                                <Image src={imgUrl} alt={`Post image ${idx + 1}`} layout="fill" objectFit="cover" data-ai-hint={currentPoll.imageKeywords && currentPoll.imageKeywords[idx] ? currentPoll.imageKeywords[idx] : "post visual"}/>
                             </div>
                         ))}
                     </div>
@@ -378,48 +407,52 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
             )}
             {currentPoll.videoUrl && (
                 <div className="mt-2 -mx-4">
-                    <video src={currentPoll.videoUrl} controls className="w-full aspect-video rounded-none bg-black" data-ai-hint="poll video" onClick={(e) => e.stopPropagation()} />
+                    <video src={currentPoll.videoUrl} controls className="w-full aspect-video rounded-none bg-black" data-ai-hint="post video" onClick={(e) => e.stopPropagation()} />
                 </div>
             )}
           </CardHeader>
 
           <CardContent className="p-4 pt-2">
-            {canSwipe ? (
+            {isPollType && canSwipe && (
               <div className="text-center text-muted-foreground text-xs py-2">
                 <Zap className="inline-block w-4 h-4 mr-1 animate-pulse" /> Swipe left or right to vote!
               </div>
-            ) : !currentUser?.id && !deadlinePassed && (
+            )}
+            {isPollType && !currentUser?.id && !deadlinePassed && (
                  <div className="text-center text-destructive text-xs py-2 flex items-center justify-center bg-destructive/10 p-2 rounded-md">
-                    <AlertCircle className="w-4 h-4 mr-1.5" /> Please
-                    <Button variant="link" className="p-0 h-auto text-destructive hover:text-destructive/80 mx-1 text-xs" onClick={(e) => {e.stopPropagation(); signIn();}}>login</Button>
+                    <AlertCircle className="w-4 h-4 mr-1.5" /> Please 
+                    <Button variant="link" className="p-0 h-auto text-destructive hover:text-destructive/80 mx-1 text-xs" onClick={(e) => {e.stopPropagation(); signIn();}}>login</Button> 
                     to vote.
                 </div>
             )}
-            <div className={cn(pollHasTwoOptions ? "flex gap-2" : "space-y-2")}>
-              {currentPoll.options.map((option) => (
-                <PollOption
-                  key={option.id}
-                  option={option}
-                  totalVotes={currentPoll.totalVotes}
-                  onVoteOptionClick={() => {
-                    if (pollHasTwoOptions || !canCurrentUserVoteOnPoll || currentPoll.isVoted || deadlinePassed) {
-                         handleShowOptionDetails(option);
-                    } else {
-                         handleInternalVote(option.id);
-                    }
-                  }}
-                  isVotedByCurrentUser={!!currentPoll.isVoted}
-                  isSelectedOptionByCurrentUser={currentPoll.votedOptionId === option.id}
-                  deadlinePassed={deadlinePassed}
-                  pollHasTwoOptions={pollHasTwoOptions}
-                  canCurrentUserVote={canCurrentUserVoteOnPoll}
-                  onShowDetails={() => handleShowOptionDetails(option)}
-                />
-              ))}
-            </div>
+            {isPollType && (
+              <div className={cn(pollHasTwoOptions ? "flex gap-2" : "space-y-2")}>
+                {currentPoll.options.map((option) => (
+                  <PollOptionDisplay
+                    key={option.id}
+                    option={option}
+                    totalVotes={currentPoll.totalVotes}
+                    onVoteOptionClick={() => {
+                      if (pollHasTwoOptions || !canCurrentUserVoteOnPoll || currentPoll.isVoted || deadlinePassed) {
+                           handleShowOptionDetails(option);
+                      } else {
+                           handleInternalVote(option.id);
+                      }
+                    }}
+                    isVotedByCurrentUser={!!currentPoll.isVoted}
+                    isSelectedOptionByCurrentUser={currentPoll.votedOptionId === option.id}
+                    deadlinePassed={deadlinePassed}
+                    pollHasTwoOptions={pollHasTwoOptions}
+                    canCurrentUserVote={canCurrentUserVoteOnPoll}
+                    onShowDetails={() => handleShowOptionDetails(option)}
+                  />
+                ))}
+              </div>
+            )}
             <div className="mt-3 flex items-center text-xs text-muted-foreground">
               <Clock className="w-3 h-3 mr-1" />
-              <span>{deadlinePassed ? `Ended ${timeRemaining}` : `Ends ${timeRemaining}`} &middot; {currentPoll.totalVotes.toLocaleString()} votes</span>
+              <span>{deadlinePassed ? `Ended ${timeRemaining}` : `Ends ${timeRemaining}`}</span>
+              {isPollType && <span className="ml-1">&middot; {currentPoll.totalVotes.toLocaleString()} votes</span>}
               {currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0 && (
                  <span className="ml-1 text-green-500 font-medium">&middot; Pledged: ${currentPoll.pledgeAmount.toLocaleString()}</span>
               )}
@@ -461,7 +494,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
           </CardFooter>
         </Card>
       </motion.div>
-      {selectedOptionForModal && (
+      {selectedOptionForModal && isPollType && (
         <OptionDetailsDialog
           option={selectedOptionForModal}
           isOpen={isModalOpen}
@@ -471,4 +504,3 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
     </>
   );
 }
-

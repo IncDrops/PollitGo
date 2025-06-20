@@ -30,7 +30,7 @@ export interface PollOption {
 }
 
 export interface Comment {
-  id:string;
+  id: string;
   user: User; // The user who made the comment
   text: string;
   createdAt: string; // ISO string
@@ -39,18 +39,19 @@ export interface Comment {
 export interface Poll {
   id: string;
   creator: User; // The user who created the poll
-  question: string;
-  options: PollOption[];
-  imageUrls?: string[];
+  question: string; // For Poll type, it's the question. For Opinion type, it's the main text/content.
+  postType?: 'poll' | 'opinion'; // To distinguish between poll and 2nd opinion
+  options: PollOption[]; // Relevant for 'poll' type
+  imageUrls?: string[]; // For Poll type: multiple poll images. For Opinion type: max 2 images.
   imageKeywords?: string[];
-  videoUrl?: string;
+  videoUrl?: string; // For Poll type: single poll video. For Opinion type: max 1 video.
   deadline: string; // ISO string
   createdAt: string; // ISO string
   likes: number;
-  totalVotes: number;
+  totalVotes: number; // Relevant for 'poll' type
   commentsCount: number;
-  isVoted?: boolean; // Indicates if the *current session user* has voted
-  votedOptionId?: string; // Which option the *current session user* voted for
+  isVoted?: boolean; // Indicates if the *current session user* has voted (for 'poll' type)
+  votedOptionId?: string; // Which option the *current session user* voted for (for 'poll' type)
   isLiked?: boolean; // Indicates if the *current session user* has liked this poll
   pledgeAmount?: number;
   pledgeOutcome?: 'accepted' | 'tipped_crowd' | 'pending';
@@ -63,17 +64,3 @@ export type NavItem = {
   label: string;
   icon: React.ElementType;
 };
-
-// You might also want a type for your NextAuth session user if you customize it significantly
-// import type { DefaultUser } from 'next-auth';
-// declare module 'next-auth' {
-//   interface Session {
-//     user?: DefaultUser & {
-//       id: string;
-//       // Add other custom session properties here
-//     };
-//   }
-//   interface User extends DefaultUser {
-//     // Add other custom user properties here if needed for token/callbacks
-//   }
-// }

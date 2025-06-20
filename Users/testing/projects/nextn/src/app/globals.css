@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: var(--font-inter), sans-serif;
+}
+
+@layer base {
+  :root {
+    --background: 210 100% 97.1%; /* Alice Blue */
+    --foreground: 240 10% 3.9%; /* Darker for text */
+    --card: 0 0% 100%; /* White for cards */
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+
+    /* New Royal Blue: #5271ff -> HSL(229, 100%, 66.1%) */
+    --primary: 229 100% 66.1%;
+    --primary-foreground: 229 50% 20%; /* Darker shade for text on primary */
+    
+    --secondary: 210 60% 92%; /* Lighter blue like Alice Blue hint */
+    --secondary-foreground: 210 40% 30%; /* Darker blue for text on secondary */
+    
+    --muted: 210 40% 90%; /* Softer muted blue/gray */
+    --muted-foreground: 210 20% 45%; /* Muted text color */
+    
+    --accent: 30 95% 75%; /* Light Orange/Peach like #f6bc18 for accents */
+    --accent-foreground: 30 60% 20%; /* Darker text for orange accent */
+    
+    --destructive: 0 84.2% 60.2%; /* Standard red */
+    --destructive-foreground: 0 0% 98%; /* Light text on destructive */
+    
+    --border: 210 30% 85%; /* Light border */
+    --input: 210 30% 94%; /* Slightly off-white for input fields */
+    --ring: 229 100% 75%; /* Lighter shade of primary for ring/focus */
+
+    --chart-1: 229 80% 70%; /* Primary variant */
+    --chart-2: 30 90% 70%;  /* Accent variant */
+    --chart-3: 150 60% 50%; /* Green variant like #00bf63 */
+    --chart-4: 210 70% 60%; /* Secondary variant */
+    --chart-5: 270 70% 65%; /* A purple variant */
+    
+    --radius: 0.5rem;
+
+    /* Custom variables for PollitGo */
+    --nav-background: 0 0% 100%; /* White for nav bars for contrast */
+    --nav-foreground: 240 10% 20%;
+    --nav-active: 229 100% 66.1%; /* Primary color for active nav items */
+  }
+
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 8% 10%; /* Darker card background */
+    --card-foreground: 0 0% 98%;
+    --popover: 240 8% 10%;
+    --popover-foreground: 0 0% 98%;
+
+    /* New Royal Blue for Dark Mode: #5271ff -> HSL(229, 100%, 66.1%) - can make it slightly less saturated if needed */
+    --primary: 229 100% 70%; /* Slightly lighter/brighter for dark mode */
+    --primary-foreground: 229 50% 25%; 
+    
+    --secondary: 240 5% 18%; /* Darker secondary */
+    --secondary-foreground: 0 0% 95%;
+    
+    --muted: 240 5% 20%;
+    --muted-foreground: 0 0% 60%;
+    
+    --accent: 30 95% 70%; /* Orange/Peach accent for dark mode */
+    --accent-foreground: 30 60% 15%;
+    
+    --destructive: 0 70% 45%; /* Darker destructive */
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 240 5% 25%;
+    --input: 240 5% 15%; /* Darker input */
+    --ring: 229 100% 70%;
+
+    --chart-1: 229 80% 65%;
+    --chart-2: 30 90% 65%;
+    --chart-3: 150 60% 45%;
+    --chart-4: 210 70% 55%;
+    --chart-5: 270 70% 60%;
+
+    --nav-background: 240 10% 10%;
+    --nav-foreground: 0 0% 90%;
+    --nav-active: 229 100% 70%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+    overscroll-behavior-y: contain; /* Prevents pull-to-refresh on mobile */
+  }
+  html, body, #__next {
+    height: 100%;
+  }
+}
