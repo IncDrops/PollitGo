@@ -98,11 +98,11 @@ When you launch or update a prototype in Firebase Studio, the interface will dis
 
     *   **Variable Name:** `_NEXTAUTH_URL`
         *   **Value:** Paste the **full public URL of THIS Firebase Studio prototype** you copied earlier.
-        *   **Importance:** Critical for redirects, callbacks, and NextAuth.js.
+        *   **Importance:** Critical for redirects, callbacks, and NextAuth.js. **MISSING OR INCORRECT `_NEXTAUTH_URL` IS A COMMON CAUSE OF BUILD FAILURES (e.g., "missing app-build-manifest.json" for auth pages).**
 
     *   **Variable Name:** `_NEXTAUTH_SECRET`
         *   **Value:** Paste the **EXACT SAME strong, random secret string** you generated (e.g., via `openssl rand -base64 32`) and used in your (correctly configured root) `.env.local`.
-        *   **Importance:** **PARAMOUNT for build success and runtime security.** This is the #1 cause of "missing `app-build-manifest.json`" errors and "NEXTAUTH_SECRET is missing" runtime errors.
+        *   **Importance:** **PARAMOUNT for build success and runtime security.** This is the #1 cause of "missing `app-build-manifest.json`" errors and "NEXTAUTH_SECRET is missing" runtime errors. Ensure this is available to the build process (e.g., via `cloudbuild.yaml`'s `env` section if using YAML, or automatically if using Buildpacks).
 
     *   **Stripe LIVE Keys for Deployed Prototype:**
         *   **Variable Name:** `_NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
@@ -110,7 +110,7 @@ When you launch or update a prototype in Firebase Studio, the interface will dis
             *   **Importance:** Required for client-side Stripe.js in the deployed app.
         *   **Variable Name:** `_STRIPE_SECRET_KEY`
             *   **Value:** Your **LIVE** Stripe SecretKey (starts with `sk_live_...`).
-            *   **Importance:** Required for backend Stripe API calls in the deployed app.
+            *   **Importance:** Required for backend Stripe API calls in the deployed app. (Also ensure it's available to the build if your build process includes server-side logic that uses it).
 
     *   **Firebase Variables (MANDATORY IF USING FIREBASE SERVICES):**
         *   If you are using any Firebase services (e.g., Firebase Storage for image uploads), these variables are **MANDATORY** for the deployed prototype. Missing or incorrect Firebase config can lead to build failures (e.g., "Firebase is blocking Next") or runtime errors.
@@ -139,7 +139,7 @@ Your Cloud Build trigger can be configured in two main ways:
 
 1.  **Buildpacks (Recommended for Firebase App Hosting & Next.js):**
     *   Set the trigger **"Type"** to **"Buildpacks"** in the Google Cloud Console when editing your trigger.
-    *   Cloud Build automatically detects your Next.js app and builds it.
+    *   Cloud Build automatically detects your Next.js app and builds it. Substitution variables (like `_NEXTAUTH_URL`, `_NEXTAUTH_SECRET`) should be automatically available to the build environment.
     *   You **do not need** a `cloudbuild.yaml` file in your repository with this setting.
     *   The "Builder image" field (e.g., `gcr.io/buildpacks/builder:latest`) will be used.
     *   **If you are encountering persistent "Failed to trigger build: if 'build.service_account' is specified..." errors with a YAML-based trigger and cannot resolve them with `gcloud` commands, switching to "Buildpacks" type might offer a simpler path, as it could have different default logging behaviors.** Ensure all necessary Substitution Variables (like `_NEXTAUTH_URL`, `_NEXTAUTH_SECRET`, `_STRIPE_SECRET_KEY`, etc.) are still configured in the trigger.
@@ -149,7 +149,7 @@ Your Cloud Build trigger can be configured in two main ways:
     *   You **must** have a `cloudbuild.yaml` (or JSON) file in your repository (e.g., at the root). A basic one has been created for you in `cloudbuild.yaml`.
     *   In the trigger settings, under "Location", specify the path to this file (e.g., `cloudbuild.yaml`).
     *   **Important:** If you use a `cloudbuild.yaml` file, ensure it is **committed and pushed** to your GitHub repository so Cloud Build can find it. (See Troubleshooting E if your pushes are failing).
-    *   This file gives you manual control over each build step.
+    *   This file gives you manual control over each build step. **Ensure critical environment variables like `NEXTAUTH_URL` and `NEXTAUTH_SECRET` are passed to the build step in your `cloudbuild.yaml` (see example `cloudbuild.yaml` in this project).**
 
 **IMPORTANT: The error "Failed to trigger build: if 'build.service_account' is specified..." (see Troubleshooting D) is related to the trigger's logging configuration when using a user-managed service account. This needs to be resolved at the trigger level, regardless of whether you use Buildpacks or a `cloudbuild.yaml` file.**
 
@@ -166,7 +166,8 @@ Your Cloud Build trigger can be configured in two main ways:
 1.  **Generate ONE Strong Secret:** `openssl rand -base64 32`
 2.  **Update in your ROOT `.env.local`** (no quotes).
 3.  **Update in Google Cloud Build Trigger (`_NEXTAUTH_SECRET`)** (no quotes). Ensure `_NEXTAUTH_URL` is also correct (full public URL of the prototype, no quotes).
-4.  **REBUILD/REDEPLOY PROTOTYPE** from Firebase Studio.
+4.  **If using `cloudbuild.yaml`:** Ensure `NEXTAUTH_SECRET=${_NEXTAUTH_SECRET}` and `NEXTAUTH_URL=${_NEXTAUTH_URL}` are passed in the `env` section of your build step.
+5.  **REBUILD/REDEPLOY PROTOTYPE** from Firebase Studio.
 
 ### B. "Application error: a client-side exception has occurred" / "Stripe checkout session is missing" / Payment Failures
 
@@ -220,8 +221,8 @@ The most direct way to resolve this, especially if the UI options in the Cloud C
     *   **If `gcloud` gives "Invalid choice: 'YourTriggerName'" or "argument TRIGGER: Must be specified.":** This means `gcloud` isn't recognizing the trigger name or ID as you're providing it. This can be due to:
         *   Typos, case-sensitivity issues, or subtle character misinterpretations (e.g., `o` vs `õ`, or invisible characters if copy-pasted).
         *   The ID not being passed correctly to the `gcloud update` command.
-        *   **Most Robust Solution:**
-            1.  **Get the exact ID using the display name:** In Cloud Shell, run:
+        *   **Most Robust Solution (If Name Fails):**
+            1.  **Get the exact ID using the display name (if `gcloud` recognizes the name for `describe`):** In Cloud Shell, run:
                 ```bash
                 gcloud beta builds triggers describe YourExactTriggerDisplayName --region=YOUR_TRIGGER_REGION --format='value(id)'
                 ```
@@ -234,6 +235,7 @@ The most direct way to resolve this, especially if the UI options in the Cloud C
                 ```
                 (Replace `COPIED_TRIGGER_ID_HERE` and `YOUR_TRIGGER_REGION` with the actual values).
             4.  **Alternative if `describe` also fails on the name:** Use `gcloud beta builds triggers list --region=YOUR_TRIGGER_REGION` to list all triggers. Find your trigger in the list and carefully copy its **ID** or **NAME** directly from that output. Use the copied identifier in the `update` command. Using quotes around a name copied from the list (e.g., `gcloud beta builds triggers update "Copied Name" ...`) can sometimes help.
+            5.  **Be vigilant for character mismatches:** If you type `PollitGo` but `gcloud` errors with `Pollitão` (with a tilde `ã`), there's a character input/interpretation issue. Carefully re-type or use the copy-from-list method.
 
 4.  Run one of the following `update` commands (using the verified/copied trigger identifier and region):
     *   **Recommended first try:**
@@ -294,7 +296,7 @@ If your `git push` or "Sync" operation in your Git client (like VS Code) fails, 
 
 ## Authentication with NextAuth.js
 
-This application uses NextAuth.js. Ensure `_NEXTAUTH_URL` and `_NEXTAUTH_SECRET` are correctly set in your deployment environment.
+This application uses NextAuth.js. Ensure `_NEXTAUTH_URL` and `_NEXTAUTH_SECRET` are correctly set in your deployment environment (Cloud Build trigger "Substitution variables"). See Troubleshooting A.
 
 ## Stripe Integration
 
