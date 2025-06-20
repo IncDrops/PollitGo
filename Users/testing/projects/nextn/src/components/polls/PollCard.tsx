@@ -10,7 +10,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Clock, MessageSquare, Heart, Share2, Gift, CheckCircle2, Film, Video as VideoIconLucide, Info, Zap, Check, Users, Flame, Loader2, AlertCircle } from 'lucide-react';
 import { formatDistanceToNowStrict, parseISO, isPast } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useSwipeable } from 'react-swipeable';
 import OptionDetailsDialog from './OptionDetailsDialog';
@@ -132,20 +132,19 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
   const [isTipping, setIsTipping] = useState(false);
   const [isLikingInProgress, setIsLikingInProgress] = useState(false);
 
-  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const [currentPoll, setCurrentPoll] = useState<Poll>(poll);
+  
+  useEffect(() => {
+    setCurrentPoll(poll);
+  }, [poll]);
+
   const controls = useAnimationControls();
+  const longPressTimer = React.useRef<NodeJS.Timeout | null>(null);
 
   const [selectedOptionForModal, setSelectedOptionForModal] = useState<PollOptionType | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const canSwipe = !!currentUser?.id && poll.options.length === 2 && !poll.isVoted && !deadlinePassed && !!onVote;
-
-  const clearLongPressTimer = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
-    }
-  }, []);
+  const canSwipe = !!currentUser?.id && currentPoll.options.length === 2 && !currentPoll.isVoted && !deadlinePassed && !!onVote;
 
   const handleInternalVote = (optionId: string) => {
     if (!onVote) return;
@@ -155,10 +154,10 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
         return;
     }
     
-    if (poll.pledgeAmount && poll.pledgeAmount > 0) {
-        const votedOption = poll.options.find(opt => opt.id === optionId);
+    if (currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0) {
+        const votedOption = currentPoll.options.find(opt => opt.id === optionId);
         if (votedOption) {
-            const amountToDistributeToVoters = poll.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
+            const amountToDistributeToVoters = currentPoll.pledgeAmount * CREATOR_PLEDGE_SHARE_FOR_VOTERS;
             const votesAfterThisUsersVote = votedOption.votes + 1;
             if ((amountToDistributeToVoters / votesAfterThisUsersVote) < MIN_PAYOUT_PER_VOTER && votesAfterThisUsersVote > 0) {
                 setTimeout(() => {
@@ -171,11 +170,11 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
             }
         }
     }
-    onVote(poll.id, optionId);
+    onVote(currentPoll.id, optionId);
   };
   
-  const handleInternalToggleLike = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleInternalToggleLike = async (e?: React.MouseEvent) => {
+    e?.stopPropagation();
     if (isLikingInProgress || !onToggleLike) return;
     if (!currentUser?.id) {
       toast({ title: "Login Required", description: "Please login to like posts.", variant: "destructive" });
@@ -183,30 +182,17 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
       return;
     }
     setIsLikingInProgress(true);
-    onToggleLike(poll.id);
+    onToggleLike(currentPoll.id);
     await new Promise(resolve => setTimeout(resolve, 300));
     setIsLikingInProgress(false);
   };
-  
-  const handleDoubleClick = () => {
-    if (isLikingInProgress || !onToggleLike) return;
-     if (!currentUser?.id) {
-      toast({ title: "Login Required", description: "Please login to like posts.", variant: "destructive" });
-      signIn();
-      return;
-    }
-    setIsLikingInProgress(true);
-    onToggleLike(poll.id);
-    setTimeout(() => setIsLikingInProgress(false), 300); 
-  };
-
 
   const swipeHandlers = useSwipeable({
     onSwiped: async (eventData) => {
-      if (!canSwipe || typeof onVote === 'undefined') return;
+      if (!canSwipe) return;
 
       const direction = eventData.dir;
-      const optionToVote = direction === 'Left' ? poll.options[0].id : poll.options[1].id;
+      const optionToVote = direction === 'Left' ? currentPoll.options[0].id : currentPoll.options[1].id;
       
       handleInternalVote(optionToVote);
 
@@ -215,7 +201,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
         opacity: 0,
         transition: { duration: 0.3, ease: "easeIn" },
       });
-
+      
       await new Promise(resolve => setTimeout(resolve, 500));
 
       controls.set({
@@ -233,22 +219,28 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
     preventScrollOnSwipe: true,
   });
 
+  const clearLongPressTimer = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+  
   const handlePointerDown = useCallback((event: React.PointerEvent) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
     clearLongPressTimer();
     longPressTimer.current = setTimeout(() => {
-      router.push(`/profile/${poll.creator.id}`);
+      router.push(`/profile/${currentPoll.creator.id}`);
       longPressTimer.current = null;
     }, 800);
-  }, [clearLongPressTimer, router, poll.creator.id]);
+  }, [clearLongPressTimer, router, currentPoll.creator.id]);
 
   const handlePointerUp = useCallback(() => {
     clearLongPressTimer();
   }, [clearLongPressTimer]);
 
-
   useEffect(() => {
-    const deadlineDate = parseISO(poll.deadline);
+    const deadlineDate = parseISO(currentPoll.deadline);
     const checkDeadline = () => {
       const now = new Date();
       const remaining = deadlineDate.getTime() - now.getTime();
@@ -263,11 +255,11 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
     checkDeadline();
     const interval = setInterval(checkDeadline, 60000);
     return () => clearInterval(interval);
-  }, [poll.deadline]);
+  }, [currentPoll.deadline]);
 
   useEffect(() => {
-    setCreatedAtFormatted(formatDistanceToNowStrict(parseISO(poll.createdAt), { addSuffix: true }));
-  }, [poll.createdAt]);
+    setCreatedAtFormatted(formatDistanceToNowStrict(parseISO(currentPoll.createdAt), { addSuffix: true }));
+  }, [currentPoll.createdAt]);
 
   const handleShowOptionDetails = (option: PollOptionType) => {
     setSelectedOptionForModal(option);
@@ -276,21 +268,21 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
 
   const onCardClick = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('button, a')) return;
-    router.push(`/polls/${poll.id}`);
+    router.push(`/polls/${currentPoll.id}`);
   };
 
   const onCreatorClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    router.push(`/profile/${poll.creator.id}`);
+    router.push(`/profile/${currentPoll.creator.id}`);
   };
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (typeof window === 'undefined') return;
-    const shareUrl = `${window.location.origin}/polls/${poll.id}`;
+    const shareUrl = `${window.location.origin}/polls/${currentPoll.id}`;
     const shareData = {
-      title: poll.question,
-      text: `Check out this post on PollitAGo: ${poll.question}`,
+      title: currentPoll.question,
+      text: `Check out this post on PollitAGo: ${currentPoll.question}`,
       url: shareUrl,
     };
     try {
@@ -325,8 +317,8 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
         body: JSON.stringify({
           amount: 500,
           currency: 'usd',
-          itemName: `Tip for ${poll.creator.name}`,
-          metadata: { pollId: poll.id, pollCreatorId: poll.creator.id, tipperUserId: currentUser.id }
+          itemName: `Tip for ${currentPoll.creator.name}`,
+          metadata: { pollId: currentPoll.id, pollCreatorId: currentPoll.creator.id, tipperUserId: currentUser.id }
         }),
       });
       const session = await response.json();
@@ -345,19 +337,19 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
   };
 
   const handlePledgeOutcomeInternal = (outcome: 'accepted' | 'tipped_crowd') => {
-    if (!currentUser?.id || currentUser.id !== poll.creator.id) {
+    if (!currentUser?.id || currentUser.id !== currentPoll.creator.id) {
         toast({title: "Action Denied", description: "Only the poll creator can decide the pledge outcome.", variant: "destructive"});
         return;
     }
     if (onPledgeOutcome) {
-      onPledgeOutcome(poll.id, outcome);
+      onPledgeOutcome(currentPoll.id, outcome);
     }
   };
 
-  const pollHasTwoOptions = poll.options.length === 2;
-  const canCurrentUserVoteOnPoll = !!currentUser?.id && !poll.isVoted && !deadlinePassed;
-  const isCreator = currentUser?.id === poll.creator.id;
-  const showPledgeOutcomeButtons = isCreator && deadlinePassed && poll.pledgeAmount && poll.pledgeAmount > 0 && (poll.pledgeOutcome === 'pending' || poll.pledgeOutcome === undefined);
+  const pollHasTwoOptions = currentPoll.options.length === 2;
+  const canCurrentUserVoteOnPoll = !!currentUser?.id && !currentPoll.isVoted && !deadlinePassed;
+  const isCreator = currentUser?.id === currentPoll.creator.id;
+  const showPledgeOutcomeButtons = isCreator && deadlinePassed && currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0 && (currentPoll.pledgeOutcome === 'pending' || currentPoll.pledgeOutcome === undefined);
 
   return (
     <>
@@ -367,7 +359,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
         onPointerLeave={handlePointerUp}
-        onDoubleClick={handleDoubleClick}
+        onDoubleClick={() => handleInternalToggleLike()}
         className="w-full touch-pan-y"
         animate={controls}
         initial={{ x: "0%", opacity: 1 }}
@@ -380,36 +372,36 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
           <CardHeader className="p-4">
             <div className="flex items-center space-x-3 mb-2">
               <Avatar className="h-10 w-10 border" onClick={onCreatorClick}>
-                <AvatarImage src={poll.creator.avatarUrl} alt={poll.creator.name} data-ai-hint={generateHintFromText(poll.creator.name) || "profile avatar"}/>
-                <AvatarFallback>{poll.creator.name ? poll.creator.name.substring(0,1).toUpperCase() : 'U'}</AvatarFallback>
+                <AvatarImage src={currentPoll.creator.avatarUrl} alt={currentPoll.creator.name} data-ai-hint={generateHintFromText(currentPoll.creator.name) || "profile avatar"}/>
+                <AvatarFallback>{currentPoll.creator.name ? currentPoll.creator.name.substring(0,1).toUpperCase() : 'U'}</AvatarFallback>
               </Avatar>
               <div>
-                <p className="text-sm font-semibold text-foreground hover:underline" onClick={onCreatorClick}>{poll.creator.name}</p>
-                <p className="text-xs text-muted-foreground">@{poll.creator.username} &middot; {createdAtFormatted || 'Just now'}</p>
+                <p className="text-sm font-semibold text-foreground hover:underline" onClick={onCreatorClick}>{currentPoll.creator.name}</p>
+                <p className="text-xs text-muted-foreground">@{currentPoll.creator.username} &middot; {createdAtFormatted || 'Just now'}</p>
               </div>
             </div>
             <CardTitle className="text-md font-semibold text-foreground leading-snug flex items-start">
-               {poll.isSpicy && <Flame className="w-4 h-4 mr-1.5 text-orange-500 flex-shrink-0 mt-0.5" />}
-              <span>{poll.question}</span>
+               {currentPoll.isSpicy && <Flame className="w-4 h-4 mr-1.5 text-orange-500 flex-shrink-0 mt-0.5" />}
+              <span>{currentPoll.question}</span>
             </CardTitle>
-             {poll.imageUrls && poll.imageUrls.length > 0 && (
+             {currentPoll.imageUrls && currentPoll.imageUrls.length > 0 && (
                 <div className="mt-2 -mx-4">
-                    <div className={cn("grid gap-0.5", poll.imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
-                        {poll.imageUrls.slice(0, poll.postType === 'opinion' ? 2 : (poll.imageUrls.length === 3 ? 2 : 4)).map((imgUrl, idx) => (
+                    <div className={cn("grid gap-0.5", currentPoll.imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
+                        {currentPoll.imageUrls.slice(0, currentPoll.imageUrls.length === 3 ? 2 : 4).map((imgUrl, idx) => (
                             <div key={idx} className={cn(
                                 "relative bg-muted overflow-hidden",
-                                poll.imageUrls?.length === 1 ? "aspect-[16/9]" : "aspect-square",
-                                (poll.postType === 'poll' && poll.imageUrls?.length === 3 && idx === 0) ? "col-span-2" : ""
+                                currentPoll.imageUrls?.length === 1 ? "aspect-[16/9]" : "aspect-square",
+                                (currentPoll.imageUrls?.length === 3 && idx === 0) ? "col-span-2" : ""
                                 )}>
-                                <Image src={imgUrl} alt={`Post image ${idx + 1}`} fill className="object-cover" sizes="100vw" data-ai-hint={poll.imageKeywords && poll.imageKeywords[idx] ? poll.imageKeywords[idx] : "post visual"}/>
+                                <Image src={imgUrl} alt={`Post image ${idx + 1}`} fill className="object-cover" sizes="100vw" data-ai-hint={currentPoll.imageKeywords && currentPoll.imageKeywords[idx] ? currentPoll.imageKeywords[idx] : "post visual"}/>
                             </div>
                         ))}
                     </div>
                 </div>
             )}
-            {poll.videoUrl && (
+            {currentPoll.videoUrl && (
                 <div className="mt-2 -mx-4">
-                    <video src={poll.videoUrl} controls className="w-full aspect-video rounded-none bg-black" data-ai-hint="post video" onClick={(e) => e.stopPropagation()} />
+                    <video src={currentPoll.videoUrl} controls className="w-full aspect-video rounded-none bg-black" data-ai-hint="post video" onClick={(e) => e.stopPropagation()} />
                 </div>
             )}
           </CardHeader>
@@ -428,20 +420,20 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
                 </div>
             )}
             <div className={cn(pollHasTwoOptions ? "flex gap-2" : "space-y-2")}>
-              {poll.options.map((option) => (
+              {currentPoll.options.map((option) => (
                 <PollOptionDisplay
                   key={option.id}
                   option={option}
-                  totalVotes={poll.totalVotes}
+                  totalVotes={currentPoll.totalVotes}
                   onVoteOptionClick={() => {
-                    if (pollHasTwoOptions || !canCurrentUserVoteOnPoll || poll.isVoted || deadlinePassed) {
+                    if (pollHasTwoOptions || !canCurrentUserVoteOnPoll || currentPoll.isVoted || deadlinePassed) {
                           handleShowOptionDetails(option);
                     } else {
                           handleInternalVote(option.id);
                     }
                   }}
-                  isVotedByCurrentUser={!!poll.isVoted}
-                  isSelectedOptionByCurrentUser={poll.votedOptionId === option.id}
+                  isVotedByCurrentUser={!!currentPoll.isVoted}
+                  isSelectedOptionByCurrentUser={currentPoll.votedOptionId === option.id}
                   deadlinePassed={deadlinePassed}
                   pollHasTwoOptions={pollHasTwoOptions}
                   canCurrentUserVote={canCurrentUserVoteOnPoll}
@@ -452,9 +444,9 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
             <div className="mt-3 flex items-center text-xs text-muted-foreground">
               <Clock className="w-3 h-3 mr-1" />
               <span>{deadlinePassed ? `Ended ${timeRemaining}` : `Ends ${timeRemaining}`}</span>
-              <span className="ml-1">&middot; {poll.totalVotes.toLocaleString()} votes</span>
-              {poll.pledgeAmount && poll.pledgeAmount > 0 && (
-                 <span className="ml-1 text-green-500 font-medium">&middot; Pledged: ${poll.pledgeAmount.toLocaleString()}</span>
+              <span className="ml-1">&middot; {currentPoll.totalVotes.toLocaleString()} votes</span>
+              {currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0 && (
+                 <span className="ml-1 text-green-500 font-medium">&middot; Pledged: ${currentPoll.pledgeAmount.toLocaleString()}</span>
               )}
             </div>
             {showPledgeOutcomeButtons && (
@@ -468,25 +460,25 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
                 </Button>
               </div>
             )}
-             {poll.pledgeOutcome === 'accepted' && isCreator && deadlinePassed && (
+             {currentPoll.pledgeOutcome === 'accepted' && isCreator && deadlinePassed && (
                 <p className="mt-1 text-xs text-green-600">You accepted the crowd's vote for this pledge.</p>
             )}
-            {poll.pledgeOutcome === 'tipped_crowd' && isCreator && deadlinePassed && (
+            {currentPoll.pledgeOutcome === 'tipped_crowd' && isCreator && deadlinePassed && (
                 <p className="mt-1 text-xs text-orange-600">You tipped the crowd for this pledge.</p>
             )}
           </CardContent>
 
           <CardFooter className="p-3 border-t flex justify-around">
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary text-xs px-1.5" onClick={handleInternalToggleLike} disabled={isLikingInProgress}>
-              {isLikingInProgress ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Heart className={cn("w-4 h-4 mr-1", poll.isLiked ? "fill-red-500 text-red-500" : "text-muted-foreground")} /> }
-              {poll.likes.toLocaleString()}
+              {isLikingInProgress ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Heart className={cn("w-4 h-4 mr-1", currentPoll.isLiked ? "fill-red-500 text-red-500" : "text-muted-foreground")} /> }
+              {currentPoll.likes.toLocaleString()}
             </Button>
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary text-xs px-1.5" onClick={onCardClick}>
-              <MessageSquare className="w-4 h-4 mr-1" /> {poll.commentsCount.toLocaleString()}
+              <MessageSquare className="w-4 h-4 mr-1" /> {currentPoll.commentsCount.toLocaleString()}
             </Button>
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary text-xs px-1.5" onClick={handleTipCreator} disabled={isTipping || !currentUser?.id}>
               {isTipping ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Gift className="w-4 h-4 mr-1" />}
-               Tip {poll.tipCount && poll.tipCount > 0 ? `(${poll.tipCount.toLocaleString()})` : ''}
+               Tip {currentPoll.tipCount && currentPoll.tipCount > 0 ? `(${currentPoll.tipCount.toLocaleString()})` : ''}
             </Button>
             <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary text-xs px-1.5" onClick={handleShare}>
               <Share2 className="w-4 h-4" />

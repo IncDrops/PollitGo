@@ -220,11 +220,10 @@ export default function NewPollPage() {
         return;
     }
     
-    console.log("Stripe object on client:", stripe ? "Available" : "Not Available");
     if (numericPledgeAmount > 0 && !stripe) {
       toast({ 
         title: "Payment System Error", 
-        description: "Stripe is not available for pledges. This could be due to a missing or invalid Stripe Publishable Key (NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY) in your environment variables. Please check console logs for 'CRITICAL STRIPE ERROR' and ensure your Next.js server was restarted after .env.local changes.", 
+        description: "Stripe is not available for pledges. This could be due to a missing or invalid Stripe Publishable Key. Please check console logs and ensure your server was restarted after any .env.local changes.", 
         variant: "destructive",
         duration: 10000
       });
@@ -239,7 +238,6 @@ export default function NewPollPage() {
           description: `Your pledge of $${numericPledgeAmount.toFixed(2)} is being prepared. You'll be redirected to Stripe.`,
         });
         
-        console.log("Attempting to create Stripe checkout session with amount:", Math.round(numericPledgeAmount * 100));
         const response = await fetch('/api/stripe/create-checkout-session', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -252,31 +250,22 @@ export default function NewPollPage() {
         });
         
         const sessionData = await response.json();
-        console.log("Response from /api/stripe/create-checkout-session:", sessionData);
 
         if (!response.ok) {
-          console.error('API error creating Stripe session:', sessionData.error, 'Stripe Error Type:', sessionData.stripeErrorType);
-          let apiErrorMessage = sessionData.error || `Server Error: ${response.status}. Please ensure your STRIPE_SECRET_KEY is correctly set in .env.local and your server restarted.`;
-          if (sessionData.stripeErrorType) {
-            apiErrorMessage += ` (Stripe Type: ${sessionData.stripeErrorType})`;
-          }
+          const apiErrorMessage = sessionData.error || `Server Error: ${response.status}. Please ensure your STRIPE_SECRET_KEY is correctly set in .env.local and your server restarted.`;
           throw new Error(apiErrorMessage);
         }
         
         if (sessionData.id) {
-          console.log("Stripe session ID received:", sessionData.id, "Attempting redirect...");
           const result = await stripe.redirectToCheckout({ sessionId: sessionData.id });
           if (result.error) {
-            console.error('Stripe redirectToCheckout error:', result.error);
             throw new Error(result.error.message || "Failed to redirect to Stripe checkout.");
           }
           return; 
         } else {
-          console.error('Stripe session ID missing in successful API response:', sessionData);
           throw new Error('Failed to retrieve Stripe session ID from server.');
         }
       } catch (error: any) {
-        console.error("Stripe pledge processing error in handleSubmit:", error);
         toast({ title: "Pledge Failed", description: error.message || "Could not process pledge. Check console for details.", variant: "destructive", duration: 7000 });
         setIsSubmitting(false);
         return;
@@ -498,7 +487,7 @@ export default function NewPollPage() {
               <PopoverTrigger asChild>
                 <Button variant={"outline"} className="w-full justify-start text-left font-normal rounded-md" disabled={formDisabled}>
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {deadline ? format(deadline, "PPP HH:mm") : <span>Pick a date & time</span>}
+                  {deadline ? format(deadline, "PPP HH:mm") : <span>Pick a date &amp; time</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
