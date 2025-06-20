@@ -147,10 +147,10 @@ Your Cloud Build trigger can be configured in two main ways:
     *   Set the trigger **"Type"** to **"Cloud Build configuration file (yaml or json)"**.
     *   You **must** have a `cloudbuild.yaml` (or JSON) file in your repository (e.g., at the root). A basic one has been created for you in `cloudbuild.yaml`.
     *   In the trigger settings, under "Location", specify the path to this file (e.g., `cloudbuild.yaml`).
-    *   **Important:** If you use a `cloudbuild.yaml` file, ensure it is **committed and pushed** to your GitHub repository so Cloud Build can find it.
+    *   **Important:** If you use a `cloudbuild.yaml` file, ensure it is **committed and pushed** to your GitHub repository so Cloud Build can find it. (See Troubleshooting E if your pushes are failing).
     *   This file gives you manual control over each build step.
 
-**IMPORTANT: The error "Failed to trigger build: if 'build.service\_account' is specified..." (see Troubleshooting D) is related to the trigger's logging configuration when using a user-managed service account. This needs to be resolved at the trigger level, regardless of whether you use Buildpacks or a `cloudbuild.yaml` file.**
+**IMPORTANT: The error "Failed to trigger build: if 'build.service_account' is specified..." (see Troubleshooting D) is related to the trigger's logging configuration when using a user-managed service account. This needs to be resolved at the trigger level, regardless of whether you use Buildpacks or a `cloudbuild.yaml` file.**
 
 ---
 
@@ -189,18 +189,20 @@ Your Cloud Build trigger can be configured in two main ways:
     *   This means your trigger is set to "Type: Cloud Build configuration file (yaml or json)" and Cloud Build cannot find the specified YAML file (e.g., `cloudbuild.yaml`) in your GitHub repository at the specified "Location" path.
     *   **Solution:**
         *   Ensure your `cloudbuild.yaml` file exists at the root of your repository (or the path specified in the trigger).
-        *   Ensure the `cloudbuild.yaml` file has been **committed and pushed** to your GitHub repository. (See Troubleshooting E)
+        *   Ensure the `cloudbuild.yaml` file has been **committed and pushed** to your GitHub repository. (See Troubleshooting E if your pushes are failing).
         *   Verify the "Location" in the trigger settings correctly points to this file (e.g., `cloudbuild.yaml`).
 3.  **REBUILD/REDEPLOY PROTOTYPE** from Firebase Studio after confirming.
 
 ### D. TRIGGER ERROR: "Failed to trigger build: if 'build.service_account' is specified..."
 
-**This error means the Cloud Build trigger's logging configuration is incompatible with using a user-managed service account, likely due to an organization policy.** This happens *before* Cloud Build tries to read your code or `cloudbuild.yaml`.
+You've correctly identified a key error message: `"Failed to trigger build: if 'build.service_account' is specified..."`.
+**This error means the Cloud Build trigger's logging configuration is incompatible with using a user-managed service account, likely due to an organization policy.** This happens *before* Cloud Build tries to read your code or `cloudbuild.yaml`. The trigger cannot even start the build.
 
 **SOLUTION: UPDATE TRIGGER LOGGING MODE VIA `gcloud`**
+The most direct way to resolve this, especially if the UI options in the Cloud Console are limited for your setup, is to use the `gcloud` command-line tool.
 1.  **Open Cloud Shell** in the Google Cloud Console or use your local `gcloud` CLI, ensuring you're authenticated to the correct project (`pollitgo`).
-2.  **Identify your trigger's region** (e.g., `us-central1`, `europe-west1`). You can find this on the Cloud Build Triggers page.
-3.  Run one of the following commands to update the logging mode for your "PollitGo" trigger (replace `YOUR_TRIGGER_REGION`):
+2.  **Identify your trigger's region** (e.g., `us-central1`, `europe-west1`). You can find this on the Cloud Build Triggers page in the Google Cloud Console.
+3.  Run one of the following commands to update the logging mode for your "PollitGo" trigger (replace `YOUR_TRIGGER_REGION` with the actual region):
     *   **Recommended first try:**
         ```bash
         gcloud beta builds triggers update PollitGo --region=YOUR_TRIGGER_REGION --update-logging=CLOUD_LOGGING_ONLY
@@ -209,8 +211,8 @@ Your Cloud Build trigger can be configured in two main ways:
         ```bash
         gcloud beta builds triggers update PollitGo --region=YOUR_TRIGGER_REGION --update-logging=NONE
         ```
-4.  These commands directly modify the trigger's configuration to satisfy the logging requirement that the UI might not expose.
-5.  After successfully running the `gcloud` command, try to **Run** the trigger again from the Cloud Console or redeploy from Firebase Studio. This "Failed to trigger build..." error should now be resolved. If the build starts but fails later, check the build logs for new errors.
+4.  These commands directly modify the trigger's configuration to satisfy the logging storage requirement that the Cloud Console UI might not expose for user-managed service accounts under certain organization policies.
+5.  After successfully running the `gcloud` command, try to **Run** the trigger again from the Cloud Console or redeploy from Firebase Studio. This "Failed to trigger build..." error should now be resolved. If the build starts but fails later (e.g., with "Firebase is blocking Next"), check the build logs for those new errors.
 
 ### E. GIT PUSH / SYNC FAILURES ("Red X", Push Rejected)
 
