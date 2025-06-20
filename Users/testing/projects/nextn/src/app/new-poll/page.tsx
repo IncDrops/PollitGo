@@ -330,10 +330,17 @@ export default function NewPollPage() {
             <CardTitle className="text-2xl">Login Required</CardTitle>
             <CardDescription>You need to be logged in to create a new post.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
               Please log in or sign up to continue.
             </p>
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Login Trouble?</AlertTitle>
+              <AlertDescription>
+                If login attempts are failing (e.g., with a &quot;failed to fetch&quot; error), please double-check your <code>NEXTAUTH_URL</code> and <code>NEXTAUTH_SECRET</code> environment variables. Ensure your development server was restarted after changes to <code>.env.local</code>. Refer to the <code>README.md</code> for setup instructions.
+              </AlertDescription>
+            </Alert>
           </CardContent>
           <CardFooter className="flex flex-col space-y-3">
             <Button onClick={() => signIn()} className="w-full">
@@ -643,3 +650,5 @@ export default function NewPollPage() {
     </div>
   );
 }
+
+    
