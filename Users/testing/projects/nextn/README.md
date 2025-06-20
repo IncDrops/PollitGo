@@ -49,7 +49,7 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=YOUR_ACTUAL_STRIPE_TEST_PUBLISHABLE_KEY_GOES_
 # gcloud auth application-default login
 # This means you usually DO NOT need to put Google Cloud project IDs or service account keys
 # directly into this .env.local file for Genkit to work locally.
-# Deployed environments (like Google Cloud Run) will use service account permissions.
+# Deployed environments (like Google Cloud Run for prototypes) will use service account permissions.
 ```
 
 **VERY IMPORTANT INSTRUCTIONS FOR `.env.local` (Local Development):**
@@ -98,7 +98,9 @@ Before assuming your keys "stopped working", always verify them in your Stripe D
 3.  Go to **Developers > API keys**.
 4.  Compare the Publishable and Secret keys shown with what you have set in your environment variables. Ensure they match exactly.
 
-**Google Cloud Project (for Genkit/AI):** In deployed Google Cloud environments, the project ID is often automatically available. The service account running your application needs appropriate IAM permissions.
+**Google Cloud Project & Service Account (for Genkit/AI in Prototypes):**
+*   **Cloud Build Service Account:** When configuring the Google Cloud Build trigger for your Firebase Studio prototype, you'll select a service account. You can typically use the **default Cloud Build service account** (`[PROJECT_NUMBER]@cloudbuild.gserviceaccount.com`). This account performs the build.
+*   **Runtime Service Account for Genkit:** The *running prototype application itself* (deployed by Cloud Build, likely to Cloud Run) will also need an identity (a service account) with permissions to use Google AI services (e.g., Vertex AI for Gemini). This might be the Compute Engine default service account (`[PROJECT_NUMBER]-compute@developer.gserviceaccount.com`) or a custom one configured for the runtime service. This runtime service account needs the **"Vertex AI User"** IAM role (or more specific permissions) for Genkit AI features to work.
 
 **Cleaning Up Old Firebase Variables (if applicable):**
 If you previously used Firebase services and had environment variables like `NEXT_PUBLIC_FIREBASE_API_KEY`, etc., set on Vercel or Google Cloud Build, you can remove them. This helps keep your configuration clean but **will not fix NextAuth.js build errors like "missing app-build-manifest.json"**. Focus on `NEXTAUTH_SECRET` and `NEXTAUTH_URL` for those build errors.
@@ -118,7 +120,7 @@ This error means Next.js could **NOT** complete the build for that specific auth
     *   **The Secret Value:** Must be a strong, consistent, random string (e.g., generated via `openssl rand -base64 32`). **Use the SAME secret value across all environments for this project.**
 
 2.  **`NEXTAUTH_URL` is INCORRECT for the BUILD ENVIRONMENT.**
-    *   **Why:** NextAuth.js needs to know its own public address.
+    *   **Why:** NextAuth.js needs to know its own public address during build and runtime.
     *   **For Vercel:** **MUST** be the full public URL of THAT Vercel deployment (e.g., `https://www.pollitago.com` or `https://your-project.vercel.app`). **IT CANNOT BE `http://localhost:9003` ON VERCEL.**
     *   **For Firebase Studio Prototypes:** **MUST** be the full public URL of THAT specific prototype (e.g., `https://your-prototype-id.cloudworkstations.dev` - find this URL in your Firebase Studio interface or deployment logs). **IT CANNOT BE `http://localhost:9003` during the prototype's cloud build.**
 
@@ -139,7 +141,7 @@ This error means Next.js could **NOT** complete the build for that specific auth
     *   **2. Configure Google Cloud Build Trigger:**
         *   Go to Google Cloud Console -> Cloud Build -> Triggers.
         *   Find the trigger associated with your Firebase Studio prototype.
-        *   Edit the trigger. Look for "Advanced" settings or **"Substitution variables"** (most common).
+        *   Edit the trigger. Scroll down to find "Advanced" settings or **"Substitution variables"**.
         *   Add/Update the following substitution variables (Cloud Build often prefers variables start with an underscore, but check their docs or try both):
             *   **Variable Name:** `_NEXTAUTH_URL` (or `NEXTAUTH_URL`)
             *   **Value:** The **exact, full public URL of your prototype** (e.g., `https://your-prototype-id.cloudworkstations.dev`).
@@ -149,6 +151,9 @@ This error means Next.js could **NOT** complete the build for that specific auth
             *   **Value:** Your **Stripe TEST Publishable Key** (`pk_test_...`).
             *   **Variable Name:** `_STRIPE_SECRET_KEY` (or `STRIPE_SECRET_KEY`)
             *   **Value:** Your **Stripe TEST Secret Key** (`sk_test_...`).
+        *   **Service Account for the Build Trigger:**
+            *   In the trigger settings, there's a "Service account" field.
+            *   Typically, you can select the **default Cloud Build service account** (e.g., `[PROJECT_NUMBER]@cloudbuild.gserviceaccount.com`). This account performs the build.
         *   **Save the trigger.**
     *   **3. Rebuild Prototype:** After making changes in Google Cloud Build, trigger a new build/deployment of your prototype from Firebase Studio.
 
@@ -187,9 +192,9 @@ These often occur after a successful build, but when the application is running.
 (Content remains largely the same, referring to the troubleshooting above)
 
 ## Genkit (AI Features)
-(Content remains largely the same)
+*   **Local Development:** Relies on Application Default Credentials (`gcloud auth application-default login`).
+*   **Firebase Studio Prototypes (Runtime):** The service account used by the *running prototype* (e.g., Compute Engine default SA) needs the **"Vertex AI User"** IAM role for Genkit to call Google AI services. This is separate from the Cloud Build trigger's service account but important for the deployed app's functionality.
 
 ## Deprecated: Firebase Usage Notes
 Firebase services have been removed from this project. If you previously had Firebase SDK environment variables set on Vercel or Google Cloud Build, you can remove them. This step is for tidiness and **will not fix NextAuth.js build errors like "missing app-build-manifest.json"**. Focus on `NEXTAUTH_SECRET` and `NEXTAUTH_URL` for those build errors.
 
-    
