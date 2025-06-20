@@ -1,45 +1,38 @@
+
 rules_version = '2';
 
 service firebase.storage {
   match /b/{bucket}/o {
-    // Default deny all reads and writes on any path.
+    // Default deny all
     match /{allPaths=**} {
       allow read, write: if false;
     }
 
-    // User Profile Pictures
-    // Path: users/{userId}/profilePicture.<ext> (App should manage specific file name and extension)
-    // - Authenticated user can write/update/delete their own profile picture.
-    // - Anyone can read profile pictures.
+    // User profile pictures
+    // Path: users/{userId}/profilePicture.jpg (or .png, etc.)
     match /users/{userId}/profilePicture {
-      allow read: if true;
+      allow read: if true; // Anyone can read profile pictures
       allow write: if request.auth != null && request.auth.uid == userId
                    && request.resource.size < 2 * 1024 * 1024 // Max 2MB
                    && request.resource.contentType.matches('image/.*'); // Only images
-      allow delete: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Poll Media (Images/Videos for Poll Questions or Options)
+    // Poll media (images/videos for polls or options)
     // Path: polls/{pollId}/{fileName}
-    // - Anyone can read poll media.
-    // - Authenticated users can write (upload) media.
-    //   (Note: For enhanced security, you'd typically verify that request.auth.uid is the creator of pollId,
-    //    often by checking a corresponding Firestore document or using custom claims.
-    //    This rule allows any authenticated user to upload to any poll path, relying on app logic for correctness.)
-    // - Poll creators (or admins) should be able to delete.
+    // A more granular approach might be needed if options have their own folders.
     match /polls/{pollId}/{fileName} {
-      allow read: if true;
-      allow write: if request.auth != null
-                   && request.resource.size < 10 * 1024 * 1024 // Max 10MB (adjust as needed)
+      allow read: if true; // Anyone can read poll media
+      allow write: if request.auth != null // Only authenticated users can upload
+                   && request.resource.size < 10 * 1024 * 1024 // Max 10MB
                    && (request.resource.contentType.matches('image/.*') || request.resource.contentType.matches('video/.*'));
-      // allow delete: if request.auth != null && (/* logic to check if user is creator or admin */);
+      // To restrict further, you might check if request.auth.uid is the poll creator
+      // or if the pollId exists in Firestore and the user has permission.
     }
 
-    // Optional: User-specific general files, if needed for other features (e.g., direct message attachments)
+    // Example: User-specific private data (only owner can read/write)
     // Path: userData/{userId}/{allUserDataPaths=**}
-    // - Only the authenticated user can read/write/delete their own files.
     match /userData/{userId}/{allUserDataPaths=**} {
-      allow read, write, delete: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
     }
   }
 }
