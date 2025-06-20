@@ -146,9 +146,10 @@ Your Cloud Build trigger can be configured in two main ways:
     *   Set the trigger **"Type"** to **"Cloud Build configuration file (yaml or json)"**.
     *   You **must** have a `cloudbuild.yaml` (or JSON) file in your repository (e.g., at the root). A basic one has been created for you in `cloudbuild.yaml`.
     *   In the trigger settings, under "Location", specify the path to this file (e.g., `cloudbuild.yaml`).
+    *   **Important:** If you use a `cloudbuild.yaml` file, ensure it is **committed and pushed** to your GitHub repository so Cloud Build can find it.
     *   This file gives you manual control over each build step.
 
-**IMPORTANT: The error "Failed to trigger build: if 'build.service\_account' is specified..." is related to the trigger's logging configuration when using a user-managed service account. This needs to be resolved at the trigger level, potentially using `gcloud` commands to set the logging mode (e.g., to `CLOUD_LOGGING_ONLY` or `NONE`), regardless of whether you use Buildpacks or a `cloudbuild.yaml` file. See Troubleshooting section D.**
+**IMPORTANT: The error "Failed to trigger build: if 'build.service\_account' is specified..." (see Troubleshooting D) is related to the trigger's logging configuration when using a user-managed service account. This needs to be resolved at the trigger level, regardless of whether you use Buildpacks or a `cloudbuild.yaml` file.**
 
 ---
 
@@ -174,21 +175,26 @@ Your Cloud Build trigger can be configured in two main ways:
     *   Check Cloud Run logs for errors from `/api/stripe/create-checkout-session` (if secret key is bad on server).
     *   Redeploy after fixing.
 
-### C. BUILD ERROR or RUNTIME ERROR: "Firebase is blocking Next" / Firebase SDK initialization failures
+### C. BUILD ERROR or RUNTIME ERROR: "Firebase is blocking Next" / Firebase SDK initialization failures / Or "We could not find a valid build file"
 
-**PRIMARY CAUSE: `_NEXT_PUBLIC_FIREBASE_...` variables are MISSING or INCORRECT in the Google Cloud Build Trigger.**
-
-**SOLUTION:**
-1.  **Verify ALL Firebase Configuration Variables:** Go to your Firebase project settings (Project Overview > Project settings > General > Your apps > SDK setup and configuration - "Config").
-2.  **In Google Cloud Build Trigger > Substitution variables:**
-    *   Ensure you have **ALL** the required Firebase config variables added, each prefixed with `_NEXT_PUBLIC_FIREBASE_` (e.g., `_NEXT_PUBLIC_FIREBASE_API_KEY`, `_NEXT_PUBLIC_FIREBASE_PROJECT_ID`, etc.).
-    *   Double-check that the values pasted are **EXACTLY** correct and **DO NOT HAVE QUOTATION MARKS** around them.
-    *   The `src/lib/firebase.ts` file attempts to initialize the SDK. If these keys are missing or wrong in the build environment, the build can fail, or the deployed app will have runtime errors when trying to use Firebase services (like Storage).
+**PRIMARY CAUSES & SOLUTIONS:**
+1.  **"Firebase is blocking Next" / SDK Init Failures:** `_NEXT_PUBLIC_FIREBASE_...` variables are MISSING or INCORRECT in the Cloud Build Trigger.
+    *   **Verify ALL Firebase Configuration Variables:** Go to your Firebase project settings (Project Overview > Project settings > General > Your apps > SDK setup and configuration - "Config").
+    *   **In Google Cloud Build Trigger > Substitution variables:**
+        *   Ensure you have **ALL** the required Firebase config variables added, each prefixed with `_NEXT_PUBLIC_FIREBASE_` (e.g., `_NEXT_PUBLIC_FIREBASE_API_KEY`, `_NEXT_PUBLIC_FIREBASE_PROJECT_ID`, etc.).
+        *   Double-check that the values pasted are **EXACTLY** correct and **DO NOT HAVE QUOTATION MARKS** around them.
+        *   The `src/lib/firebase.ts` file attempts to initialize the SDK. If these keys are missing or wrong in the build environment, the build can fail, or the deployed app will have runtime errors when trying to use Firebase services (like Storage).
+2.  **"We could not find a valid build file" Error (when using `cloudbuild.yaml`):**
+    *   This means your trigger is set to "Type: Cloud Build configuration file (yaml or json)" and Cloud Build cannot find the specified YAML file (e.g., `cloudbuild.yaml`) in your GitHub repository at the specified "Location" path.
+    *   **Solution:**
+        *   Ensure your `cloudbuild.yaml` file exists at the root of your repository (or the path specified in the trigger).
+        *   Ensure the `cloudbuild.yaml` file has been **committed and pushed** to your GitHub repository.
+        *   Verify the "Location" in the trigger settings correctly points to this file (e.g., `cloudbuild.yaml`).
 3.  **REBUILD/REDEPLOY PROTOTYPE** from Firebase Studio after confirming.
 
 ### D. TRIGGER ERROR: "Failed to trigger build: if 'build.service_account' is specified..."
 
-**This error means the Cloud Build trigger's logging configuration is incompatible with using a user-managed service account, likely due to an organization policy.**
+**This error means the Cloud Build trigger's logging configuration is incompatible with using a user-managed service account, likely due to an organization policy.** This happens *before* Cloud Build tries to read your code or `cloudbuild.yaml`.
 
 **SOLUTION: UPDATE TRIGGER LOGGING MODE VIA `gcloud`**
 1.  **Open Cloud Shell** in the Google Cloud Console or use your local `gcloud` CLI, ensuring you're authenticated to the correct project (`pollitgo`).
@@ -233,3 +239,5 @@ For local development, Genkit uses Application Default Credentials (`gcloud auth
 ## Vercel Deployment (Currently Not Focused)
 
 This section remains for informational purposes if you decide to deploy to Vercel later. You would configure similar environment variables (using LIVE keys for production) in Vercel Project Settings.
+
+    
