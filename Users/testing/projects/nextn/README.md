@@ -40,6 +40,7 @@ NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=YOUR_ACTUAL_STRIPE_TEST_PUBLISHABLE_KEY_GOES_
 # ==================================================================================
 # Get these values from your Firebase project settings:
 # Firebase Console > Project Overview (click the gear icon) > Project settings > General tab > Your apps > SDK setup and configuration (select "Config" radio button).
+# Prefix with NEXT_PUBLIC_ to make them available to the client-side browser environment.
 NEXT_PUBLIC_FIREBASE_API_KEY=YOUR_FIREBASE_API_KEY
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=YOUR_FIREBASE_AUTH_DOMAIN
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=YOUR_FIREBASE_PROJECT_ID
@@ -108,7 +109,16 @@ When you launch or update a prototype in Firebase Studio, the interface will dis
             *   **Value:** YOUR_FIREBASE_API_KEY
         *   **Variable Name:** `_NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
             *   **Value:** YOUR_FIREBASE_AUTH_DOMAIN
-        *   ...and so on for `PROJECT_ID`, `STORAGE_BUCKET`, `MESSAGING_SENDER_ID`, `APP_ID`, and optionally `MEASUREMENT_ID`.
+        *   **Variable Name:** `_NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+            *   **Value:** YOUR_FIREBASE_PROJECT_ID
+        *   **Variable Name:** `_NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+            *   **Value:** YOUR_FIREBASE_STORAGE_BUCKET
+        *   **Variable Name:** `_NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+            *   **Value:** YOUR_FIREBASE_MESSAGING_SENDER_ID
+        *   **Variable Name:** `_NEXT_PUBLIC_FIREBASE_APP_ID`
+            *   **Value:** YOUR_FIREBASE_APP_ID
+        *   **Variable Name:** `_NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID`  (Optional)
+            *   **Value:** YOUR_FIREBASE_MEASUREMENT_ID
         *   **Importance:** Required for Firebase SDK to connect to your project.
 
 6.  **Service Account (in the same Trigger settings):**
@@ -141,7 +151,7 @@ When you launch or update a prototype in Firebase Studio, the interface will dis
     *   Verify the key in Cloud Build Trigger and Redeploy.
 2.  **Firebase SDK Initialization Failure (if using Firebase features on the client):**
     *   Ensure all `_NEXT_PUBLIC_FIREBASE_...` variables are correctly set in the Cloud Build Trigger.
-    *   Check Browser Console for Firebase-related errors.
+    *   Check Browser Console for Firebase-related errors (e.g., "Firebase: Error (auth/invalid-api-key)" or issues connecting to Firestore/Storage). The file `src/lib/firebase.ts` logs specific errors if core Firebase config keys are missing.
 
 ---
 
@@ -165,15 +175,7 @@ Firebase SDK is initialized in `src/lib/firebase.ts`. To use Firebase services (
     *   Find the "SDK setup and configuration" section and select the **"Config"** radio button.
     *   You will see an object like `const firebaseConfig = { apiKey: "...", authDomain: "...", ... };`. These are the values you need.
 2.  **Set Environment Variables:**
-    *   Add these values to your `.env.local` file (for local development) and to your Google Cloud Build trigger's "Substitution variables" (for prototype deployment).
-    *   **Crucially, prefix them with `NEXT_PUBLIC_`** so Next.js makes them available to the client-side browser environment.
-        *   `NEXT_PUBLIC_FIREBASE_API_KEY=...`
-        *   `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...`
-        *   `NEXT_PUBLIC_FIREBASE_PROJECT_ID=...`
-        *   `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...`
-        *   `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...`
-        *   `NEXT_PUBLIC_FIREBASE_APP_ID=...`
-        *   `NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=...` (Optional, for Analytics)
+    *   Add these values to your `.env.local` file (for local development) and to your Google Cloud Build trigger's "Substitution variables" (for prototype deployment), ensuring you use the correct prefixes as detailed in the sections above (`NEXT_PUBLIC_FIREBASE_...` for `.env.local`, and `_NEXT_PUBLIC_FIREBASE_...` for Cloud Build).
 
 ## Genkit (AI Features)
 
@@ -184,4 +186,13 @@ For local development, Genkit uses Application Default Credentials (`gcloud auth
 ## Deprecated: Vercel Deployment
 
 Deployment via Vercel is currently not the primary focus. If you choose to use Vercel in the future, you will need to configure similar environment variables in your Vercel project settings.
-
+The Vercel environment variable names would typically be:
+- `NEXTAUTH_URL`
+- `NEXTAUTH_SECRET`
+- `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY`
+- `STRIPE_SECRET_KEY`
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- ... and so on for all Firebase config keys.
+Ensure they are set in Vercel Project Settings > Environment Variables and that you redeploy after any changes.
+```
