@@ -287,6 +287,7 @@ export default function UserProfilePage({ params }: { params: { userId: string }
 }
 
 const PollCardFeedWrapper: React.FC<{ initialPolls: Poll[], userIdForFeed?: string, feedType?: string }> = ({ initialPolls }) => {
+  console.log('PollCardFeedWrapper rendering'); // Added console log
   if (!initialPolls || initialPolls.length === 0) {
     return <p className="text-center py-8 text-muted-foreground">No polls to display for this feed.</p>;
   }
