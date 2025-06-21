@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { mockPolls, mockUsers } from "@/lib/mockData";
 import type { Poll, PollOption as PollOptionType, Comment as CommentType, User } from "@/types";
-import { formatDistanceToNowStrict, parseISO } from "date-fns";
+import { formatDistanceToNowStrict, parseISO, isPast, intervalToDuration, formatDuration } from "date-fns";
 import { Clock, Heart, MessageSquare, Share2, Gift, Send, Info, CheckCircle2, Loader2, Check, Users, Flame, AlertCircle, UserCircle2, LogIn, Video as VideoIconLucide } from "lucide-react";
 import Image from "next/image";
 import NextLink from "next/link";
@@ -196,19 +196,40 @@ export default function PollDetailsPage() {
   useEffect(() => {
     if (poll) {
       const deadlineDate = parseISO(poll.deadline);
-      const checkDeadline = () => {
+      let interval: NodeJS.Timeout;
+
+      const updateTimer = () => {
         const now = new Date();
-        const remaining = deadlineDate.getTime() - now.getTime();
-        if (remaining <= 0) {
+        const remainingMs = deadlineDate.getTime() - now.getTime();
+
+        if (remainingMs <= 0) {
           setDeadlinePassedState(true);
           setTimeRemaining("Ended");
-        } else {
-          setDeadlinePassedState(false);
-          setTimeRemaining(formatDistanceToNowStrict(deadlineDate, { addSuffix: true }));
+          if (interval) clearInterval(interval);
+          return;
         }
+
+        setDeadlinePassedState(false);
+        const duration = intervalToDuration({ start: now, end: deadlineDate });
+        
+        const formatted = formatDuration(duration, {
+          format: ['days', 'hours', 'minutes', 'seconds'],
+          delimiter: ' ',
+          zero: false,
+        });
+
+        const finalFormat = formatted
+          .replace(/\s*days?/, 'd')
+          .replace(/\s*hours?/, 'h')
+          .replace(/\s*minutes?/, 'm')
+          .replace(/\s*seconds?/, 's');
+        
+        setTimeRemaining(finalFormat + " left");
       };
-      checkDeadline();
-      const interval = setInterval(checkDeadline, 60000);
+
+      updateTimer();
+      interval = setInterval(updateTimer, 1000);
+
       return () => clearInterval(interval);
     }
   }, [poll]);
@@ -468,7 +489,7 @@ export default function PollDetailsPage() {
             )}
             <div className="mt-4 flex items-center text-sm text-muted-foreground">
               <Clock className="w-4 h-4 mr-1.5" />
-              <span>{deadlinePassedState ? `Ended` : `Ends ${timeRemaining}`} &middot; {poll.totalVotes.toLocaleString()} votes</span>
+              <span>{timeRemaining} &middot; {poll.totalVotes.toLocaleString()} votes</span>
                {poll.pledgeAmount && poll.pledgeAmount > 0 && (
                  <span className="ml-1 text-green-600 font-semibold">&middot; Creator Pledged: ${poll.pledgeAmount.toLocaleString()}</span>
               )}
@@ -578,4 +599,3 @@ export default function PollDetailsPage() {
     </>
   );
 }
-    

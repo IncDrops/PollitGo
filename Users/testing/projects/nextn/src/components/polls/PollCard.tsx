@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Clock, MessageSquare, Heart, Share2, Gift, CheckCircle2, Film, Video as VideoIconLucide, Info, Zap, Check, Users, Flame, Loader2, AlertCircle } from 'lucide-react';
-import { formatDistanceToNowStrict, parseISO, isPast } from 'date-fns';
+import { formatDistanceToNowStrict, parseISO, isPast, intervalToDuration, formatDuration } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import React, { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
@@ -178,19 +178,42 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
 
   useEffect(() => {
     const deadlineDate = parseISO(poll.deadline);
-    const checkDeadline = () => {
+    let interval: NodeJS.Timeout;
+
+    const updateTimer = () => {
       const now = new Date();
-      const remaining = deadlineDate.getTime() - now.getTime();
-      if (remaining <= 0) {
+      const remainingMs = deadlineDate.getTime() - now.getTime();
+
+      if (remainingMs <= 0) {
         setDeadlinePassed(true);
         setTimeRemaining("Ended");
-      } else {
-        setDeadlinePassed(false);
-        setTimeRemaining(formatDistanceToNowStrict(deadlineDate, { addSuffix: true }));
+        if (interval) clearInterval(interval);
+        return;
       }
+      
+      setDeadlinePassed(false);
+      const duration = intervalToDuration({ start: now, end: deadlineDate });
+      
+      const format = duration.days || duration.hours ? ['days', 'hours', 'minutes'] : ['days', 'hours', 'minutes', 'seconds'];
+
+      const formatted = formatDuration(duration, {
+        format: format,
+        delimiter: ' ',
+        zero: false,
+      });
+
+      const finalFormat = formatted
+        .replace(/\s*days?/, 'd')
+        .replace(/\s*hours?/, 'h')
+        .replace(/\s*minutes?/, 'm')
+        .replace(/\s*seconds?/, 's');
+      
+      setTimeRemaining(finalFormat + " left");
     };
-    checkDeadline();
-    const interval = setInterval(checkDeadline, 60000);
+
+    updateTimer();
+    interval = setInterval(updateTimer, 1000);
+
     return () => clearInterval(interval);
   }, [poll.deadline]);
 
@@ -373,7 +396,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
             </div>
             <div className="mt-3 flex items-center text-xs text-muted-foreground">
               <Clock className="w-3 h-3 mr-1" />
-              <span>{deadlinePassed ? `Ended ${timeRemaining}` : `Ends ${timeRemaining}`}</span>
+              <span>{timeRemaining}</span>
               <span className="ml-1">&middot; {poll.totalVotes.toLocaleString()} votes</span>
               {poll.pledgeAmount && poll.pledgeAmount > 0 && (
                  <span className="ml-1 text-green-500 font-medium">&middot; Pledged: ${poll.pledgeAmount.toLocaleString()}</span>
