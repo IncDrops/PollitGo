@@ -12,10 +12,13 @@ async function authorize(credentials: Record<string, string> | undefined): Promi
   }
   const { email, password } = credentials;
 
+  // For demo purposes, allow test@example.com or any new email
   if (email === "test@example.com" && password === "password") {
     console.log("Auth: Authorizing test user: test@example.com");
-    return { id: "1", name: "Test User", email: "test@example.com", image: null };
+    return { id: "user1", name: "Test User", email: "test@example.com", image: null };
   }
+  
+  // Simulate creating a new user on login attempt
   console.log(`Auth: Simulating authorization/signup for: ${email}`);
   return { id: email, name: email.split('@')[0] || "New User", email: email, image: null };
 }
@@ -55,49 +58,10 @@ export const authOptions: NextAuthOptions = {
   pages: {
     signIn: '/login',
   },
-  secret: process.env.NEXTAUTH_SECRET, // This is critical. NextAuth will check this.
+  secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === 'development',
 };
 
-let handler: ReturnType<typeof NextAuth>;
-let GET_handler: Function;
-let POST_handler: Function;
+const handler = NextAuth(authOptions);
 
-if (!process.env.NEXTAUTH_SECRET) {
-  console.error(
-    'CRITICAL NEXTAUTH_SECRET ERROR (API Route Init): The NEXTAUTH_SECRET environment variable is NOT SET. ' +
-    'NextAuth.js WILL FAIL. This can lead to build errors (like missing manifests for /login or /signup) and runtime errors. ' +
-    'Ensure this variable is set in your environment (e.g., .env.local for local development, ' +
-    'Vercel project settings for Vercel deployments, Google Cloud Build environment variables for Studio prototypes).'
-  );
-  
-  const criticalErrorResponse = () => new Response(
-    JSON.stringify({ 
-      error: "Server misconfiguration: NEXTAUTH_SECRET is missing.",
-      message: "The authentication system is not properly configured. Please contact support or check server logs." 
-    }),
-    { status: 500, headers: { 'Content-Type': 'application/json' } }
-  );
-  GET_handler = criticalErrorResponse;
-  POST_handler = criticalErrorResponse;
-
-} else {
-  try {
-    handler = NextAuth(authOptions);
-    GET_handler = handler;
-    POST_handler = handler;
-  } catch (error: any) {
-    console.error('CRITICAL Error initializing NextAuth (API Route Init):', error.message, error.stack);
-    const errorResponse = () => new Response(
-      JSON.stringify({ 
-        error: "NextAuth initialization failed during API route setup. Check server logs.", 
-        details: error.message 
-      }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    );
-    GET_handler = errorResponse;
-    POST_handler = errorResponse;
-  }
-}
-
-export { GET_handler as GET, POST_handler as POST };
+export { handler as GET, handler as POST };
