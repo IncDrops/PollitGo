@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { Poll, PollOption as PollOptionType, User } from '@/types';
@@ -24,7 +23,7 @@ interface PollCardProps {
   onVote?: (pollId: string, optionId: string) => void;
   onPollActionComplete?: (pollId: string, swipeDirection?: 'left' | 'right') => void;
   onPledgeOutcome?: (pollId: string, outcome: 'accepted' | 'tipped_crowd') => void;
-  currentUser?: User | null; 
+  currentUser?: User | null;
 }
 
 const OPTION_TEXT_TRUNCATE_LENGTH = 100;
@@ -166,9 +165,9 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
       );
       return { ...prevPoll, options: updatedOptions, totalVotes: newTotalVotes, isVoted: true, votedOptionId: optionId };
     });
-    
+
     onVote(currentPoll.id, optionId); // Call the actual vote handler from PollFeed
-    
+
     // Check for pledge warning based on *updated* votes
     const updatedOption = currentPoll.options.find(opt => opt.id === optionId);
     if (currentPoll.pledgeAmount && currentPoll.pledgeAmount > 0 && updatedOption) {
@@ -191,7 +190,7 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
       if (!canSwipe || typeof onVote === 'undefined') return;
       const direction = eventData.dir;
       const optionToVote = direction === 'Left' ? currentPoll.options[0].id : currentPoll.options[1].id;
-      
+
       controls.start({
         x: direction === "Left" ? "-100%" : "100%",
         opacity: 0,
@@ -360,7 +359,13 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
                                 currentPoll.imageUrls?.length === 1 ? "aspect-[16/9]" : "aspect-square",
                                 currentPoll.imageUrls?.length === 3 && idx === 0 ? "col-span-2" : ""
                                 )}>
-                                <Image src={imgUrl} alt={`Poll image ${idx + 1}`} layout="fill" objectFit="cover" data-ai-hint={currentPoll.imageKeywords && currentPoll.imageKeywords[idx] ? currentPoll.imageKeywords[idx] : "poll visual"}/>
+                                <Image 
+                                  src={imgUrl} 
+                                  alt={`Poll image ${idx + 1}`} 
+                                  fill
+                                  style={{ objectFit: 'cover' }}
+                                  data-ai-hint={currentPoll.imageKeywords && currentPoll.imageKeywords[idx] ? currentPoll.imageKeywords[idx] : "poll visual"}
+                                />
                             </div>
                         ))}
                     </div>
@@ -462,6 +467,3 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
     </>
   );
 }
-
-
-    

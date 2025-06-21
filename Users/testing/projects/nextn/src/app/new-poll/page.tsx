@@ -558,10 +558,10 @@ export default function NewPollPage() {
                   <Flame className="mr-2 h-5 w-5 text-orange-500" /> Spicy Content (18+)
                 </Label>
               </div>
-              <Alert variant={isSpicy ? "destructive" : "default"}>
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>{isSpicy ? "Heads Up!" : "Content Note"}</AlertTitle>
-                <AlertDescription>
+              <Alert variant={isSpicy ? "destructive" : "default"} className={isSpicy ? "border-orange-500/50" : ""}>
+                <AlertCircle className={cn("h-4 w-4", isSpicy ? "!text-orange-500" : "!text-muted-foreground")} />
+                <AlertTitle className={isSpicy ? "text-orange-600" : ""}>{isSpicy ? "Heads Up!" : "Content Note"}</AlertTitle>
+                <AlertDescription className={isSpicy ? "text-orange-600/80" : ""}>
                   {isSpicy 
                     ? "Spicy posts are subject to stricter content moderation. Ensure compliance with community guidelines."
                     : "Mark this if your post contains mature themes or sensitive topics."
@@ -627,3 +627,4 @@ export default function NewPollPage() {
     </div>
   );
 }
+
