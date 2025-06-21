@@ -230,7 +230,7 @@ export default function NewPollPage() {
     if (numericPledgeAmount > 0 && !stripe) {
       toast({ 
         title: "Payment System Error", 
-        description: "The payment system (Stripe) is not available. This might be due to a missing or invalid configuration (e.g., Stripe Publishable Key). You cannot make a pledge at this time. Please check console for details.", 
+        description: "The payment system is not available. You cannot make a pledge at this time.", 
         variant: "destructive",
         duration: 7000
       });
@@ -242,7 +242,7 @@ export default function NewPollPage() {
       try {
         toast({
           title: 'Processing Pledge...',
-          description: `Your pledge of $${numericPledgeAmount.toFixed(2)} is being prepared. You'll be redirected to Stripe.`,
+          description: `Your pledge of $${numericPledgeAmount.toFixed(2)} is being prepared.`,
         });
 
         const response = await fetch('/api/stripe/create-checkout-session', {
@@ -272,15 +272,16 @@ export default function NewPollPage() {
       }
     }
 
-    console.log('Simulating poll submission. User:', currentUser?.email, 'Data:', {
+    console.log('Simulating poll submission:', {
       question, options, deadline, pledgeAmount: numericPledgeAmount || 0, isSpicy, pollImageFiles, pollVideoFile
     });
 
     toast({
-      title: 'Poll Creation Simulated',
-      description: 'Poll data logged to console. Implement backend to save polls.',
+      title: 'Poll Submitted (Simulated)',
+      description: 'Your poll data was logged to the console. Implement backend to save it.',
     });
 
+    // Reset form
     setQuestion('');
     setOptions([{ id: `option-${Date.now()}`, text: '' }, { id: `option-${Date.now() + 1}`, text: '' }]);
     setDeadline(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000));
@@ -333,12 +334,12 @@ export default function NewPollPage() {
   const formDisabled = isSubmitting;
   const showStripeNotReadyAlert = isStripeChecked && parseFloat(pledgeAmount) > 0 && !stripe;
 
-
   return (
     <div className="container mx-auto px-4 py-8">
       <Card className="w-full max-w-2xl mx-auto shadow-xl rounded-lg">
         <CardHeader className="border-b">
           <CardTitle className="text-2xl font-headline text-center text-foreground">Create New Poll</CardTitle>
+          <CardDescription className="text-center">Ask a question and let the community vote.</CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-6 pt-6">

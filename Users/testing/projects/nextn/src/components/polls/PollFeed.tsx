@@ -175,7 +175,8 @@ export default function PollFeed({
   };
 
   const handlePollActionComplete = (pollIdToRemove: string, swipeDirection?: 'left' | 'right') => {
-     setExitDirectionMap(prev => ({ ...prev, [pollIdToRemove]: swipeDirection || 'default' }));
+    setExitDirectionMap(prev => ({ ...prev, [pollIdToRemove]: swipeDirection || 'default' }));
+    setPolls(prevPolls => prevPolls.filter(p => p.id !== pollIdToRemove));
   };
 
   const handlePledgeOutcome = (pollId: string, outcome: 'accepted' | 'tipped_crowd') => {
@@ -220,20 +221,7 @@ export default function PollFeed({
 
   return (
     <div className="w-full space-y-0 relative">
-      <AnimatePresence 
-        initial={false}
-        onExitComplete={() => {
-          const pollIdToRemove = Object.keys(exitDirectionMap)[0];
-          if (pollIdToRemove) {
-            setPolls(prevPolls => prevPolls.filter(p => p.id !== pollIdToRemove));
-            setExitDirectionMap(prev => {
-              const newMap = {...prev};
-              delete newMap[pollIdToRemove];
-              return newMap;
-            });
-          }
-        }}
-      >
+      <AnimatePresence initial={false}>
         {polls.map((poll) => (
           <motion.div
             key={poll.id}
