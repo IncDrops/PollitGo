@@ -207,6 +207,8 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
   });
 
   useEffect(() => {
+ console.log('Deadline string:', currentPoll.deadline);
+ console.log('Parsed deadline date:', deadlineDate);
     const deadlineDate = parseISO(currentPoll.deadline);
     const checkDeadline = () => {
       const now = new Date();
