@@ -212,19 +212,13 @@ export default function PollDetailsPage() {
         setDeadlinePassedState(false);
         const duration = intervalToDuration({ start: now, end: deadlineDate });
         
-        const formatted = formatDuration(duration, {
-          format: ['days', 'hours', 'minutes', 'seconds'],
-          delimiter: ' ',
-          zero: false,
-        });
-
-        const finalFormat = formatted
-          .replace(/\s*days?/, 'd')
-          .replace(/\s*hours?/, 'h')
-          .replace(/\s*minutes?/, 'm')
-          .replace(/\s*seconds?/, 's');
+        const parts = [];
+        if (duration.days && duration.days > 0) parts.push(`${duration.days}d`);
+        if (duration.hours !== undefined) parts.push(`${String(duration.hours).padStart(2, '0')}h`);
+        if (duration.minutes !== undefined) parts.push(`${String(duration.minutes).padStart(2, '0')}m`);
+        if (duration.seconds !== undefined) parts.push(`${String(duration.seconds).padStart(2, '0')}s`);
         
-        setTimeRemaining(finalFormat + " left");
+        setTimeRemaining(parts.join(':') + " left");
       };
 
       updateTimer();

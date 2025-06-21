@@ -157,7 +157,6 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
     }
     setIsLikingInProgress(true);
     onToggleLike(poll.id);
-    // Give time for state to propagate and UI to update, then release the lock.
     await new Promise(resolve => setTimeout(resolve, 300)); 
     setIsLikingInProgress(false);
   };
@@ -169,23 +168,19 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
       const direction = eventData.dir;
       const optionToVote = direction === 'Left' ? poll.options[0].id : poll.options[1].id;
 
-      // 1. Animate out
       await controls.start({
         x: direction === 'Left' ? '-110%' : '110%',
         opacity: 0,
         transition: { duration: 0.4, ease: "easeIn" },
       });
-
-      // 2. Call vote function which updates state in parent
+      
       onVote(poll.id, optionToVote);
 
-      // 3. Instantly move card to opposite side (off-screen)
-      await controls.start({
+      controls.set({
         x: direction === 'Left' ? '110%' : '-110%',
-        transition: { duration: 0 },
+        opacity: 1, // Keep it visible for the slide-in
       });
       
-      // 4. Animate back in to the center
       await controls.start({
         x: '0%',
         opacity: 1,
@@ -210,25 +205,17 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
         if (interval) clearInterval(interval);
         return;
       }
-      
+
       setDeadlinePassed(false);
       const duration = intervalToDuration({ start: now, end: deadlineDate });
       
-      const format = duration.days || duration.hours ? ['days', 'hours', 'minutes'] : ['days', 'hours', 'minutes', 'seconds'];
-
-      const formatted = formatDuration(duration, {
-        format: format,
-        delimiter: ' ',
-        zero: false,
-      });
-
-      const finalFormat = formatted
-        .replace(/\s*days?/, 'd')
-        .replace(/\s*hours?/, 'h')
-        .replace(/\s*minutes?/, 'm')
-        .replace(/\s*seconds?/, 's');
+      const parts = [];
+      if (duration.days && duration.days > 0) parts.push(`${duration.days}d`);
+      if (duration.hours !== undefined) parts.push(`${String(duration.hours).padStart(2, '0')}h`);
+      if (duration.minutes !== undefined) parts.push(`${String(duration.minutes).padStart(2, '0')}m`);
+      if (duration.seconds !== undefined) parts.push(`${String(duration.seconds).padStart(2, '0')}s`);
       
-      setTimeRemaining(finalFormat + " left");
+      setTimeRemaining(parts.join(':') + " left");
     };
 
     updateTimer();
