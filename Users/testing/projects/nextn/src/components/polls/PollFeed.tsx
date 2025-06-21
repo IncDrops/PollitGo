@@ -14,11 +14,7 @@ import { signIn } from 'next-auth/react';
 const pollCardVariants = {
   initial: { opacity: 0, y: 50, scale: 0.95 },
   animate: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 400, damping: 30 } },
-  exit: (custom: 'left' | 'right' | 'default') => {
-    if (custom === 'left') return { x: "-100%", opacity: 0, transition: { duration: 0.3 } };
-    if (custom === 'right') return { x: "100%", opacity: 0, transition: { duration: 0.3 } };
-    return { opacity: 0, scale: 0.8, transition: { duration: 0.2 } }; // Default exit for non-swipe actions
-  }
+  exit: { opacity: 0, scale: 0.8, transition: { duration: 0.2 } }
 };
 
 const MIN_PAYOUT_PER_VOTER = 0.10;
@@ -27,15 +23,11 @@ const BATCH_SIZE = 10;
 
 interface PollFeedProps {
   staticPolls?: Poll[];
-  onVoteCallback?: (pollId: string, optionId: string) => void;
-  onPledgeOutcomeCallback?: (pollId: string, outcome: 'accepted' | 'tipped_crowd') => void;
   currentUser?: User | null;
 }
 
 export default function PollFeed({
   staticPolls,
-  onVoteCallback,
-  onPledgeOutcomeCallback,
   currentUser: propCurrentUser
 }: PollFeedProps) {
   const [polls, setPolls] = useState<Poll[]>(() => (staticPolls || []).map(p => ({...p})));
@@ -49,8 +41,7 @@ export default function PollFeed({
   const currentUser = propCurrentUser !== undefined ? propCurrentUser : authHookUser;
 
   const { toast } = useToast();
-  const [exitDirectionMap, setExitDirectionMap] = useState<Record<string, 'left' | 'right' | 'default'>>({});
-
+  
   const loadMorePolls = useCallback(async (isInitial = false) => {
     if (staticPolls || loadingMore || !hasMore) return;
 
@@ -113,10 +104,6 @@ export default function PollFeed({
         signIn();
         return;
     }
-    if (onVoteCallback) {
-      onVoteCallback(pollId, optionId);
-      return;
-    }
     setPolls(prevPolls =>
       prevPolls.map(p => {
         if (p.id === pollId && !p.isVoted) {
@@ -166,6 +153,8 @@ export default function PollFeed({
           const newLikesCount = newIsLiked ? p.likes + 1 : Math.max(0, p.likes - 1);
           if (newIsLiked) {
             toast({ title: "Poll Liked!" });
+          } else {
+            toast({ title: "Poll Unliked" });
           }
           return { ...p, isLiked: newIsLiked, likes: newLikesCount };
         }
@@ -173,22 +162,13 @@ export default function PollFeed({
       })
     );
   };
-
-  const handlePollActionComplete = (pollIdToRemove: string, swipeDirection?: 'left' | 'right') => {
-    setExitDirectionMap(prev => ({ ...prev, [pollIdToRemove]: swipeDirection || 'default' }));
-    setPolls(prevPolls => prevPolls.filter(p => p.id !== pollIdToRemove));
-  };
-
+  
   const handlePledgeOutcome = (pollId: string, outcome: 'accepted' | 'tipped_crowd') => {
     if (!isAuthenticated || !currentUser || polls.find(p => p.id === pollId)?.creator.id !== currentUser.id) {
         setTimeout(() => {
           toast({title: "Action Denied", description: "Only the poll creator can decide the pledge outcome.", variant: "destructive"});
         }, 0);
         return;
-    }
-    if (onPledgeOutcomeCallback) {
-      onPledgeOutcomeCallback(pollId, outcome);
-      return;
     }
     setPolls(prevPolls =>
       prevPolls.map(p =>
@@ -226,7 +206,6 @@ export default function PollFeed({
           <motion.div
             key={poll.id}
             layout
-            custom={exitDirectionMap[poll.id] || 'default'}
             variants={pollCardVariants}
             initial="initial"
             animate="animate"
@@ -237,7 +216,6 @@ export default function PollFeed({
               poll={poll}
               onVote={handleVote}
               onToggleLike={handleToggleLike}
-              onPollActionComplete={handlePollActionComplete}
               currentUser={currentUser}
               onPledgeOutcome={handlePledgeOutcome}
             />

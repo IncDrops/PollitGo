@@ -23,7 +23,6 @@ interface PollCardProps {
   poll: Poll;
   onVote?: (pollId: string, optionId: string) => void;
   onToggleLike?: (pollId: string) => void;
-  onPollActionComplete?: (pollId: string, swipeDirection?: 'left' | 'right') => void;
   onPledgeOutcome?: (pollId: string, outcome: 'accepted' | 'tipped_crowd') => void;
   currentUser?: User | null;
 }
@@ -122,7 +121,7 @@ const PollOptionDisplay: React.FC<{
   );
 };
 
-export default function PollCard({ poll, onVote, onToggleLike, onPollActionComplete, onPledgeOutcome, currentUser }: PollCardProps) {
+export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, currentUser }: PollCardProps) {
   const router = useRouter();
   const { toast } = useToast();
   const stripe = useStripe();
@@ -158,19 +157,40 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
     }
     setIsLikingInProgress(true);
     onToggleLike(poll.id);
+    // Give time for state to propagate and UI to update, then release the lock.
     await new Promise(resolve => setTimeout(resolve, 300)); 
     setIsLikingInProgress(false);
   };
 
   const swipeHandlers = useSwipeable({
     onSwiped: async (eventData) => {
-      if (!canSwipe || typeof onVote === 'undefined' || !onPollActionComplete) return;
+      if (!canSwipe || !onVote) return;
 
       const direction = eventData.dir;
       const optionToVote = direction === 'Left' ? poll.options[0].id : poll.options[1].id;
+
+      // 1. Animate out
+      await controls.start({
+        x: direction === 'Left' ? '-110%' : '110%',
+        opacity: 0,
+        transition: { duration: 0.4, ease: "easeIn" },
+      });
+
+      // 2. Call vote function which updates state in parent
+      onVote(poll.id, optionToVote);
+
+      // 3. Instantly move card to opposite side (off-screen)
+      await controls.start({
+        x: direction === 'Left' ? '110%' : '-110%',
+        transition: { duration: 0 },
+      });
       
-      onPollActionComplete(poll.id, direction.toLowerCase() as 'left' | 'right');
-      handleInternalVote(optionToVote);
+      // 4. Animate back in to the center
+      await controls.start({
+        x: '0%',
+        opacity: 1,
+        transition: { duration: 0.4, ease: "easeOut" },
+      });
     },
     trackMouse: true,
     preventScrollOnSwipe: true,
@@ -346,7 +366,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPollActionCompl
                                 poll.imageUrls?.length === 1 ? "aspect-[16/9]" : "aspect-square",
                                 (poll.imageUrls?.length === 3 && idx === 0) ? "col-span-2" : ""
                                 )}>
-                                <Image src={imgUrl} alt={`Post image ${idx + 1}`} fill className="object-cover" sizes="100vw" data-ai-hint={poll.imageKeywords && poll.imageKeywords[idx] ? poll.imageKeywords[idx] : "post visual"}/>
+                                <Image src={imgUrl} alt={`Post image ${idx + 1}`} fill sizes="100vw" className="object-cover" data-ai-hint={poll.imageKeywords && poll.imageKeywords[idx] ? poll.imageKeywords[idx] : "post visual"}/>
                             </div>
                         ))}
                     </div>
