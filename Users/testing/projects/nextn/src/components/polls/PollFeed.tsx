@@ -14,7 +14,7 @@ import { signIn } from 'next-auth/react';
 const pollCardVariants = {
   initial: { opacity: 0, y: 50, scale: 0.95 },
   animate: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 400, damping: 30 } },
-  exit: { opacity: 0, scale: 0.8, transition: { duration: 0.2 } } // Simplified exit for actual list removal
+  exit: { opacity: 0, scale: 0.8, transition: { duration: 0.2 } }
 };
 
 const MIN_PAYOUT_PER_VOTER = 0.10;
@@ -24,7 +24,6 @@ const BATCH_SIZE = 10;
 interface PollFeedProps {
   staticPolls?: Poll[];
   onVoteCallback?: (pollId: string, optionId: string) => void;
-  // onPollActionCompleteCallback is removed as PollCard now handles its own animation
   onPledgeOutcomeCallback?: (pollId: string, outcome: 'accepted' | 'tipped_crowd') => void;
   currentUser?: User | null;
 }
@@ -46,7 +45,6 @@ export default function PollFeed({
   const currentUser = propCurrentUser !== undefined ? propCurrentUser : authHookUser;
 
   const { toast } = useToast();
-  // exitDirectionMap is removed as PollCard manages its own swipe animation direction
 
   const loadMorePolls = useCallback(async (isInitial = false) => {
     if (staticPolls || loadingMore || !hasMore) return;
@@ -150,8 +148,27 @@ export default function PollFeed({
     );
   };
 
-  // handleToggleLike is removed as PollCard will manage its local like state visually for now
-  // If likes need to be persistent, this logic should be in PollFeed and update the 'polls' state
+  const handleToggleLike = (pollId: string) => {
+    if (!isAuthenticated) {
+      toast({ title: "Login Required", description: "Please login to like polls.", variant: "destructive" });
+      signIn();
+      return;
+    }
+    setPolls(prevPolls =>
+      prevPolls.map(p => {
+        if (p.id === pollId) {
+          const newIsLiked = !p.isLiked;
+          const newLikesCount = newIsLiked ? p.likes + 1 : Math.max(0, p.likes - 1);
+          if (newIsLiked) {
+            toast({ title: "Poll Liked!" });
+          }
+          return { ...p, isLiked: newIsLiked, likes: newLikesCount };
+        }
+        return p;
+      })
+    );
+  };
+
 
   const handlePledgeOutcome = (pollId: string, outcome: 'accepted' | 'tipped_crowd') => {
     if (!isAuthenticated || !currentUser || polls.find(p => p.id === pollId)?.creator.id !== currentUser.id) {
@@ -199,17 +216,17 @@ export default function PollFeed({
         {polls.map((poll) => (
           <motion.div
             key={poll.id}
-            layout // Handles smooth reordering when other items in the list change
-            variants={pollCardVariants} // Uses simplified variants for add/remove from list
+            layout
+            variants={pollCardVariants}
             initial="initial"
             animate="animate"
-            exit="exit" // Standard exit for list removal (e.g. if a poll is deleted)
+            exit="exit"
             className="min-h-[1px]"
           >
             <PollCard
               poll={poll}
-              onVote={handleVote} // Passed to PollCard to update PollFeed's state
-              // onPollActionComplete is removed
+              onVote={handleVote}
+              onToggleLike={handleToggleLike}
               currentUser={currentUser}
               onPledgeOutcome={handlePledgeOutcome}
             />
@@ -233,4 +250,3 @@ export default function PollFeed({
     </div>
   );
 }
-

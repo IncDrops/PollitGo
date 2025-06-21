@@ -90,7 +90,6 @@ const PollOptionDisplay: React.FC<{
               height={pollHasTwoOptions ? 60 : 40}
               className={cn("rounded-md object-cover shadow-sm", pollHasTwoOptions ? "mb-2" : "mr-2")}
               data-ai-hint={generateHintFromText(option.text) || "option visual"}
-              sizes="(max-width: 768px) 20vw, 10vw"
             />
           )}
           {option.videoUrl && !option.imageUrl && <VideoIconLucide className={cn("text-muted-foreground", pollHasTwoOptions ? "mb-2 h-10 w-10" : "w-5 h-5 mr-2")} />}
@@ -185,7 +184,6 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
         transition: { duration: 0.3, ease: "easeIn" },
       });
       
-      // Pause to allow parent state to update
       await new Promise(resolve => setTimeout(resolve, 500));
 
       controls.set({

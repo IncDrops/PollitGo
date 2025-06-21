@@ -404,7 +404,7 @@ const PollCardFeedWrapper: React.FC<PollCardFeedWrapperProps> = ({ initialPolls,
   };
 
   return (
-    <div className="space-y-0 divide-y divide-border"> {/* Changed from PollFeed directly to avoid recursive PollFeed component */}
+    <div className="space-y-0 divide-y divide-border">
       {polls.map(poll => (
         <PollCard 
           key={poll.id} 
