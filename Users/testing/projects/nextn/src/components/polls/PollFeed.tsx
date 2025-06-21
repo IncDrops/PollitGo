@@ -14,7 +14,11 @@ import { signIn } from 'next-auth/react';
 const pollCardVariants = {
   initial: { opacity: 0, y: 50, scale: 0.95 },
   animate: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 400, damping: 30 } },
-  exit: { opacity: 0, scale: 0.8, transition: { duration: 0.2 } }
+  exit: (custom: 'left' | 'right' | 'default') => {
+    if (custom === 'left') return { x: "-100%", opacity: 0, transition: { duration: 0.3 } };
+    if (custom === 'right') return { x: "100%", opacity: 0, transition: { duration: 0.3 } };
+    return { opacity: 0, scale: 0.8, transition: { duration: 0.2 } }; // Default exit for non-swipe actions
+  }
 };
 
 const MIN_PAYOUT_PER_VOTER = 0.10;
@@ -45,6 +49,7 @@ export default function PollFeed({
   const currentUser = propCurrentUser !== undefined ? propCurrentUser : authHookUser;
 
   const { toast } = useToast();
+  const [exitDirectionMap, setExitDirectionMap] = useState<Record<string, 'left' | 'right' | 'default'>>({});
 
   const loadMorePolls = useCallback(async (isInitial = false) => {
     if (staticPolls || loadingMore || !hasMore) return;
@@ -169,6 +174,9 @@ export default function PollFeed({
     );
   };
 
+  const handlePollActionComplete = (pollIdToRemove: string, swipeDirection?: 'left' | 'right') => {
+     setExitDirectionMap(prev => ({ ...prev, [pollIdToRemove]: swipeDirection || 'default' }));
+  };
 
   const handlePledgeOutcome = (pollId: string, outcome: 'accepted' | 'tipped_crowd') => {
     if (!isAuthenticated || !currentUser || polls.find(p => p.id === pollId)?.creator.id !== currentUser.id) {
@@ -212,11 +220,25 @@ export default function PollFeed({
 
   return (
     <div className="w-full space-y-0 relative">
-      <AnimatePresence initial={false}>
+      <AnimatePresence 
+        initial={false}
+        onExitComplete={() => {
+          const pollIdToRemove = Object.keys(exitDirectionMap)[0];
+          if (pollIdToRemove) {
+            setPolls(prevPolls => prevPolls.filter(p => p.id !== pollIdToRemove));
+            setExitDirectionMap(prev => {
+              const newMap = {...prev};
+              delete newMap[pollIdToRemove];
+              return newMap;
+            });
+          }
+        }}
+      >
         {polls.map((poll) => (
           <motion.div
             key={poll.id}
             layout
+            custom={exitDirectionMap[poll.id] || 'default'}
             variants={pollCardVariants}
             initial="initial"
             animate="animate"
@@ -227,6 +249,7 @@ export default function PollFeed({
               poll={poll}
               onVote={handleVote}
               onToggleLike={handleToggleLike}
+              onPollActionComplete={handlePollActionComplete}
               currentUser={currentUser}
               onPledgeOutcome={handlePledgeOutcome}
             />

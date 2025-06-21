@@ -468,7 +468,7 @@ export default function PollDetailsPage() {
             )}
             <div className="mt-4 flex items-center text-sm text-muted-foreground">
               <Clock className="w-4 h-4 mr-1.5" />
-              <span>{deadlinePassedState ? `Ended ${formatDistanceToNowStrict(parseISO(poll.deadline), { addSuffix: true })}` : `Ends ${timeRemaining}`} &middot; {poll.totalVotes.toLocaleString()} votes</span>
+              <span>{deadlinePassedState ? `Ended` : `Ends ${timeRemaining}`} &middot; {poll.totalVotes.toLocaleString()} votes</span>
                {poll.pledgeAmount && poll.pledgeAmount > 0 && (
                  <span className="ml-1 text-green-600 font-semibold">&middot; Creator Pledged: ${poll.pledgeAmount.toLocaleString()}</span>
               )}
