@@ -337,7 +337,7 @@ export default function NewOpinionPage() {
               Poll it &amp; Go
             </Button>
             <p className="text-xs text-muted-foreground text-center px-4">
-              Poll responsibly. PollitAGo nor its users are responsible for your ultimate decision.
+            <p className="text-xs text-muted-foreground mt-4 text-center">Poll Responsibly, only you are liable for your ultimate decision.</p>
             </p>
           </CardFooter>
         </form>
