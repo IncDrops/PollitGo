@@ -357,7 +357,7 @@ export default function NewOpinionPage() {
               Submit Opinion
             </Button>
             <p className="text-xs text-muted-foreground text-center px-4">
-                Poll responsibly, PollitAgo nor its users are responsible for your ultimate decision.
+                Poll responsibly, PollitAGo nor its users are responsible for your ultimate decision.
             </p>
           </CardFooter>
         </form>
