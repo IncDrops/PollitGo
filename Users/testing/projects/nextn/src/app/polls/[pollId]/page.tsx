@@ -441,7 +441,7 @@ export default function PollDetailsPage() {
                 <div className={cn("grid gap-2", poll.imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2", poll.imageUrls.length > 2 && "md:grid-cols-" + Math.min(poll.imageUrls.length, 4))}>
                     {poll.imageUrls.map((imgUrl, idx) => (
                         <div key={idx} className="relative aspect-video bg-muted rounded-md overflow-hidden shadow-sm">
-                            <Image src={imgUrl} alt={`Poll image ${idx + 1}`} fill className="object-cover" sizes="100vw" priority={idx === 0} data-ai-hint={poll.imageKeywords && poll.imageKeywords[idx] ? poll.imageKeywords[idx] : "poll visual"}/>
+                            <Image src={imgUrl} alt={`Poll image ${idx + 1}`} fill style={{objectFit: "cover"}} sizes="100vw" priority={idx === 0} data-ai-hint={poll.imageKeywords && poll.imageKeywords[idx] ? poll.imageKeywords[idx] : "poll visual"}/>
                         </div>
                     ))}
                 </div>
@@ -484,7 +484,7 @@ export default function PollDetailsPage() {
             )}
             <div className="mt-4 flex items-center text-sm text-muted-foreground">
               <Clock className="w-4 h-4 mr-1.5" />
-              <span>{deadlinePassedState ? 'Ended' : `Ends in: ${timeRemaining}`} &middot; {poll.totalVotes.toLocaleString()} votes</span>
+              <span>{deadlinePassedState ? 'Ended' : `${timeRemaining}`} &middot; {poll.totalVotes.toLocaleString()} votes</span>
                {poll.pledgeAmount && poll.pledgeAmount > 0 && (
                  <span className="ml-1 text-green-600 font-semibold">&middot; Creator Pledged: ${poll.pledgeAmount.toLocaleString()}</span>
               )}

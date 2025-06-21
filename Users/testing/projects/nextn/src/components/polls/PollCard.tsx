@@ -28,8 +28,6 @@ interface PollCardProps {
 }
 
 const OPTION_TEXT_TRUNCATE_LENGTH = 100;
-const MIN_PAYOUT_PER_VOTER = 0.10;
-const CREATOR_PLEDGE_SHARE_FOR_VOTERS = 0.50;
 
 const generateHintFromText = (text: string = ""): string => {
   return text.split(' ').slice(0, 2).join(' ').toLowerCase();
@@ -127,7 +125,6 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
   const stripe = useStripe();
   const [deadlinePassed, setDeadlinePassed] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState<string>('');
-  const [createdAtFormatted, setCreatedAtFormatted] = useState<string | null>(null);
   const [isTipping, setIsTipping] = useState(false);
   const [isLikingInProgress, setIsLikingInProgress] = useState(false);
 
@@ -141,6 +138,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
 
   const handleInternalVote = async (optionId: string) => {
     if (!onVote || !canSwipe) return;
+
     if (!currentUser?.id) {
         toast({title: "Login Required", description: "Please login to vote.", variant:"destructive"});
         signIn();
@@ -225,10 +223,6 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
 
     return () => clearInterval(interval);
   }, [poll.deadline]);
-
-  useEffect(() => {
-    setCreatedAtFormatted(formatDistanceToNowStrict(parseISO(poll.createdAt), { addSuffix: true }));
-  }, [poll.createdAt]);
 
   const handleShowOptionDetails = (option: PollOptionType) => {
     setSelectedOptionForModal(option);
@@ -325,129 +319,130 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
       <motion.div
         {...(canSwipe ? swipeHandlers : {})}
         className="w-full touch-pan-y"
-        animate={controls}
         style={{ transformStyle: "preserve-3d", perspective: 1000 }}
       >
-        <Card
-          onClick={onCardClick}
-          className="w-full max-w-md mx-auto shadow-lg rounded-xl overflow-hidden mb-4 bg-card active:shadow-2xl active:scale-[1.005] transition-transform duration-100 ease-out cursor-pointer"
-        >
-          <CardHeader className="p-4">
-            <div className="flex items-center space-x-3 mb-2">
-              <Avatar className="h-10 w-10 border" onClick={onCreatorClick}>
-                <AvatarImage src={poll.creator.avatarUrl} alt={poll.creator.name} data-ai-hint={generateHintFromText(poll.creator.name) || "profile avatar"}/>
-                <AvatarFallback>{poll.creator.name ? poll.creator.name.substring(0,1).toUpperCase() : 'U'}</AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="text-sm font-semibold text-foreground hover:underline" onClick={onCreatorClick}>{poll.creator.name}</p>
-                <p className="text-xs text-muted-foreground">@{poll.creator.username} &middot; {createdAtFormatted || 'Just now'}</p>
+        <motion.div animate={controls}>
+          <Card
+            onClick={onCardClick}
+            className="w-full max-w-md mx-auto shadow-lg rounded-xl overflow-hidden mb-4 bg-card active:shadow-2xl active:scale-[1.005] transition-transform duration-100 ease-out cursor-pointer"
+          >
+            <CardHeader className="p-4">
+              <div className="flex items-center space-x-3 mb-2">
+                <Avatar className="h-10 w-10 border" onClick={onCreatorClick}>
+                  <AvatarImage src={poll.creator.avatarUrl || undefined} alt={poll.creator.name || ''} data-ai-hint={generateHintFromText(poll.creator.name) || "profile avatar"}/>
+                  <AvatarFallback>{poll.creator.name ? poll.creator.name.substring(0,1).toUpperCase() : 'U'}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="text-sm font-semibold text-foreground hover:underline" onClick={onCreatorClick}>{poll.creator.name}</p>
+                  <p className="text-xs text-muted-foreground">@{poll.creator.username} &middot; {formatDistanceToNowStrict(parseISO(poll.createdAt), { addSuffix: true })}</p>
+                </div>
               </div>
-            </div>
-            <CardTitle className="text-md font-semibold text-foreground leading-snug flex items-start">
-               {poll.isSpicy && <Flame className="w-4 h-4 mr-1.5 text-orange-500 flex-shrink-0 mt-0.5" />}
-              <span>{poll.question}</span>
-            </CardTitle>
-             {poll.imageUrls && poll.imageUrls.length > 0 && (
-                <div className="mt-2 -mx-4">
-                    <div className={cn("grid gap-0.5", poll.imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
-                        {poll.imageUrls.slice(0, poll.imageUrls.length === 3 ? 2 : 4).map((imgUrl, idx) => (
-                            <div key={idx} className={cn(
-                                "relative bg-muted overflow-hidden",
-                                poll.imageUrls?.length === 1 ? "aspect-[16/9]" : "aspect-square",
-                                (poll.imageUrls?.length === 3 && idx === 0) ? "col-span-2" : ""
-                                )}>
-                                <Image src={imgUrl} alt={`Post image ${idx + 1}`} fill sizes="100vw" className="object-cover" data-ai-hint={poll.imageKeywords && poll.imageKeywords[idx] ? poll.imageKeywords[idx] : "post visual"}/>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
-            {poll.videoUrl && (
-                <div className="mt-2 -mx-4">
-                    <video src={poll.videoUrl} controls className="w-full aspect-video rounded-none bg-black" data-ai-hint="post video" onClick={(e) => e.stopPropagation()} />
-                </div>
-            )}
-          </CardHeader>
-
-          <CardContent className="p-4 pt-2">
-            {canSwipe && (
-              <div className="text-center text-muted-foreground text-xs py-2">
-                <Zap className="inline-block w-4 h-4 mr-1 animate-pulse" /> Swipe left or right to vote!
-              </div>
-            )}
-            {!currentUser?.id && !deadlinePassed && (
-                 <div className="text-center text-destructive text-xs py-2 flex items-center justify-center bg-destructive/10 p-2 rounded-md">
-                    <AlertCircle className="w-4 h-4 mr-1.5" /> Please
-                    <Button variant="link" className="p-0 h-auto text-destructive hover:text-destructive/80 mx-1 text-xs" onClick={(e) => {e.stopPropagation(); signIn();}}>login</Button>
-                    to vote.
-                </div>
-            )}
-            <div className={cn(pollHasTwoOptions ? "flex gap-2" : "space-y-2")}>
-              {poll.options.map((option) => (
-                <PollOptionDisplay
-                  key={option.id}
-                  option={option}
-                  totalVotes={poll.totalVotes}
-                  onVoteOptionClick={() => {
-                    if (pollHasTwoOptions || !canCurrentUserVoteOnPoll || poll.isVoted || deadlinePassed) {
-                          handleShowOptionDetails(option);
-                    } else {
-                          handleInternalVote(option.id);
-                    }
-                  }}
-                  isVotedByCurrentUser={!!poll.isVoted}
-                  isSelectedOptionByCurrentUser={poll.votedOptionId === option.id}
-                  deadlinePassed={deadlinePassed}
-                  pollHasTwoOptions={pollHasTwoOptions}
-                  canCurrentUserVote={canCurrentUserVoteOnPoll}
-                  onShowDetails={() => handleShowOptionDetails(option)}
-                />
-              ))}
-            </div>
-            <div className="mt-3 flex items-center text-xs text-muted-foreground">
-              <Clock className="w-3 h-3 mr-1" />
-              <span>{deadlinePassed ? 'Ended' : `Ends in: ${timeRemaining}`}</span>
-              <span className="ml-1">&middot; {poll.totalVotes.toLocaleString()} votes</span>
-              {poll.pledgeAmount && poll.pledgeAmount > 0 && (
-                 <span className="ml-1 text-green-500 font-medium">&middot; Pledged: ${poll.pledgeAmount.toLocaleString()}</span>
+              <CardTitle className="text-md font-semibold text-foreground leading-snug flex items-start">
+                 {poll.isSpicy && <Flame className="w-4 h-4 mr-1.5 text-orange-500 flex-shrink-0 mt-0.5" />}
+                <span>{poll.question}</span>
+              </CardTitle>
+               {poll.imageUrls && poll.imageUrls.length > 0 && (
+                  <div className="mt-2 -mx-4">
+                      <div className={cn("grid gap-0.5", poll.imageUrls.length === 1 ? "grid-cols-1" : "grid-cols-2")}>
+                          {poll.imageUrls.slice(0, poll.imageUrls.length === 3 ? 2 : 4).map((imgUrl, idx) => (
+                              <div key={idx} className={cn(
+                                  "relative bg-muted overflow-hidden",
+                                  poll.imageUrls?.length === 1 ? "aspect-[16/9]" : "aspect-square",
+                                  (poll.imageUrls?.length === 3 && idx === 0) ? "col-span-2" : ""
+                                  )}>
+                                  <Image src={imgUrl} alt={`Post image ${idx + 1}`} fill style={{objectFit: "cover"}} sizes="100vw" data-ai-hint={poll.imageKeywords && poll.imageKeywords[idx] ? poll.imageKeywords[idx] : "post visual"}/>
+                              </div>
+                          ))}
+                      </div>
+                  </div>
               )}
-            </div>
-            {showPledgeOutcomeButtons && (
-              <div className="mt-3 pt-3 border-t space-y-1 sm:space-y-0 sm:flex sm:space-x-2">
-                <p className="text-xs text-center sm:text-left text-muted-foreground mb-1 sm:mb-0 sm:w-full">Creator: Decide pledge outcome.</p>
-                <Button onClick={(e) => { e.stopPropagation(); handlePledgeOutcomeInternal('accepted'); }} variant="outline" size="sm" className="w-full sm:w-auto text-xs">
-                  <Check className="mr-1 h-3 w-3" /> Accept Vote
-                </Button>
-                <Button onClick={(e) => { e.stopPropagation(); handlePledgeOutcomeInternal('tipped_crowd');}} variant="destructive" size="sm" className="w-full sm:w-auto text-xs">
-                  <Users className="mr-1 h-3 w-3" /> Tip Crowd
-                </Button>
-              </div>
-            )}
-             {poll.pledgeOutcome === 'accepted' && isCreator && deadlinePassed && (
-                <p className="mt-1 text-xs text-green-600">You accepted the crowd's vote for this pledge.</p>
-            )}
-            {poll.pledgeOutcome === 'tipped_crowd' && isCreator && deadlinePassed && (
-                <p className="mt-1 text-xs text-orange-600">You tipped the crowd for this pledge.</p>
-            )}
-          </CardContent>
+              {poll.videoUrl && (
+                  <div className="mt-2 -mx-4">
+                      <video src={poll.videoUrl} controls className="w-full aspect-video rounded-none bg-black" data-ai-hint="post video" onClick={(e) => e.stopPropagation()} />
+                  </div>
+              )}
+            </CardHeader>
 
-          <CardFooter className="p-3 border-t flex justify-around">
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary text-xs px-1.5" onClick={handleInternalToggleLike} disabled={isLikingInProgress}>
-              {isLikingInProgress ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Heart className={cn("w-4 h-4 mr-1", poll.isLiked ? "fill-red-500 text-red-500" : "text-muted-foreground")} /> }
-              {poll.likes.toLocaleString()}
-            </Button>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary text-xs px-1.5" onClick={onCardClick}>
-              <MessageSquare className="w-4 h-4 mr-1" /> {poll.commentsCount.toLocaleString()}
-            </Button>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary text-xs px-1.5" onClick={handleTipCreator} disabled={isTipping || !currentUser?.id}>
-              {isTipping ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Gift className="w-4 h-4 mr-1" />}
-               Tip {poll.tipCount && poll.tipCount > 0 ? `(${poll.tipCount.toLocaleString()})` : ''}
-            </Button>
-            <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary text-xs px-1.5" onClick={handleShare}>
-              <Share2 className="w-4 h-4" />
-            </Button>
-          </CardFooter>
-        </Card>
+            <CardContent className="p-4 pt-2">
+              {canSwipe && (
+                <div className="text-center text-muted-foreground text-xs py-2">
+                  <Zap className="inline-block w-4 h-4 mr-1 animate-pulse" /> Swipe left or right to vote!
+                </div>
+              )}
+              {!currentUser?.id && !deadlinePassed && (
+                   <div className="text-center text-destructive text-xs py-2 flex items-center justify-center bg-destructive/10 p-2 rounded-md">
+                      <AlertCircle className="w-4 h-4 mr-1.5" /> Please
+                      <Button variant="link" className="p-0 h-auto text-destructive hover:text-destructive/80 mx-1 text-xs" onClick={(e) => {e.stopPropagation(); signIn();}}>login</Button>
+                      to vote.
+                  </div>
+              )}
+              <div className={cn(pollHasTwoOptions ? "flex gap-2" : "space-y-2")}>
+                {poll.options.map((option) => (
+                  <PollOptionDisplay
+                    key={option.id}
+                    option={option}
+                    totalVotes={poll.totalVotes}
+                    onVoteOptionClick={() => {
+                      if (pollHasTwoOptions || !canCurrentUserVoteOnPoll || poll.isVoted || deadlinePassed) {
+                            handleShowOptionDetails(option);
+                      } else {
+                            handleInternalVote(option.id);
+                      }
+                    }}
+                    isVotedByCurrentUser={!!poll.isVoted}
+                    isSelectedOptionByCurrentUser={poll.votedOptionId === option.id}
+                    deadlinePassed={deadlinePassed}
+                    pollHasTwoOptions={pollHasTwoOptions}
+                    canCurrentUserVote={canCurrentUserVoteOnPoll}
+                    onShowDetails={() => handleShowOptionDetails(option)}
+                  />
+                ))}
+              </div>
+              <div className="mt-3 flex items-center text-xs text-muted-foreground">
+                <Clock className="w-3 h-3 mr-1" />
+                <span>{timeRemaining}</span>
+                <span className="ml-1">&middot; {poll.totalVotes.toLocaleString()} votes</span>
+                {poll.pledgeAmount && poll.pledgeAmount > 0 && (
+                   <span className="ml-1 text-green-500 font-medium">&middot; Pledged: ${poll.pledgeAmount.toLocaleString()}</span>
+                )}
+              </div>
+              {showPledgeOutcomeButtons && (
+                <div className="mt-3 pt-3 border-t space-y-1 sm:space-y-0 sm:flex sm:space-x-2">
+                  <p className="text-xs text-center sm:text-left text-muted-foreground mb-1 sm:mb-0 sm:w-full">Creator: Decide pledge outcome.</p>
+                  <Button onClick={(e) => { e.stopPropagation(); handlePledgeOutcomeInternal('accepted'); }} variant="outline" size="sm" className="w-full sm:w-auto text-xs">
+                    <Check className="mr-1 h-3 w-3" /> Accept Vote
+                  </Button>
+                  <Button onClick={(e) => { e.stopPropagation(); handlePledgeOutcomeInternal('tipped_crowd');}} variant="destructive" size="sm" className="w-full sm:w-auto text-xs">
+                    <Users className="mr-1 h-3 w-3" /> Tip Crowd
+                  </Button>
+                </div>
+              )}
+               {poll.pledgeOutcome === 'accepted' && isCreator && deadlinePassed && (
+                  <p className="mt-1 text-xs text-green-600">You accepted the crowd's vote for this pledge.</p>
+              )}
+              {poll.pledgeOutcome === 'tipped_crowd' && isCreator && deadlinePassed && (
+                  <p className="mt-1 text-xs text-orange-600">You tipped the crowd for this pledge.</p>
+              )}
+            </CardContent>
+
+            <CardFooter className="p-3 border-t flex justify-around">
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary text-xs px-1.5" onClick={handleInternalToggleLike} disabled={isLikingInProgress}>
+                {isLikingInProgress ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Heart className={cn("w-4 h-4 mr-1", poll.isLiked ? "fill-red-500 text-red-500" : "text-muted-foreground")} /> }
+                {poll.likes.toLocaleString()}
+              </Button>
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary text-xs px-1.5" onClick={onCardClick}>
+                <MessageSquare className="w-4 h-4 mr-1" /> {poll.commentsCount.toLocaleString()}
+              </Button>
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary text-xs px-1.5" onClick={handleTipCreator} disabled={isTipping || !currentUser?.id}>
+                {isTipping ? <Loader2 className="mr-1 h-4 w-4 animate-spin" /> : <Gift className="w-4 h-4 mr-1" />}
+                 Tip {poll.tipCount && poll.tipCount > 0 ? `(${poll.tipCount.toLocaleString()})` : ''}
+              </Button>
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-primary text-xs px-1.5" onClick={handleShare}>
+                <Share2 className="w-4 h-4" />
+              </Button>
+            </CardFooter>
+          </Card>
+        </motion.div>
       </motion.div>
       {selectedOptionForModal && (
         <OptionDetailsDialog
