@@ -10,7 +10,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Clock, MessageSquare, Heart, Share2, Gift, CheckCircle2, Film, Video as VideoIconLucide, Info, Zap, Check, Users, Flame, Loader2, AlertCircle } from 'lucide-react';
 import { formatDistanceToNowStrict, parseISO, isPast, intervalToDuration, formatDuration } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { useSwipeable } from 'react-swipeable';
 import OptionDetailsDialog from './OptionDetailsDialog';
@@ -135,18 +135,27 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const controls = useAnimationControls();
+  const wasVoted = useRef(poll.isVoted);
+
   const canSwipe = !!currentUser?.id && poll.options.length === 2 && !poll.isVoted && !deadlinePassed && !!onVote;
 
-  const handleInternalVote = (optionId: string) => {
-    if (!onVote) return;
+  const handleInternalVote = async (optionId: string) => {
+    if (!onVote || !canSwipe) return;
     if (!currentUser?.id) {
         toast({title: "Login Required", description: "Please login to vote.", variant:"destructive"});
         signIn();
         return;
     }
+    if (poll.isVoted) return;
+
+    await controls.start({
+        rotateY: 90,
+        transition: { duration: 0.25, ease: 'easeIn' },
+    });
+    
     onVote(poll.id, optionId);
   };
-  
+
   const handleInternalToggleLike = async (e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (isLikingInProgress || !onToggleLike) return;
@@ -160,32 +169,24 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
     await new Promise(resolve => setTimeout(resolve, 300)); 
     setIsLikingInProgress(false);
   };
+  
+  useEffect(() => {
+    if (poll.isVoted && !wasVoted.current) {
+        controls.set({ rotateY: -90 });
+        controls.start({
+            rotateY: 0,
+            transition: { duration: 0.25, ease: 'easeOut' },
+        });
+    }
+    wasVoted.current = poll.isVoted;
+  }, [poll.isVoted, controls]);
+
 
   const swipeHandlers = useSwipeable({
-    onSwiped: async (eventData) => {
-      if (!canSwipe || !onVote) return;
-
-      const direction = eventData.dir;
-      const optionToVote = direction === 'Left' ? poll.options[0].id : poll.options[1].id;
-
-      await controls.start({
-        x: direction === 'Left' ? '-110%' : '110%',
-        opacity: 0,
-        transition: { duration: 0.4, ease: "easeIn" },
-      });
-      
-      onVote(poll.id, optionToVote);
-
-      controls.set({
-        x: direction === 'Left' ? '110%' : '-110%',
-        opacity: 1, // Keep it visible for the slide-in
-      });
-      
-      await controls.start({
-        x: '0%',
-        opacity: 1,
-        transition: { duration: 0.4, ease: "easeOut" },
-      });
+    onSwiped: (eventData) => {
+      if (!canSwipe) return;
+      const optionToVote = eventData.dir === 'Left' ? poll.options[0].id : poll.options[1].id;
+      handleInternalVote(optionToVote);
     },
     trackMouse: true,
     preventScrollOnSwipe: true,
@@ -209,13 +210,14 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
       setDeadlinePassed(false);
       const duration = intervalToDuration({ start: now, end: deadlineDate });
       
-      const parts = [];
-      if (duration.days && duration.days > 0) parts.push(`${duration.days}d`);
-      if (duration.hours !== undefined) parts.push(`${String(duration.hours).padStart(2, '0')}h`);
-      if (duration.minutes !== undefined) parts.push(`${String(duration.minutes).padStart(2, '0')}m`);
-      if (duration.seconds !== undefined) parts.push(`${String(duration.seconds).padStart(2, '0')}s`);
-      
-      setTimeRemaining(parts.join(':') + " left");
+      let timeStr = "";
+      if (duration.days && duration.days > 0) {
+        timeStr += `${duration.days}d : `;
+      }
+      timeStr += `${String(duration.hours ?? 0).padStart(2, '0')}:`;
+      timeStr += `${String(duration.minutes ?? 0).padStart(2, '0')}:`;
+      timeStr += `${String(duration.seconds ?? 0).padStart(2, '0')}`;
+      setTimeRemaining(timeStr);
     };
 
     updateTimer();
@@ -324,6 +326,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
         {...(canSwipe ? swipeHandlers : {})}
         className="w-full touch-pan-y"
         animate={controls}
+        style={{ transformStyle: "preserve-3d", perspective: 1000 }}
       >
         <Card
           onClick={onCardClick}
@@ -403,7 +406,7 @@ export default function PollCard({ poll, onVote, onToggleLike, onPledgeOutcome, 
             </div>
             <div className="mt-3 flex items-center text-xs text-muted-foreground">
               <Clock className="w-3 h-3 mr-1" />
-              <span>{timeRemaining}</span>
+              <span>{deadlinePassed ? 'Ended' : `Ends in: ${timeRemaining}`}</span>
               <span className="ml-1">&middot; {poll.totalVotes.toLocaleString()} votes</span>
               {poll.pledgeAmount && poll.pledgeAmount > 0 && (
                  <span className="ml-1 text-green-500 font-medium">&middot; Pledged: ${poll.pledgeAmount.toLocaleString()}</span>

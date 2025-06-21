@@ -212,13 +212,14 @@ export default function PollDetailsPage() {
         setDeadlinePassedState(false);
         const duration = intervalToDuration({ start: now, end: deadlineDate });
         
-        const parts = [];
-        if (duration.days && duration.days > 0) parts.push(`${duration.days}d`);
-        if (duration.hours !== undefined) parts.push(`${String(duration.hours).padStart(2, '0')}h`);
-        if (duration.minutes !== undefined) parts.push(`${String(duration.minutes).padStart(2, '0')}m`);
-        if (duration.seconds !== undefined) parts.push(`${String(duration.seconds).padStart(2, '0')}s`);
-        
-        setTimeRemaining(parts.join(':') + " left");
+        let timeStr = "";
+        if (duration.days && duration.days > 0) {
+          timeStr += `${duration.days}d : `;
+        }
+        timeStr += `${String(duration.hours ?? 0).padStart(2, '0')}:`;
+        timeStr += `${String(duration.minutes ?? 0).padStart(2, '0')}:`;
+        timeStr += `${String(duration.seconds ?? 0).padStart(2, '0')}`;
+        setTimeRemaining(timeStr);
       };
 
       updateTimer();
@@ -483,7 +484,7 @@ export default function PollDetailsPage() {
             )}
             <div className="mt-4 flex items-center text-sm text-muted-foreground">
               <Clock className="w-4 h-4 mr-1.5" />
-              <span>{timeRemaining} &middot; {poll.totalVotes.toLocaleString()} votes</span>
+              <span>{deadlinePassedState ? 'Ended' : `Ends in: ${timeRemaining}`} &middot; {poll.totalVotes.toLocaleString()} votes</span>
                {poll.pledgeAmount && poll.pledgeAmount > 0 && (
                  <span className="ml-1 text-green-600 font-semibold">&middot; Creator Pledged: ${poll.pledgeAmount.toLocaleString()}</span>
               )}
