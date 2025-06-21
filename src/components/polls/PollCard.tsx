@@ -338,7 +338,11 @@ export default function PollCard({ poll, onVote, onPollActionComplete, onPledgeO
           <CardHeader className="p-4">
             <div className="flex items-center space-x-3 mb-2">
               <Avatar className="h-10 w-10 border" onClick={onCreatorClick}>
-                <AvatarImage src={currentPoll.creator.avatarUrl} alt={currentPoll.creator.name} data-ai-hint={generateHintFromText(currentPoll.creator.name) || "profile avatar"}/>
+                <AvatarImage 
+                  src={currentPoll.creator.avatarUrl || undefined} 
+                  alt={currentPoll.creator.name || "User avatar"} 
+                  data-ai-hint={generateHintFromText(currentPoll.creator.name) || "profile avatar"}
+                />
                 <AvatarFallback>{currentPoll.creator.name ? currentPoll.creator.name.substring(0,1).toUpperCase() : 'U'}</AvatarFallback>
               </Avatar>
               <div>

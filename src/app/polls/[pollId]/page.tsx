@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -20,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useStripe } from "@stripe/react-stripe-js";
 import useAuth from '@/hooks/useAuth'; // Updated to NextAuth useAuth
 import { signIn } from 'next-auth/react';
+
 
 
 async function getPollDetails(pollId: string): Promise<{ poll: Poll | null; comments: CommentType[] }> {
@@ -355,7 +355,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
             <div className="flex items-center space-x-3 mb-3">
               <NextLink href={`/profile/${poll.creator.id}`}>
                 <Avatar className="h-12 w-12 border cursor-pointer">
-                  <AvatarImage src={poll.creator.avatarUrl} alt={poll.creator.name} data-ai-hint={generateHintFromText(poll.creator.name) || "profile avatar"}/>
+                  <AvatarImage src={poll.creator.avatarUrl ?? undefined} alt={poll.creator.name ?? undefined} data-ai-hint={generateHintFromText(poll.creator.name) || "profile avatar"}/>
                   <AvatarFallback>{poll.creator.name ? poll.creator.name.substring(0, 1).toUpperCase() : 'U'}</AvatarFallback>
                 </Avatar>
               </NextLink>
@@ -465,7 +465,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
               <form action={handleCommentSubmit} id="comment-form" className="flex items-start space-x-2 mb-6">
                 {isAuthenticated && currentUser ? (
                   <Avatar className="h-10 w-10 border">
-                    <AvatarImage src={currentUser.image || `https://placehold.co/100x100.png?text=${currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U'}`} alt={currentUser.name || "User"} data-ai-hint="profile avatar" />
+                    <AvatarImage src={currentUser.image ?? undefined} alt={currentUser.name ?? undefined} data-ai-hint="profile avatar" />
                     <AvatarFallback>{currentUser.name ? currentUser.name.substring(0,1).toUpperCase() : 'U'}</AvatarFallback>
                   </Avatar>
                 ) : (
@@ -483,7 +483,7 @@ export default function PollDetailsPage({ params }: { params: { pollId: string }
                 {comments.map(comment => (
                   <div key={comment.id} className="flex items-start space-x-3">
                      <Avatar className="h-8 w-8 border">
-                        <AvatarImage src={comment.user.avatarUrl} alt={comment.user.name} data-ai-hint="profile avatar" />
+                        <AvatarImage src={comment.user.avatarUrl ?? undefined} alt={comment.user.name ?? undefined} data-ai-hint="profile avatar" />
                         <AvatarFallback>{comment.user.name ? comment.user.name.substring(0,1).toUpperCase() : 'U'}</AvatarFallback>
                      </Avatar>
                      <div className="flex-1 bg-muted/50 p-3 rounded-lg">
