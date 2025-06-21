@@ -354,7 +354,7 @@ export default function NewOpinionPage() {
           <CardFooter className="border-t pt-6 flex flex-col items-center gap-4">
             <Button type="submit" className="w-full text-lg py-6 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md font-semibold" disabled={formDisabled}>
               {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-              Poll it &amp; Go
+              Submit Opinion
             </Button>
             <p className="text-xs text-muted-foreground text-center px-4">
                 Poll responsibly, PollitAgo nor its users are responsible for your ultimate decision.

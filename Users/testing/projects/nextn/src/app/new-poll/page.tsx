@@ -559,7 +559,7 @@ export default function NewPollPage() {
                 </Label>
               </div>
               <Alert variant={isSpicy ? "destructive" : "default"} className={isSpicy ? "border-orange-500/50" : ""}>
-                <AlertCircle className={cn("h-4 w-4", isSpicy ? "!text-orange-500" : "!text-muted-foreground")} />
+                <AlertCircle className={cn("h-4 w-4", isSpicy && "!text-orange-500")} />
                 <AlertTitle className={isSpicy ? "text-orange-600" : ""}>{isSpicy ? "Heads Up!" : "Content Note"}</AlertTitle>
                 <AlertDescription className={isSpicy ? "text-orange-600/80" : ""}>
                   {isSpicy 
@@ -616,7 +616,7 @@ export default function NewPollPage() {
           <CardFooter className="border-t pt-6 flex flex-col items-center gap-4">
             <Button type="submit" className="w-full text-lg py-6 bg-primary hover:bg-primary/90 text-primary-foreground rounded-md font-semibold" disabled={formDisabled}>
               {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-              Poll it &amp; Go
+              Create Poll
             </Button>
             <p className="text-xs text-muted-foreground text-center px-4">
                 Poll responsibly, PollitAgo nor its users are responsible for your ultimate decision.
@@ -627,4 +627,3 @@ export default function NewPollPage() {
     </div>
   );
 }
-
